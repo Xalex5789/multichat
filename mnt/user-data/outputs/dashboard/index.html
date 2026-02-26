@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeve Multichat — Dashboard</title>
+  <style>
+    :root {
+      --bg:       #0f172a;
+      --panel:    #1e293b;
+      --border:   #334155;
+      --text:     #f1f5f9;
+      --muted:    #94a3b8;
+      --twitch:   #9146FF;
+      --kick:     #53FC18;
+      --tiktok:   #FF0050;
+      --custom:   #FF6B9D;
+      --green:    #22c55e;
+      --red:      #ef4444;
+      --yellow:   #eab308;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #FF6B9D, #9146FF);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    #ws-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    #ws-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--red);
+      transition: background 0.3s;
+      flex-shrink: 0;
+    }
+    #ws-dot.ok { background: var(--green); }
+
+    /* ── LAYOUT ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 0;
+      height: calc(100vh - 57px);
+      overflow: hidden;
+    }
+
+    .sidebar {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── PLATFORM STATUS ── */
+    .platform-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.04);
+      margin-bottom: 8px;
+      transition: background 0.2s;
+    }
+
+    .platform-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--red); flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .platform-dot.ok { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .platform-dot.warn { background: var(--yellow); }
+
+    .platform-icon { font-size: 18px; }
+    .platform-name { font-weight: 600; font-size: 14px; flex: 1; }
+    .platform-channel { font-size: 12px; color: var(--muted); }
+
+    .btn-small {
+      padding: 4px 10px;
+      font-size: 11px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-small:hover { background: rgba(255,255,255,0.08); }
+    .btn-small.danger:hover { background: rgba(239,68,68,0.2); border-color: var(--red); }
+
+    /* ── CONFIG FORM ── */
+    .form-group { margin-bottom: 12px; }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    .form-group .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .form-group input {
+      flex: 1;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus { border-color: #FF6B9D; }
+    .form-group input::placeholder { color: var(--muted); }
+
+    .btn {
+      padding: 9px 16px;
+      border-radius: 8px;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .btn-primary   { background: linear-gradient(135deg, #FF6B9D, #9146FF); color: #fff; }
+    .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-secondary { background: rgba(255,255,255,0.08); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.14); }
+    .btn-danger    { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.4); }
+    .btn-danger:hover { background: rgba(239,68,68,0.25); }
+    .btn-tiktok    { background: rgba(255,0,80,0.15); color: var(--tiktok); border: 1px solid rgba(255,0,80,0.4); }
+    .btn-tiktok:hover { background: rgba(255,0,80,0.25); }
+    .btn-full { width: 100%; }
+
+    .save-hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .tag-connector { background: rgba(34,197,94,0.15); color: var(--green); }
+    .tag-puppeteer { background: rgba(234,179,8,0.15); color: var(--yellow); }
+
+    /* ── OVERLAY URL ── */
+    .url-box {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      font-family: monospace;
+      color: #7dd3fc;
+      word-break: break-all;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .url-box:hover { background: rgba(255,255,255,0.08); }
+
+    /* ── MENSAJES CHAT (derecha) ── */
+    .chat-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      scroll-behavior: smooth;
+    }
+
+    .msg-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 10px;
+      border-left: 3px solid transparent;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg-item.twitch  { border-left-color: var(--twitch); }
+    .msg-item.kick    { border-left-color: var(--kick); }
+    .msg-item.tiktok  { border-left-color: var(--tiktok); }
+    .msg-item.custom  { border-left-color: var(--custom); }
+
+    .msg-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--border);
+      background-size: cover; background-position: center;
+      flex-shrink: 0; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .msg-body { flex: 1; min-width: 0; }
+    .msg-header { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; flex-wrap: wrap; }
+    .msg-user { font-weight: 700; font-size: 13px; }
+    .msg-platform { font-size: 10px; padding: 1px 6px; border-radius: 999px; font-weight: 600; }
+    .msg-platform.twitch { background: rgba(145,70,255,0.2); color: var(--twitch); }
+    .msg-platform.kick   { background: rgba(83,252,24,0.15); color: var(--kick); }
+    .msg-platform.tiktok { background: rgba(255,0,80,0.15); color: var(--tiktok); }
+    .msg-platform.custom { background: rgba(255,107,157,0.15); color: var(--custom); }
+    .msg-time { font-size: 10px; color: var(--muted); margin-left: auto; }
+    .msg-text { font-size: 13px; color: var(--text); line-height: 1.5; word-break: break-word; }
+
+    /* ── TIKTOK PREVIEW PANEL ── */
+    #tiktok-panel {
+      position: fixed;
+      top: 57px; right: 0; bottom: 0;
+      width: 380px;
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      display: none;
+      flex-direction: column;
+      z-index: 100;
+      transition: transform 0.3s;
+    }
+    #tiktok-panel.open { display: flex; }
+
+    .tiktok-panel-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #tiktok-iframe-wrap {
+      flex: 1;
+      position: relative;
+      background: #000;
+    }
+
+    #tiktok-iframe-wrap iframe {
+      width: 100%; height: 100%; border: none;
+    }
+
+    .tiktok-overlay-msg {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.85);
+      gap: 12px;
+      color: var(--text);
+      font-size: 14px;
+      text-align: center;
+      padding: 20px;
+    }
+
+    /* ── BOTTOM INPUT ── */
+    .input-bar {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--panel);
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-bar input {
+      flex: 1;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 14px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+    .input-bar input:focus { border-color: #FF6B9D; }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #1e293b; border: 1px solid #334155;
+      color: var(--text); padding: 10px 20px; border-radius: 8px;
+      font-size: 13px; z-index: 999;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🎮 Meeve Multichat Dashboard</h1>
+  <div id="ws-status">
+    <span id="ws-dot"></span>
+    <span id="ws-label">Desconectado</span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ══ SIDEBAR ══ -->
+  <div class="sidebar">
+
+    <!-- Config del servidor -->
+    <div class="card">
+      <div class="card-title">Servidor</div>
+      <div class="form-group">
+        <label>URL del servidor Render</label>
+        <div class="input-row">
+          <input id="serverUrl" type="text" placeholder="wss://tu-app.onrender.com" />
+          <button class="btn btn-primary" onclick="saveAndConnect()">Conectar</button>
+        </div>
+        <div class="save-hint">Se guarda automáticamente en el navegador</div>
+      </div>
+    </div>
+
+    <!-- Config de canales -->
+    <div class="card">
+      <div class="card-title">Canales</div>
+
+      <!-- Twitch -->
+      <div class="form-group">
+        <label>🟣 Twitch — nombre de canal</label>
+        <div class="input-row">
+          <input id="twitchChannel" type="text" placeholder="ej: meeve_" />
+        </div>
+      </div>
+
+      <!-- Kick -->
+      <div class="form-group">
+        <label>🟢 Kick — nombre de canal (slug)</label>
+        <div class="input-row">
+          <input id="kickChannel" type="text" placeholder="ej: meeve" />
+        </div>
+      </div>
+
+      <!-- TikTok -->
+      <div class="form-group">
+        <label>🎵 TikTok — usuario (sin @)</label>
+        <div class="input-row">
+          <input id="tiktokUser" type="text" placeholder="ej: meeve_" />
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-full" onclick="saveChannels()">💾 Guardar canales en servidor</button>
+      <div class="save-hint">Esto envía los canales al servidor Render. El servidor necesita reiniciarse para aplicarlos (usa las variables de entorno en Render para hacerlo permanente).</div>
+    </div>
+
+    <!-- Estado plataformas -->
+    <div class="card">
+      <div class="card-title">Estado conexiones</div>
+
+      <div class="platform-row" id="row-twitch">
+        <span class="platform-dot" id="dot-twitch"></span>
+        <span class="platform-icon">🟣</span>
+        <div>
+          <div class="platform-name">Twitch</div>
+          <div class="platform-channel" id="ch-twitch">—</div>
+        </div>
+      </div>
+
+      <div class="platform-row" id="row-kick">
+        <span class="platform-dot" id="dot-kick"></span>
+        <span class="platform-icon">🟢</span>
+        <div>
+          <div class="platform-name">Kick</div>
+          <div class="platform-channel" id="ch-kick">—</div>
+        </div>
+      </div>
+
+      <div class="platform-row" id="row-tiktok">
+        <span class="platform-dot" id="dot-tiktok"></span>
+        <span class="platform-icon">🎵</span>
+        <div>
+          <div class="platform-name">TikTok</div>
+          <div class="platform-channel" id="ch-tiktok">—</div>
+        </div>
+        <span id="tiktok-mode-tag" class="tag tag-connector">connector</span>
+      </div>
+    </div>
+
+    <!-- TikTok control -->
+    <div class="card">
+      <div class="card-title">TikTok — Control</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-tiktok" style="flex:1" onclick="restartTikTok()">🔄 Reconectar</button>
+        <button class="btn btn-secondary" style="flex:1" onclick="toggleTikTokPreview()">📺 Preview</button>
+      </div>
+      <div style="margin-top:10px; font-size:12px; color:var(--muted);">
+        El Preview abre el live de TikTok en un panel lateral. Mantenlo visible para que el servidor capte los mensajes si el connector falla.
+      </div>
+    </div>
+
+    <!-- URL del overlay -->
+    <div class="card">
+      <div class="card-title">URL del Overlay (OBS)</div>
+      <div class="url-box" id="overlay-url" onclick="copyOverlayUrl()" title="Click para copiar">
+        Configura el servidor primero...
+      </div>
+      <div style="margin-top:8px; display:flex; gap:8px;">
+        <button class="btn btn-secondary" style="flex:1; font-size:12px;" onclick="copyOverlayUrl()">📋 Copiar</button>
+        <button class="btn btn-secondary" style="flex:1; font-size:12px;" onclick="openOverlay()">🔗 Abrir</button>
+      </div>
+    </div>
+
+  </div>
+  <!-- ══ FIN SIDEBAR ══ -->
+
+  <!-- ══ MAIN ══ -->
+  <div class="main">
+
+    <div class="chat-panel" id="chat-panel">
+      <div style="text-align:center; color:var(--muted); margin:auto; font-size:14px;">
+        Los mensajes aparecerán aquí cuando el servidor esté conectado ✨
+      </div>
+    </div>
+
+    <div class="input-bar">
+      <input id="custom-msg-input" type="text" placeholder="Escribe un mensaje personalizado y pulsa Enter…"
+             onkeydown="if(event.key==='Enter') sendCustomMessage()" />
+      <button class="btn btn-primary" onclick="sendCustomMessage()">Enviar ⭐</button>
+    </div>
+
+  </div>
+  <!-- ══ FIN MAIN ══ -->
+
+</div>
+
+<!-- ══ TIKTOK PREVIEW PANEL ══ -->
+<div id="tiktok-panel">
+  <div class="tiktok-panel-header">
+    <span style="font-size:18px;">🎵</span>
+    <span style="font-weight:700; flex:1;">TikTok Live Preview</span>
+    <button class="btn btn-small" onclick="toggleTikTokPreview()">✕ Cerrar</button>
+  </div>
+  <div id="tiktok-iframe-wrap">
+    <div class="tiktok-overlay-msg" id="tiktok-overlay-msg">
+      <span style="font-size:32px;">🎵</span>
+      <span>Configura el usuario de TikTok y pulsa "Preview" para abrir el live.</span>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ── PERSISTENCIA LOCAL ─────────────────────────────────────
+  const store = {
+    get: (k, def='') => { try { return localStorage.getItem(k) || def; } catch { return def; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  };
+
+  // ── ESTADO ─────────────────────────────────────────────────
+  let ws = null;
+  let retryDelay = 1000;
+  let isConnected = false;
+  let currentChannels = { twitch: '', kick: '', tiktok: '' };
+  let tiktokPreviewOpen = false;
+
+  const platformIcons = { twitch: '🟣', kick: '🟢', tiktok: '🎵', custom: '⭐' };
+
+  // ── INIT ───────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('serverUrl').value   = store.get('serverUrl');
+    document.getElementById('twitchChannel').value = store.get('twitchChannel');
+    document.getElementById('kickChannel').value   = store.get('kickChannel');
+    document.getElementById('tiktokUser').value    = store.get('tiktokUser');
+
+    updateOverlayUrl();
+
+    const savedUrl = store.get('serverUrl');
+    if (savedUrl) connectWS(savedUrl);
+  });
+
+  // ── WEBSOCKET ──────────────────────────────────────────────
+  function connectWS(url) {
+    if (!url) return;
+
+    if (ws) { try { ws.close(); } catch {} }
+
+    const wsUrl = url.replace(/^https?/, 'ws');
+
+    try { ws = new WebSocket(wsUrl); } catch(e) {
+      setStatus(false); scheduleRetry(url); return;
+    }
+
+    ws.onopen = () => {
+      isConnected = true;
+      retryDelay  = 1000;
+      setStatus(true);
+      console.log('[Dashboard] Conectado a', wsUrl);
+    };
+
+    ws.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === 'status') {
+          handleStatus(data);
+        } else {
+          appendMessage(data);
+        }
+      } catch {}
+    };
+
+    ws.onclose = () => {
+      isConnected = false;
+      setStatus(false);
+      scheduleRetry(url);
+    };
+
+    ws.onerror = () => ws.close();
+  }
+
+  function scheduleRetry(url) {
+    retryDelay = Math.min(retryDelay * 2, 30000);
+    setTimeout(() => connectWS(url), retryDelay);
+  }
+
+  function setStatus(ok) {
+    document.getElementById('ws-dot').className   = ok ? 'ok' : '';
+    document.getElementById('ws-label').textContent = ok ? 'Conectado' : 'Desconectado';
+  }
+
+  // ── MANEJAR ESTADO DEL SERVIDOR ────────────────────────────
+  function handleStatus(data) {
+    setPlatformStatus('twitch', data.twitch,  data.channels?.twitch  || '—');
+    setPlatformStatus('kick',   data.kick,    data.channels?.kick    || '—');
+    setPlatformStatus('tiktok', data.tiktok,  data.channels?.tiktok  || '—');
+
+    if (data.channels) currentChannels = data.channels;
+
+    const modeTag = document.getElementById('tiktok-mode-tag');
+    if (modeTag) {
+      modeTag.textContent = data.tiktokMode || 'connector';
+      modeTag.className = 'tag ' + (data.tiktokMode === 'puppeteer' ? 'tag-puppeteer' : 'tag-connector');
+    }
+  }
+
+  function setPlatformStatus(platform, connected, channel) {
+    const dot = document.getElementById('dot-' + platform);
+    const ch  = document.getElementById('ch-'  + platform);
+    if (dot) dot.className = 'platform-dot' + (connected ? ' ok' : '');
+    if (ch)  ch.textContent = channel || '—';
+  }
+
+  // ── AGREGAR MENSAJE AL CHAT ────────────────────────────────
+  function appendMessage(data) {
+    const panel = document.getElementById('chat-panel');
+
+    // Eliminar el placeholder si existe
+    const placeholder = panel.querySelector('div[style*="margin:auto"]');
+    if (placeholder) placeholder.remove();
+
+    const platform = data.platform || data.type || 'custom';
+    const icon = platformIcons[platform] || '💬';
+
+    const now = new Date();
+    const time = now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+
+    const el = document.createElement('div');
+    el.className = 'msg-item ' + platform;
+
+    const avatarStyle = data.chatimg ? `background-image:url('${data.chatimg}')` : '';
+    const avatarContent = data.chatimg ? '' : icon;
+
+    el.innerHTML = `
+      <div class="msg-avatar" style="${avatarStyle}">${avatarContent}</div>
+      <div class="msg-body">
+        <div class="msg-header">
+          <span class="msg-user" style="${data.nameColor ? `color:${data.nameColor}` : ''}">${escHtml(data.chatname || '?')}</span>
+          <span class="msg-platform ${platform}">${platform}</span>
+          <span class="msg-time">${time}</span>
+        </div>
+        <div class="msg-text">${escHtml(data.chatmessage || data.hasDonation || '')}</div>
+      </div>`;
+
+    panel.appendChild(el);
+
+    // Limitar a 200 mensajes en el dashboard
+    const msgs = panel.querySelectorAll('.msg-item');
+    if (msgs.length > 200) msgs[0].remove();
+
+    // Auto-scroll
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+
+  // ── BOTONES DE ACCIÓN ──────────────────────────────────────
+  function saveAndConnect() {
+    const url = document.getElementById('serverUrl').value.trim();
+    if (!url) return toast('Introduce la URL del servidor');
+    store.set('serverUrl', url);
+    retryDelay = 1000;
+    connectWS(url);
+    updateOverlayUrl();
+    toast('Conectando a ' + url);
+  }
+
+  function saveChannels() {
+    const twitch = document.getElementById('twitchChannel').value.trim();
+    const kick   = document.getElementById('kickChannel').value.trim();
+    const tiktok = document.getElementById('tiktokUser').value.trim();
+
+    store.set('twitchChannel', twitch);
+    store.set('kickChannel',   kick);
+    store.set('tiktokUser',    tiktok);
+
+    if (!isConnected) return toast('⚠️ Conecta al servidor primero');
+
+    // Enviar al servidor para actualización en caliente (el servidor puede ignorar esto si no lo implementa aún)
+    ws.send(JSON.stringify({ type: 'update_channels', twitch, kick, tiktok }));
+    toast('✅ Canales guardados. Para hacerlos permanentes, configúralos en las variables de entorno de Render.');
+  }
+
+  async function restartTikTok() {
+    const url = store.get('serverUrl');
+    if (!url) return toast('Configura la URL del servidor primero');
+
+    const httpUrl = url.replace(/^wss?/, 'https').replace(/\/$/, '');
+    try {
+      const r = await fetch(httpUrl + '/api/tiktok/restart', { method: 'POST' });
+      const d = await r.json();
+      if (d.ok) toast('🔄 TikTok reconectando... (reinicio #' + d.restarts + ')');
+      else       toast('❌ Error al reconectar TikTok');
+    } catch (e) {
+      toast('❌ No se pudo contactar el servidor: ' + e.message);
+    }
+  }
+
+  function toggleTikTokPreview() {
+    tiktokPreviewOpen = !tiktokPreviewOpen;
+    const panel = document.getElementById('tiktok-panel');
+    panel.classList.toggle('open', tiktokPreviewOpen);
+
+    if (tiktokPreviewOpen) {
+      loadTikTokPreview();
+    }
+  }
+
+  function loadTikTokPreview() {
+    const user = document.getElementById('tiktokUser').value.trim()
+                  || store.get('tiktokUser')
+                  || currentChannels.tiktok;
+
+    const wrap = document.getElementById('tiktok-iframe-wrap');
+    const overlay = document.getElementById('tiktok-overlay-msg');
+
+    if (!user) {
+      overlay.style.display = 'flex';
+      overlay.innerHTML = '<span style="font-size:32px">🎵</span><span>Introduce tu usuario de TikTok en la configuración primero.</span>';
+      return;
+    }
+
+    overlay.style.display = 'none';
+
+    // Si ya hay iframe, no recrear
+    if (wrap.querySelector('iframe')) return;
+
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://www.tiktok.com/@${user}/live`;
+    iframe.allow = 'autoplay';
+    iframe.allowFullscreen = true;
+    wrap.appendChild(iframe);
+  }
+
+  function sendCustomMessage() {
+    const input = document.getElementById('custom-msg-input');
+    const text  = input.value.trim();
+    if (!text) return;
+    if (!isConnected) return toast('⚠️ No hay conexión con el servidor');
+
+    ws.send(JSON.stringify({ type: 'custom_message', user: 'Tú (dashboard)', text }));
+    input.value = '';
+  }
+
+  // ── URL OVERLAY ────────────────────────────────────────────
+  function updateOverlayUrl() {
+    const serverUrl = store.get('serverUrl');
+    const box = document.getElementById('overlay-url');
+    if (!serverUrl) {
+      box.textContent = 'Configura el servidor primero...';
+      return;
+    }
+
+    // La URL del overlay está en GitHub Pages (mismo repo, carpeta /overlay/)
+    // Si se sirve desde GitHub Pages, la URL base del dashboard sería:
+    // https://USUARIO.github.io/REPO/dashboard/ → overlay en /overlay/
+    const baseUrl = window.location.href.replace('/dashboard/', '/overlay/').replace('/dashboard/index.html', '/overlay/index.html');
+    const overlayUrl = `${baseUrl}?server=${encodeURIComponent(serverUrl)}`;
+    box.textContent = overlayUrl;
+    box.dataset.url = overlayUrl;
+  }
+
+  function copyOverlayUrl() {
+    const box = document.getElementById('overlay-url');
+    const url = box.dataset.url || box.textContent;
+    if (!url || url.includes('Configura')) return toast('Configura el servidor primero');
+    navigator.clipboard.writeText(url).then(() => toast('✅ URL copiada al portapapeles'));
+  }
+
+  function openOverlay() {
+    const box = document.getElementById('overlay-url');
+    const url = box.dataset.url || box.textContent;
+    if (!url || url.includes('Configura')) return toast('Configura el servidor primero');
+    window.open(url, '_blank');
+  }
+
+  // ── TOAST ──────────────────────────────────────────────────
+  function toast(msg, duration=3000) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), duration);
+  }
+</script>
+</body>
+</html>
