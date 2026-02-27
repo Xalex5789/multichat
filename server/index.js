@@ -215,51 +215,77 @@ function _connectKickWS(channelId, attempt = 1) {
     state.kick.ws = null;
   }
 
-  const pusherUrl = 'wss://ws-us2.pusher.com/app/eb1d5f283081a78b932c?protocol=7&client=js&version=7.6.0&flash=false';
+  // Kick migró de Pusher a su propio WebSocket en wss://ws.kick.com
+  const kickWsUrl = 'wss://ws.kick.com/';
 
   let ws;
   try {
-    ws = new WebSocket(pusherUrl, {
+    ws = new WebSocket(kickWsUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Origin': 'https://kick.com',
-        'Host': 'ws-us2.pusher.com',
       }
     });
   } catch(e) {
     console.error('[Kick] No se pudo crear WebSocket:', e.message);
-    const delay = Math.min(5000 * attempt, 60000);
+    const delay = Math.min(10000 * attempt, 60000);
     setTimeout(() => _connectKickWS(channelId, attempt + 1), delay);
     return;
   }
 
   state.kick.ws = ws;
   let pingInterval = null;
+  let socketId = null;
 
   ws.on('open', () => {
-    ws.send(JSON.stringify({
-      event: 'pusher:subscribe',
-      data:  { auth: '', channel: `chatrooms.${channelId}.v2` }
-    }));
-
-    state.kick.connected = true;
-    console.log(`[Kick] ✅ Suscrito al chatroom ${channelId} (intento #${attempt})`);
-    broadcastStatus();
-
-    pingInterval = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
-      }
-    }, 25000);
+    console.log(`[Kick] WS abierto, esperando connection_established... (intento #${attempt})`);
   });
 
   ws.on('message', (raw) => {
     try {
       const msg = JSON.parse(raw);
-      if (msg.event === 'pusher:connection_established') return;
-      if (msg.event === 'pusher:pong') return;
+      const event = msg.event || '';
 
-      if (msg.event === 'App\\Events\\ChatMessageEvent') {
+      // 1. Conexión establecida → suscribirse al canal
+      if (event === 'pusher:connection_established') {
+        const connData = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
+        socketId = connData.socket_id;
+        console.log('[Kick] Conexión establecida, socket_id:', socketId);
+
+        // Suscribirse al chatroom
+        ws.send(JSON.stringify({
+          event: 'pusher:subscribe',
+          data:  { auth: '', channel: `chatrooms.${channelId}.v2` }
+        }));
+
+        // Ping cada 30s
+        pingInterval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
+          }
+        }, 30000);
+        return;
+      }
+
+      if (event === 'pusher:pong') return;
+
+      // 2. Suscripción confirmada
+      if (event === 'pusher_internal:subscription_succeeded') {
+        state.kick.connected = true;
+        console.log(`[Kick] ✅ Suscrito al chatroom ${channelId}`);
+        broadcastStatus();
+        return;
+      }
+
+      // 3. Error de suscripción
+      if (event === 'pusher:error') {
+        const errData = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
+        console.error('[Kick] Error Pusher:', errData?.message || JSON.stringify(errData));
+        return;
+      }
+
+      // 4. Mensaje de chat
+      if (event === 'App\Events\ChatMessageEvent') {
         const d = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
         broadcast({
           type:        'kick',
@@ -270,15 +296,24 @@ function _connectKickWS(channelId, attempt = 1) {
           chatimg:     d.sender?.profile_pic || null,
           mid:         d.id || ('kick-' + Date.now()),
         });
+        return;
       }
-    } catch (e) {}
+
+      // Log de eventos desconocidos para debug
+      if (event && event !== 'pusher:pong') {
+        console.log('[Kick] Evento:', event);
+      }
+
+    } catch (e) {
+      console.error('[Kick] Error parseando mensaje:', e.message);
+    }
   });
 
   ws.on('close', (code) => {
     state.kick.connected = false;
     broadcastStatus();
-    if (pingInterval) clearInterval(pingInterval);
-    const delay = Math.min(5000 * Math.min(attempt, 6), 60000);
+    if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
+    const delay = Math.min(5000 * Math.min(attempt, 8), 60000);
     console.log(`[Kick] Desconectado (code: ${code}). Reconectando en ${delay/1000}s...`);
     setTimeout(() => _connectKickWS(channelId, attempt + 1), delay);
   });
