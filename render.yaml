@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: meeve-multichat
+    env: node
+    region: oregon
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    healthCheckPath: /health
+    envVars:
+      - key: TWITCH_CHANNEL
+        sync: false          # <— lo introduces manualmente en el panel de Render
+      - key: KICK_CHANNEL
+        sync: false
+      - key: KICK_CHANNEL_ID
+        sync: false
+      - key: TIKTOK_USERNAME
+        sync: false
+      - key: TIKTOK_MODE
+        value: connector     # 'connector' por defecto, cambiar a 'puppeteer' si falla
+      - key: NODE_ENV
+        value: production
