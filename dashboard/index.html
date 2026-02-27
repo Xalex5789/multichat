@@ -184,7 +184,6 @@
 <div class="layout">
   <div class="sidebar">
 
-    <!-- Servidor -->
     <div class="card">
       <div class="card-title">Servidor</div>
       <div class="form-group">
@@ -197,7 +196,6 @@
       </div>
     </div>
 
-    <!-- Estado -->
     <div class="card">
       <div class="card-title">Estado conexiones</div>
       <div class="platform-row">
@@ -227,7 +225,6 @@
       </div>
     </div>
 
-    <!-- Kick resolver -->
     <div class="card">
       <div class="card-title">Kick — Resolver ID</div>
       <div id="kick-status-box" class="info-box green" style="margin-bottom:10px;">
@@ -249,7 +246,6 @@
       </div>
     </div>
 
-    <!-- TikTok -->
     <div class="card">
       <div class="card-title">TikTok — Control</div>
       <div style="display:flex; gap:8px; margin-bottom:10px;">
@@ -263,7 +259,6 @@
       </div>
     </div>
 
-    <!-- Overlay URL -->
     <div class="card">
       <div class="card-title">URL del Overlay (OBS)</div>
       <div class="info-box warn" style="margin-bottom:10px; font-size:11px;">
@@ -272,8 +267,7 @@
       </div>
       <div class="form-group">
         <label>URL base del overlay</label>
-        <input id="overlayBase" type="text"
-          placeholder="https://usuario.github.io/repo/overlay/index.html" />
+        <input id="overlayBase" type="text" placeholder="https://usuario.github.io/repo/overlay/index.html" />
         <div class="hint">La URL completa de tu overlay/index.html</div>
       </div>
       <div class="url-box" id="overlay-url" onclick="copyOverlayUrl()" title="Click para copiar" style="margin-bottom:8px;">
@@ -302,7 +296,6 @@
   </div>
 </div>
 
-<!-- Modal TikTok sessionid -->
 <div id="tiktok-modal" class="modal-overlay">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal('tiktok-modal')">✕</button>
@@ -324,172 +317,206 @@
 <div id="toast"></div>
 
 <script>
-// ── STORAGE ────────────────────────────────────────────────────
+// ── STORAGE ──────────────────────────────────────────────────
 var store = {
-  get: function(k, d) { d = d || ''; try { return localStorage.getItem(k) || d; } catch(e) { return d; } },
-  set: function(k, v) { try { localStorage.setItem(k, v); } catch(e) {} }
+  get: function(k, d) { d=d||''; try { return localStorage.getItem(k)||d; } catch(e){return d;} },
+  set: function(k, v) { try { localStorage.setItem(k,v); } catch(e){} }
 };
 
-// ── ESTADO ─────────────────────────────────────────────────────
-var ws = null;
-var retryDelay = 1000;
-var isConnected = false;
-var autoKickDone = false;
-var currentChannels = { twitch: '', kick: '', tiktok: '' };
-var platformIcons = { twitch: '🟣', kick: '🟢', tiktok: '🎵', custom: '⭐' };
+// ── ESTADO ───────────────────────────────────────────────────
+var ws = null, retryDelay = 1000, isConnected = false, autoKickDone = false;
+var currentChannels = { twitch:'', kick:'', tiktok:'' };
+var platformIcons   = { twitch:'🟣', kick:'🟢', tiktok:'🎵', custom:'⭐' };
 
-// ── KICK BROWSER WEBSOCKET ──────────────────────────────────────
-var kickWs = null;
-var kickRetryDelay = 3000;
-var kickRetryTimeout = null;
-var kickChannelId = null;
+// ══════════════════════════════════════════════════════════════
+// KICK AVATAR CACHE — igual que Social Stream Ninja
+// SSN resuelve avatares de Twitch con su proxy API:
+//   chatimg = "https://api.socialstream.ninja/twitch/?username=" + username
+// Nosotros hacemos lo mismo para Kick directamente desde kick.com/api/v2/channels/{username}
+// Los avatares se cachean en memoria + localStorage para no repetir llamadas.
+// ══════════════════════════════════════════════════════════════
+var kickAvatarCache   = {};   // username_lower → URL
+var kickAvatarPending = {};   // username_lower → [callbacks] (evitar llamadas duplicadas)
+
+(function loadCache() {
+  try { kickAvatarCache = JSON.parse(localStorage.getItem('kickAvatarCache')||'{}'); } catch(e){}
+})();
+
+function saveCache() {
+  try {
+    var keys = Object.keys(kickAvatarCache);
+    if (keys.length > 200) {                            // Límite 200 entradas
+      var t = {};
+      keys.slice(-200).forEach(function(k){ t[k]=kickAvatarCache[k]; });
+      kickAvatarCache = t;
+    }
+    localStorage.setItem('kickAvatarCache', JSON.stringify(kickAvatarCache));
+  } catch(e){}
+}
+
+function getKickAvatar(username, callback) {
+  if (!username) return callback(null);
+  var lc = username.toLowerCase();
+
+  if (kickAvatarCache[lc])   return callback(kickAvatarCache[lc]);   // hit caché
+  if (kickAvatarPending[lc]) { kickAvatarPending[lc].push(callback); return; } // en vuelo
+
+  kickAvatarPending[lc] = [callback];
+
+  fetch('https://kick.com/api/v2/channels/' + lc, { headers:{'Accept':'application/json'} })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      // SSN lee: data.user.profile_pic  (campo confirmado de la API pública de Kick)
+      var avatar = null;
+      if (data) {
+        avatar = (data.user && (data.user.profile_pic || data.user.profilePic))
+               || data.profile_pic
+               || null;
+      }
+      if (avatar) { kickAvatarCache[lc] = avatar; saveCache(); }
+      var cbs = kickAvatarPending[lc]||[]; delete kickAvatarPending[lc];
+      cbs.forEach(function(cb){ cb(avatar); });
+    })
+    .catch(function(){
+      var cbs = kickAvatarPending[lc]||[]; delete kickAvatarPending[lc];
+      cbs.forEach(function(cb){ cb(null); });
+    });
+}
+
+// ── KICK BROWSER WEBSOCKET ───────────────────────────────────
+var kickWs = null, kickRetryDelay = 3000, kickRetryTimeout = null;
 
 function connectKickBrowser(channelId) {
   if (!channelId) return;
-  kickChannelId = channelId;
-
   if (kickWs && kickWs.readyState <= 1) return;
-
   if (kickRetryTimeout) { clearTimeout(kickRetryTimeout); kickRetryTimeout = null; }
 
   var box = document.getElementById('kick-status-box');
-  if (box) {
-    box.className = 'info-box warn';
-    box.innerHTML = '⏳ Conectando a Kick desde el navegador...';
-  }
+  if (box) { box.className='info-box warn'; box.innerHTML='⏳ Conectando a Kick desde el navegador...'; }
 
   var urls = [
     'wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false',
     'wss://ws-us2.pusher.com/app/eb1d5f283081a78b932c?protocol=7&client=js&version=7.6.0&flash=false',
   ];
-  var urlIndex = parseInt(localStorage.getItem('kickWsUrlIndex') || '0');
-
-  tryKickUrl(channelId, urls, urlIndex);
+  var urlIdx = parseInt(localStorage.getItem('kickWsUrlIndex')||'0');
+  tryKickUrl(channelId, urls, urlIdx);
 }
 
 function tryKickUrl(channelId, urls, idx) {
   if (idx >= urls.length) idx = 0;
-  var url = urls[idx];
-  console.log('[Kick Browser] Intentando:', url.substring(0, 60) + '...');
-
-  try { kickWs = new WebSocket(url); } catch(e) {
-    console.error('[Kick Browser] No se pudo crear WS:', e.message);
-    kickRetryTimeout = setTimeout(function() { tryKickUrl(channelId, urls, (idx+1) % urls.length); }, 5000);
+  try { kickWs = new WebSocket(urls[idx]); } catch(e) {
+    kickRetryTimeout = setTimeout(function(){ tryKickUrl(channelId, urls, (idx+1)%urls.length); }, 5000);
     return;
   }
 
   kickWs.onopen = function() {
     kickRetryDelay = 3000;
     localStorage.setItem('kickWsUrlIndex', idx);
-    kickWs.send(JSON.stringify({
-      event: 'pusher:subscribe',
-      data: { auth: '', channel: 'chatrooms.' + channelId + '.v2' }
-    }));
-    console.log('[Kick Browser] Suscrito al chatroom', channelId);
+    kickWs.send(JSON.stringify({ event:'pusher:subscribe', data:{ auth:'', channel:'chatrooms.'+channelId+'.v2' } }));
   };
 
   kickWs.onmessage = function(e) {
     try {
-      var msg = JSON.parse(e.data);
+      var msg   = JSON.parse(e.data);
       var event = msg.event || '';
-
-      if (event === 'pusher:connection_established') return;
-      if (event === 'pusher:pong') return;
+      if (event === 'pusher:connection_established' || event === 'pusher:pong') return;
 
       if (event === 'pusher_internal:subscription_succeeded') {
-        console.log('[Kick Browser] ✅ Suscripción confirmada');
         var box = document.getElementById('kick-status-box');
-        if (box) { box.className = 'info-box green'; box.innerHTML = '✅ Kick conectado desde el navegador (chatroom ' + channelId + ')'; }
-        if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'kick_connected' }));
+        if (box) { box.className='info-box green'; box.innerHTML='✅ Kick conectado desde el navegador (chatroom '+channelId+')'; }
+        if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type:'kick_connected' }));
         return;
       }
 
       if (event === 'pusher:error') {
-        var ed = typeof msg.data === 'string' ? JSON.parse(msg.data) : (msg.data || {});
-        console.warn('[Kick Browser] Error Pusher:', ed.message || JSON.stringify(ed));
-        kickWs.close();
-        return;
+        var ed = typeof msg.data==='string' ? JSON.parse(msg.data) : (msg.data||{});
+        console.warn('[Kick] Error Pusher:', ed.message||JSON.stringify(ed));
+        kickWs.close(); return;
       }
 
-      var isChatEvent = (event === 'App\Events\ChatMessageEvent') ||
-                        (event === 'App\\Events\\ChatMessageEvent') ||
-                        (event.indexOf('ChatMessageEvent') !== -1);
+      var isChatEvent = event==='App\Events\ChatMessageEvent'
+                     || event==='App\\Events\\ChatMessageEvent'
+                     || event.indexOf('ChatMessageEvent') !== -1;
 
-      if (isChatEvent) {
-        var d = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
-        console.log('[Kick Browser] Mensaje de chat:', d.sender && d.sender.username, ':', d.content);
+      if (!isChatEvent) return;
 
-        // Debug: loguear el objeto sender completo para ver los campos disponibles
-        if (d.sender) console.log('[Kick Browser] sender:', JSON.stringify(d.sender));
+      var d = typeof msg.data==='string' ? JSON.parse(msg.data) : msg.data;
 
-        // Extraer roles de Kick
-        var kickRoles = [];
-        var badges = (d.sender && d.sender.identity && d.sender.identity.badges) || [];
-        for (var bi = 0; bi < badges.length; bi++) {
-          var b = badges[bi];
-          var btype = (b.type || '').toLowerCase();
-          if (btype === 'broadcaster' || btype === 'owner') kickRoles.push({ type: 'broadcaster', label: 'Owner' });
-          else if (btype === 'moderator' || btype === 'mod') kickRoles.push({ type: 'moderator', label: 'Mod' });
-          else if (btype === 'vip') kickRoles.push({ type: 'vip', label: 'VIP' });
-          else if (btype === 'subscriber' || btype === 'sub') kickRoles.push({ type: 'subscriber', label: 'Sub' });
-          else if (btype === 'og') kickRoles.push({ type: 'og', label: 'OG' });
-          else if (b.type) kickRoles.push({ type: btype, label: b.type });
-        }
-
-        // ── FIX: cubrir todos los campos posibles donde Kick manda el avatar ──
-        var avatar = null;
-        if (d.sender) {
-          avatar = d.sender.profile_pic
-                || d.sender.profile_picture
-                || d.sender.profilePicture
-                || d.sender.profilePic
-                || d.sender.avatar
-                || null;
-        }
-
-        var chatMsg = {
-          type: 'kick_message',
-          platform: 'kick',
-          chatname: (d.sender && d.sender.username) || 'Unknown',
-          chatmessage: d.content,
-          nameColor: (d.sender && d.sender.identity && d.sender.identity.color) || '#53FC18',
-          chatimg: avatar,
-          roles: kickRoles,
-          mid: d.id || ('kick-' + Date.now())
-        };
-
-        if (ws && ws.readyState === 1) {
-          ws.send(JSON.stringify(chatMsg));
-        } else {
-          appendMessage(chatMsg);
-        }
+      // Roles / badges
+      var kickRoles = [];
+      var badges = (d.sender && d.sender.identity && d.sender.identity.badges) || [];
+      for (var bi=0; bi<badges.length; bi++) {
+        var b = badges[bi], btype = (b.type||'').toLowerCase();
+        if      (btype==='broadcaster'||btype==='owner') kickRoles.push({type:'broadcaster',label:'Owner'});
+        else if (btype==='moderator'||btype==='mod')     kickRoles.push({type:'moderator',label:'Mod'});
+        else if (btype==='vip')                          kickRoles.push({type:'vip',label:'VIP'});
+        else if (btype==='subscriber'||btype==='sub')    kickRoles.push({type:'subscriber',label:'Sub'});
+        else if (btype==='og')                           kickRoles.push({type:'og',label:'OG'});
+        else if (b.type)                                 kickRoles.push({type:btype,label:b.type});
       }
-    } catch(err) { console.error('[Kick Browser] Error parseando:', err.message); }
+
+      var username = (d.sender && d.sender.username) || 'Unknown';
+
+      // ── AVATAR — mismo patrón que Social Stream Ninja ──────────────
+      // 1. Intentar campo directo del evento Pusher
+      var avatarInEvent = null;
+      if (d.sender) {
+        avatarInEvent = d.sender.profile_pic
+                     || d.sender.profile_picture
+                     || d.sender.profilePicture
+                     || d.sender.profilePic
+                     || d.sender.avatar
+                     || null;
+      }
+
+      if (avatarInEvent) {
+        // Si vino en el evento, cachear y enviar de inmediato
+        kickAvatarCache[username.toLowerCase()] = avatarInEvent;
+        saveCache();
+        dispatchKickMsg(username, d, kickRoles, avatarInEvent);
+      } else {
+        // No vino en el evento → resolver via kick.com/api/v2 (como SSN)
+        getKickAvatar(username, function(avatar) {
+          dispatchKickMsg(username, d, kickRoles, avatar);
+        });
+      }
+
+    } catch(err) { console.error('[Kick Browser] parse error:', err.message); }
   };
 
   kickWs.onclose = function(e) {
-    console.log('[Kick Browser] Desconectado (code:', e.code, '). Reintentando...');
     var box = document.getElementById('kick-status-box');
-    if (box) { box.className = 'info-box warn'; box.innerHTML = '🔄 Kick desconectado, reintentando...'; }
-    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'kick_disconnected' }));
-    var nextIdx = e.code === 4001 ? (idx + 1) % urls.length : idx;
-    kickRetryDelay = Math.min(kickRetryDelay * 1.5, 30000);
-    kickRetryTimeout = setTimeout(function() { tryKickUrl(channelId, urls, nextIdx); }, kickRetryDelay);
+    if (box) { box.className='info-box warn'; box.innerHTML='🔄 Kick desconectado, reintentando...'; }
+    if (ws && ws.readyState===1) ws.send(JSON.stringify({type:'kick_disconnected'}));
+    var nextIdx = e.code===4001 ? (idx+1)%urls.length : idx;
+    kickRetryDelay = Math.min(kickRetryDelay*1.5, 30000);
+    kickRetryTimeout = setTimeout(function(){ tryKickUrl(channelId, urls, nextIdx); }, kickRetryDelay);
   };
 
-  kickWs.onerror = function(e) { console.error('[Kick Browser] Error WS'); };
+  kickWs.onerror = function(){ console.error('[Kick Browser] WS error'); };
 
-  // Ping cada 25s
-  var pingInt = setInterval(function() {
-    if (kickWs && kickWs.readyState === 1) {
-      kickWs.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
-    } else {
-      clearInterval(pingInt);
-    }
+  var pingInt = setInterval(function(){
+    if (kickWs && kickWs.readyState===1) kickWs.send(JSON.stringify({event:'pusher:ping',data:{}}));
+    else clearInterval(pingInt);
   }, 25000);
 }
 
-// ── INIT ────────────────────────────────────────────────────────
+function dispatchKickMsg(username, d, kickRoles, avatar) {
+  var chatMsg = {
+    type:        'kick_message',
+    platform:    'kick',
+    chatname:    username,
+    chatmessage: d.content,
+    nameColor:   (d.sender && d.sender.identity && d.sender.identity.color) || '#53FC18',
+    chatimg:     avatar || null,
+    roles:       kickRoles,
+    mid:         d.id || ('kick-'+Date.now())
+  };
+  if (ws && ws.readyState===1) ws.send(JSON.stringify(chatMsg));
+  else appendMessage(chatMsg);
+}
+
+// ── INIT ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   var saved = store.get('serverUrl');
   document.getElementById('serverUrl').value = saved;
@@ -497,134 +524,97 @@ document.addEventListener('DOMContentLoaded', function() {
   var overlayInput = document.getElementById('overlayBase');
   if (overlayInput) {
     overlayInput.value = store.get('overlayBase') || '';
-    overlayInput.addEventListener('input', function() {
-      store.set('overlayBase', overlayInput.value.trim());
-      updateOverlayUrl();
+    overlayInput.addEventListener('input', function(){
+      store.set('overlayBase', overlayInput.value.trim()); updateOverlayUrl();
     });
   }
-
   updateOverlayUrl();
   if (saved) connectWS(saved);
 });
 
-// ── WEBSOCKET ───────────────────────────────────────────────────
+// ── WEBSOCKET ────────────────────────────────────────────────
 function connectWS(url) {
   if (!url) return;
-  if (ws) { try { ws.close(); } catch(e) {} }
+  if (ws) { try { ws.close(); } catch(e){} }
+  var wsUrl = url.replace(/^https?/,'ws').replace(/\/$/,'');
+  try { ws = new WebSocket(wsUrl); } catch(e) { setStatus(false); scheduleRetry(url); return; }
 
-  var wsUrl = url.replace(/^https?/, 'ws').replace(/\/$/, '');
-
-  try {
-    ws = new WebSocket(wsUrl);
-  } catch(e) {
-    setStatus(false);
-    scheduleRetry(url);
-    return;
-  }
-
-  ws.onopen = function() {
-    isConnected = true;
-    retryDelay = 1000;
-    setStatus(true);
-    var savedKickId = store.get('kickChannelId');
-    if (savedKickId && (!kickWs || kickWs.readyState > 1)) {
-      connectKickBrowser(savedKickId);
-    }
+  ws.onopen = function(){
+    isConnected=true; retryDelay=1000; setStatus(true);
+    var id = store.get('kickChannelId');
+    if (id && (!kickWs || kickWs.readyState>1)) connectKickBrowser(id);
   };
-
-  ws.onmessage = function(e) {
+  ws.onmessage = function(e){
     try {
       var data = JSON.parse(e.data);
-      console.log('[WS] msg recibido:', data.type, data.chatname || '');
-      if (data.type === 'status') {
-        handleStatus(data);
-      } else {
-        appendMessage(data);
-      }
-    } catch(err) {
-      console.error('[WS] Error:', err.message);
-    }
+      if (data.type==='status') handleStatus(data); else appendMessage(data);
+    } catch(err){}
   };
-
-  ws.onclose = function() {
-    isConnected = false;
-    setStatus(false);
-    scheduleRetry(url);
-  };
-
-  ws.onerror = function() { ws.close(); };
+  ws.onclose = function(){ isConnected=false; setStatus(false); scheduleRetry(url); };
+  ws.onerror = function(){ ws.close(); };
 }
 
-function scheduleRetry(url) {
-  retryDelay = Math.min(retryDelay * 2, 30000);
-  setTimeout(function() { connectWS(url); }, retryDelay);
+function scheduleRetry(url){
+  retryDelay = Math.min(retryDelay*2, 30000);
+  setTimeout(function(){ connectWS(url); }, retryDelay);
+}
+function setStatus(ok){
+  document.getElementById('ws-dot').className = ok?'ok':'';
+  document.getElementById('ws-label').textContent = ok?'Conectado':'Desconectado';
 }
 
-function setStatus(ok) {
-  document.getElementById('ws-dot').className = ok ? 'ok' : '';
-  document.getElementById('ws-label').textContent = ok ? 'Conectado' : 'Desconectado';
-}
-
-// ── STATUS ──────────────────────────────────────────────────────
+// ── STATUS ───────────────────────────────────────────────────
 function handleStatus(data) {
-  setPlatformStatus('twitch', data.twitch,  (data.channels && data.channels.twitch)  || '—');
-  setPlatformStatus('kick',   data.kick,    (data.channels && data.channels.kick)    || '—');
-  setPlatformStatus('tiktok', data.tiktok,  (data.channels && data.channels.tiktok) || '—');
-
+  setPlatformStatus('twitch', data.twitch,  (data.channels&&data.channels.twitch)  ||'—');
+  setPlatformStatus('kick',   data.kick,    (data.channels&&data.channels.kick)    ||'—');
+  setPlatformStatus('tiktok', data.tiktok,  (data.channels&&data.channels.tiktok) ||'—');
   if (data.channels) currentChannels = data.channels;
 
   var modeTag = document.getElementById('tiktok-mode-tag');
   if (modeTag) {
-    modeTag.textContent = data.tiktokMode || 'connector';
-    modeTag.className = 'tag ' + (data.tiktokMode === 'puppeteer' ? 'tag-puppeteer' : 'tag-connector');
+    modeTag.textContent = data.tiktokMode||'connector';
+    modeTag.className   = 'tag '+(data.tiktokMode==='puppeteer'?'tag-puppeteer':'tag-connector');
   }
 
   if (!data.kick && data.channels && data.channels.kick) {
     var savedId = store.get('kickChannelId');
-    if (savedId) {
-      if (!kickWs || kickWs.readyState > 1) {
-        connectKickBrowser(savedId);
-      }
-    } else if (!autoKickDone) {
-      autoKickDone = true;
-      setTimeout(resolveKickId, 1500);
-    }
+    if (savedId) { if (!kickWs||kickWs.readyState>1) connectKickBrowser(savedId); }
+    else if (!autoKickDone) { autoKickDone=true; setTimeout(resolveKickId, 1500); }
   }
 }
 
-function setPlatformStatus(platform, connected, channel) {
-  var dot = document.getElementById('dot-' + platform);
-  var ch  = document.getElementById('ch-'  + platform);
-  if (dot) dot.className = 'platform-dot' + (connected ? ' ok' : '');
-  if (ch)  ch.textContent = channel || '—';
+function setPlatformStatus(platform, connected, channel){
+  var dot=document.getElementById('dot-'+platform);
+  var ch =document.getElementById('ch-' +platform);
+  if (dot) dot.className='platform-dot'+(connected?' ok':'');
+  if (ch)  ch.textContent=channel||'—';
 }
 
-// ── MENSAJES ────────────────────────────────────────────────────
+// ── MENSAJES ─────────────────────────────────────────────────
 function appendMessage(data) {
   var panel = document.getElementById('chat-panel');
-  var placeholder = document.getElementById('chat-placeholder');
-  if (placeholder) placeholder.remove();
+  var ph    = document.getElementById('chat-placeholder');
+  if (ph) ph.remove();
 
-  var platform = data.platform || data.type || 'custom';
-  var icon = platformIcons[platform] || '💬';
-  var time = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+  var platform = data.platform||data.type||'custom';
+  var icon     = platformIcons[platform]||'💬';
+  var time     = new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+  var el       = document.createElement('div');
+  el.className = 'msg-item '+platform;
 
-  var el = document.createElement('div');
-  el.className = 'msg-item ' + platform;
-
-  var avatarStyle   = data.chatimg ? "background-image:url('" + data.chatimg + "')" : '';
+  var avatarStyle   = data.chatimg ? "background-image:url('"+data.chatimg+"')" : '';
   var avatarContent = data.chatimg ? '' : icon;
-  var nameStyle     = data.nameColor ? 'color:' + data.nameColor : '';
+  var nameStyle     = data.nameColor ? 'color:'+data.nameColor : '';
 
   el.innerHTML =
-    '<div class="msg-avatar" style="' + avatarStyle + '">' + avatarContent + '</div>' +
-    '<div class="msg-body">' +
-      '<div class="msg-header">' +
-        '<span class="msg-user" style="' + nameStyle + '">' + esc(data.chatname || '?') + '</span>' +
-        '<span class="msg-platform ' + platform + '">' + platform + '</span>' +
-        '<span class="msg-time">' + time + '</span>' +
-      '</div>' +
-      '<div class="msg-text">' + esc(data.chatmessage || data.hasDonation || '') + '</div>' +
+    '<div class="msg-avatar" style="'+avatarStyle+'">'+avatarContent+'</div>'+
+    '<div class="msg-body">'+
+      '<div class="msg-header">'+
+        '<span class="msg-user" style="'+nameStyle+'">'+esc(data.chatname||'?')+'</span>'+
+        '<span class="msg-platform '+platform+'">'+platform+'</span>'+
+        '<span class="msg-time">'+time+'</span>'+
+      '</div>'+
+      '<div class="msg-text">'+esc(data.chatmessage||data.hasDonation||'')+'</div>'+
     '</div>';
 
   panel.appendChild(el);
@@ -633,196 +623,152 @@ function appendMessage(data) {
   panel.scrollTop = panel.scrollHeight;
 }
 
-function esc(str) {
-  return String(str)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function esc(str){
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── ACCIONES ────────────────────────────────────────────────────
-function saveAndConnect() {
+// ── ACCIONES ─────────────────────────────────────────────────
+function saveAndConnect(){
   var url = document.getElementById('serverUrl').value.trim();
   if (!url) return toast('Introduce la URL del servidor');
-  store.set('serverUrl', url);
-  retryDelay = 1000;
-  autoKickDone = false;
-  connectWS(url);
-  updateOverlayUrl();
-  toast('Conectando a ' + url);
+  store.set('serverUrl', url); retryDelay=1000; autoKickDone=false;
+  connectWS(url); updateOverlayUrl(); toast('Conectando a '+url);
 }
 
-function toggleKickManual() {
-  var el = document.getElementById('kick-manual-wrap');
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+function toggleKickManual(){
+  var el=document.getElementById('kick-manual-wrap');
+  el.style.display = el.style.display==='none'?'block':'none';
 }
 
-async function resolveKickId() {
+async function resolveKickId(){
   var channel = currentChannels.kick || store.get('kickChannel') || '';
   var box = document.getElementById('kick-status-box');
-
-  if (!channel) {
-    box.className = 'info-box warn';
-    box.innerHTML = '⚠️ El servidor no tiene <strong>KICK_CHANNEL</strong> configurado en variables de entorno.';
+  if (!channel){
+    box.className='info-box warn';
+    box.innerHTML='⚠️ El servidor no tiene <strong>KICK_CHANNEL</strong> configurado.';
     return;
   }
-
-  box.className = 'info-box warn';
-  box.innerHTML = '⏳ Resolviendo ID de kick.com/' + channel + '...';
-
+  box.className='info-box warn'; box.innerHTML='⏳ Resolviendo ID de kick.com/'+channel+'...';
   try {
-    var r = await fetch('https://kick.com/api/v2/channels/' + channel, {
-      headers: { 'Accept': 'application/json' }
-    });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var r  = await fetch('https://kick.com/api/v2/channels/'+channel,{headers:{'Accept':'application/json'}});
+    if (!r.ok) throw new Error('HTTP '+r.status);
     var d  = await r.json();
-    var id = String((d.chatroom && d.chatroom.id) || d.id || '');
-    if (!id) throw new Error('No se encontró chatroom.id en la respuesta');
+    var id = String((d.chatroom&&d.chatroom.id)||d.id||'');
+    if (!id) throw new Error('No se encontró chatroom.id');
 
-    box.className = 'info-box green';
-    box.innerHTML = '✅ ID encontrado: <strong>' + id + '</strong> — enviando al servidor...';
+    // Cachear avatar del streamer principal al mismo tiempo
+    var sv = (d.user&&(d.user.profile_pic||d.user.profilePic))||d.profile_pic||null;
+    if (sv) { kickAvatarCache[channel.toLowerCase()]=sv; saveCache(); }
+
+    box.className='info-box green';
+    box.innerHTML='✅ ID encontrado: <strong>'+id+'</strong> — enviando al servidor...';
     document.getElementById('kickChannelId').value = id;
     await sendKickId(id);
-
-  } catch(e) {
-    box.className = 'info-box red';
-    box.innerHTML = '❌ <strong>' + e.message + '</strong><br>Usa el botón Manual e introduce el ID a mano.';
-    document.getElementById('kick-manual-wrap').style.display = 'block';
+  } catch(e){
+    box.className='info-box red';
+    box.innerHTML='❌ <strong>'+e.message+'</strong><br>Usa el botón Manual.';
+    document.getElementById('kick-manual-wrap').style.display='block';
   }
 }
 
-async function sendKickId(idParam) {
+async function sendKickId(idParam){
   var id = idParam || document.getElementById('kickChannelId').value.trim();
   if (!id) return toast('Introduce el Channel ID');
-
   var serverUrl = store.get('serverUrl');
   if (!serverUrl) return toast('Conecta al servidor primero');
-
-  var httpUrl = serverUrl.replace(/^wss?/, 'https').replace(/\/$/, '');
+  var httpUrl = serverUrl.replace(/^wss?/,'https').replace(/\/$/,'');
   try {
-    var r = await fetch(httpUrl + '/api/kick/channel-id', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ channelId: id })
+    var r = await fetch(httpUrl+'/api/kick/channel-id',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({channelId:id})
     });
     var d = await r.json();
-    if (d.ok) {
+    if (d.ok){
       store.set('kickChannelId', String(id));
-      toast('✅ Kick conectando con ID ' + id);
-      // Conectar desde el navegador con el ID nuevo
+      toast('✅ Kick conectando con ID '+id);
       connectKickBrowser(String(id));
-      var box = document.getElementById('kick-status-box');
-      box.className = 'info-box green';
-      box.innerHTML = '✅ Kick conectando con chatroom ID: <strong>' + id + '</strong>';
-    } else {
-      toast('❌ El servidor rechazó el ID');
-    }
-  } catch(e) {
-    toast('❌ Error contactando servidor: ' + e.message);
-  }
+      var box=document.getElementById('kick-status-box');
+      box.className='info-box green';
+      box.innerHTML='✅ Kick conectando con chatroom ID: <strong>'+id+'</strong>';
+    } else { toast('❌ El servidor rechazó el ID'); }
+  } catch(e){ toast('❌ Error contactando servidor: '+e.message); }
 }
 
-async function restartTikTok() {
-  var serverUrl = store.get('serverUrl');
+async function restartTikTok(){
+  var serverUrl=store.get('serverUrl');
   if (!serverUrl) return toast('Configura la URL del servidor primero');
-  var httpUrl = serverUrl.replace(/^wss?/, 'https').replace(/\/$/, '');
+  var httpUrl=serverUrl.replace(/^wss?/,'https').replace(/\/$/,'');
   try {
-    var r = await fetch(httpUrl + '/api/tiktok/restart', { method: 'POST' });
-    var d = await r.json();
-    toast(d.ok ? '🔄 TikTok reconectando... (#' + d.restarts + ')' : '❌ Error al reconectar TikTok');
-  } catch(e) {
-    toast('❌ No se pudo contactar el servidor');
-  }
+    var r=await fetch(httpUrl+'/api/tiktok/restart',{method:'POST'});
+    var d=await r.json();
+    toast(d.ok?'🔄 TikTok reconectando... (#'+d.restarts+')':'❌ Error al reconectar TikTok');
+  } catch(e){ toast('❌ No se pudo contactar el servidor'); }
 }
 
-function openTikTokLive() {
-  var user = currentChannels.tiktok || '';
-  if (!user) return toast('TikTok no configurado en el servidor (variable TIKTOK_USERNAME)');
-  window.open('https://www.tiktok.com/@' + user + '/live', '_blank', 'noopener');
+function openTikTokLive(){
+  var user=currentChannels.tiktok||'';
+  if (!user) return toast('TikTok no configurado (variable TIKTOK_USERNAME)');
+  window.open('https://www.tiktok.com/@'+user+'/live','_blank','noopener');
 }
 
-function sendCustomMessage() {
-  var input = document.getElementById('custom-msg-input');
-  var text  = input.value.trim();
+function sendCustomMessage(){
+  var input=document.getElementById('custom-msg-input');
+  var text=input.value.trim();
   if (!text) return;
-  if (!isConnected || !ws) return toast('⚠️ No hay conexión con el servidor');
-  ws.send(JSON.stringify({ type: 'custom_message', user: 'Tú (dashboard)', text: text }));
-  input.value = '';
+  if (!isConnected||!ws) return toast('⚠️ No hay conexión con el servidor');
+  ws.send(JSON.stringify({type:'custom_message',user:'Tú (dashboard)',text:text}));
+  input.value='';
 }
 
-function getAutoOverlayUrl() {
-  var href = window.location.href.split('?')[0].replace(/\/+$/, '');
-  var result = href.replace(/\/dashboard(\/.*)?$/, '/overlay/index.html');
-  if (result === href) {
-    result = href.replace(/\/[^/]+$/, '/overlay/index.html');
-  }
+function getAutoOverlayUrl(){
+  var href=window.location.href.split('?')[0].replace(/\/+$/,'');
+  var result=href.replace(/\/dashboard(\/.*)?$/,'/overlay/index.html');
+  if (result===href) result=href.replace(/\/[^/]+$/,'/overlay/index.html');
   return result;
 }
 
-function updateOverlayUrl() {
-  var serverUrl = store.get('serverUrl');
-  var box = document.getElementById('overlay-url');
-  var inputEl = document.getElementById('overlayBase');
-
-  var autoOverlay = window.location.protocol !== 'file:' ? getAutoOverlayUrl() : '';
-
-  var currentInput = inputEl ? inputEl.value.trim() : '';
-  if (!currentInput || currentInput.indexOf('overlay') === -1) {
-    currentInput = autoOverlay;
-    if (inputEl) inputEl.value = currentInput;
-    if (currentInput) store.set('overlayBase', currentInput);
+function updateOverlayUrl(){
+  var serverUrl=store.get('serverUrl');
+  var box=document.getElementById('overlay-url');
+  var inputEl=document.getElementById('overlayBase');
+  var autoOverlay=window.location.protocol!=='file:'?getAutoOverlayUrl():'';
+  var currentInput=inputEl?inputEl.value.trim():'';
+  if (!currentInput||currentInput.indexOf('overlay')===-1){
+    currentInput=autoOverlay;
+    if (inputEl) inputEl.value=currentInput;
+    if (currentInput) store.set('overlayBase',currentInput);
   }
-
-  if (!serverUrl) {
-    box.textContent = 'Configura el servidor primero...';
-    box.dataset.url = '';
-    return;
-  }
-
-  if (!currentInput) {
-    box.textContent = 'Introduce la URL del overlay arriba...';
-    box.dataset.url = '';
-    return;
-  }
-
-  var base = currentInput.split('?')[0];
-  var url = base + '?server=' + encodeURIComponent(serverUrl);
-  box.textContent = url;
-  box.dataset.url = url;
+  if (!serverUrl){ box.textContent='Configura el servidor primero...'; box.dataset.url=''; return; }
+  if (!currentInput){ box.textContent='Introduce la URL del overlay arriba...'; box.dataset.url=''; return; }
+  var url=currentInput.split('?')[0]+'?server='+encodeURIComponent(serverUrl);
+  box.textContent=url; box.dataset.url=url;
 }
 
-function copyOverlayUrl() {
-  var url = document.getElementById('overlay-url').dataset.url;
+function copyOverlayUrl(){
+  var url=document.getElementById('overlay-url').dataset.url;
   if (!url) return toast('Configura el servidor primero');
-  navigator.clipboard.writeText(url).then(function() { toast('✅ URL copiada'); });
+  navigator.clipboard.writeText(url).then(function(){ toast('✅ URL copiada'); });
 }
-
-function openOverlay() {
-  var url = document.getElementById('overlay-url').dataset.url;
+function openOverlay(){
+  var url=document.getElementById('overlay-url').dataset.url;
   if (!url) return toast('Configura el servidor primero');
-  window.open(url, '_blank');
+  window.open(url,'_blank');
 }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 
-function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-function injectTestMessage() {
-  appendMessage({
-    type: 'custom',
-    platform: 'custom',
-    chatname: 'Test local',
-    chatmessage: '✅ El chat del dashboard funciona correctamente',
-    nameColor: '#FF6B9D',
-    mid: 'test-' + Date.now()
-  });
+function injectTestMessage(){
+  appendMessage({type:'custom',platform:'custom',chatname:'Test local',
+    chatmessage:'✅ El chat del dashboard funciona correctamente',
+    nameColor:'#FF6B9D',mid:'test-'+Date.now()});
   toast('Mensaje de prueba inyectado');
 }
 
-function toast(msg, duration) {
-  duration = duration || 3000;
-  var el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(function() { el.classList.remove('show'); }, duration);
+function toast(msg, duration){
+  duration=duration||3000;
+  var el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(function(){ el.classList.remove('show'); }, duration);
 }
 </script>
 </body>
