@@ -164,12 +164,12 @@ function connectTwitch() {
     // Extraer roles/badges de Twitch
     const badges = tags.badges || {};
     const roles = [];
-    if (badges.broadcaster)  roles.push({ type: 'broadcaster', label: 'Streamer' });
-    if (badges.moderator)    roles.push({ type: 'moderator',   label: 'Mod' });
-    if (badges.vip)          roles.push({ type: 'vip',         label: 'VIP' });
-    if (badges.subscriber)   roles.push({ type: 'subscriber',  label: 'Sub' });
-    if (badges.founder)      roles.push({ type: 'founder',     label: 'Founder' });
-    if (badges['bits-leader']) roles.push({ type: 'bits',      label: 'Bits' });
+    if (badges.broadcaster)    roles.push({ type: 'broadcaster', label: 'Streamer' });
+    if (badges.moderator)      roles.push({ type: 'moderator',   label: 'Mod' });
+    if (badges.vip)            roles.push({ type: 'vip',         label: 'VIP' });
+    if (badges.subscriber)     roles.push({ type: 'subscriber',  label: 'Sub' });
+    if (badges.founder)        roles.push({ type: 'founder',     label: 'Founder' });
+    if (badges['bits-leader']) roles.push({ type: 'bits',        label: 'Bits' });
 
     broadcast({
       type:        'twitch',
@@ -212,11 +212,12 @@ function handleKickMessageFromBrowser(data) {
   broadcast({
     type:        'kick',
     platform:    'kick',
-    chatname:    data.chatname || 'Unknown',
+    chatname:    data.chatname  || 'Unknown',
     chatmessage: data.chatmessage,
     nameColor:   data.nameColor || '#53FC18',
-    chatimg:     data.chatimg || null,
-    mid:         data.mid || ('kick-' + Date.now()),
+    chatimg:     data.chatimg   || null,
+    roles:       data.roles     || [],        // ← FIX: pasar roles al overlay
+    mid:         data.mid       || ('kick-' + Date.now()),
   });
 }
 
@@ -283,9 +284,8 @@ async function connectTikTokConnector() {
       setTimeout(() => connectTikTokConnector(), 120000);
     } else if (e.message?.includes('403') || e.message?.includes('blocked')) {
       console.log('[TikTok] ⚠️  IP bloqueada por TikTok. Necesitas TIKTOK_SESSION_ID.');
-      console.log('[TikTok] 💡 Cómo obtener sessionid: kick.com → F12 → Application → Cookies → sessionid');
+      console.log('[TikTok] 💡 Cómo obtener sessionid: tiktok.com → F12 → Application → Cookies → sessionid');
       broadcastStatus();
-      // Reintento largo si IP bloqueada
       setTimeout(() => connectTikTokConnector(), 300000); // 5 min
     } else {
       console.log('[TikTok] Reintentando en 15s...');
@@ -348,7 +348,6 @@ app.get('/health', (req, res) => res.json({
 }));
 
 // Preview TikTok — proxy simple para evitar el bloqueo de iframe
-// En lugar de iframe, abre una nueva ventana en el cliente
 app.get('/tiktok-preview', (req, res) => {
   const user = CONFIG.tiktok || req.query.user || '';
   res.send(`<!DOCTYPE html>
