@@ -266,11 +266,21 @@
     <!-- Overlay URL -->
     <div class="card">
       <div class="card-title">URL del Overlay (OBS)</div>
-      <div class="url-box" id="overlay-url" onclick="copyOverlayUrl()" title="Click para copiar">
-        Configura el servidor primero...
+      <div class="info-box warn" style="margin-bottom:10px; font-size:11px;">
+        Introduce la URL donde está tu <strong>overlay/index.html</strong><br>
+        (GitHub Pages, servidor local, etc.)
       </div>
-      <div style="margin-top:8px; display:flex; gap:8px;">
-        <button class="btn btn-secondary btn-full" style="font-size:12px;" onclick="copyOverlayUrl()">📋 Copiar</button>
+      <div class="form-group">
+        <label>URL base del overlay</label>
+        <input id="overlayBase" type="text"
+          placeholder="https://usuario.github.io/repo/overlay/index.html" />
+        <div class="hint">La URL completa de tu overlay/index.html</div>
+      </div>
+      <div class="url-box" id="overlay-url" onclick="copyOverlayUrl()" title="Click para copiar" style="margin-bottom:8px;">
+        Configura la URL del overlay...
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-secondary btn-full" style="font-size:12px;" onclick="copyOverlayUrl()">📋 Copiar URL OBS</button>
         <button class="btn btn-secondary btn-full" style="font-size:12px;" onclick="openOverlay()">🔗 Abrir</button>
       </div>
     </div>
@@ -332,6 +342,16 @@ var platformIcons = { twitch: '🟣', kick: '🟢', tiktok: '🎵', custom: '⭐
 document.addEventListener('DOMContentLoaded', function() {
   var saved = store.get('serverUrl');
   document.getElementById('serverUrl').value = saved;
+
+  var overlayInput = document.getElementById('overlayBase');
+  if (overlayInput) {
+    overlayInput.value = store.get('overlayBase') || '';
+    overlayInput.addEventListener('input', function() {
+      store.set('overlayBase', overlayInput.value.trim());
+      updateOverlayUrl();
+    });
+  }
+
   updateOverlayUrl();
   if (saved) connectWS(saved);
 });
@@ -354,7 +374,7 @@ function connectWS(url) {
   ws.onopen = function() {
     isConnected = true;
     retryDelay = 1000;
-    autoKickDone = false;
+    // NO resetear autoKickDone aquí — evita el bucle de reconexión de Kick
     setStatus(true);
   };
 
@@ -405,15 +425,20 @@ function handleStatus(data) {
     modeTag.className = 'tag ' + (data.tiktokMode === 'puppeteer' ? 'tag-puppeteer' : 'tag-connector');
   }
 
-  // Auto-resolver Kick si está desconectado y hay canal configurado
+  // Auto-resolver Kick solo una vez por sesión, y solo si Kick NO está conectado
   if (!data.kick && data.channels && data.channels.kick && !autoKickDone) {
     autoKickDone = true;
     var savedId = store.get('kickChannelId');
     if (savedId) {
+      console.log('[Kick] Reenviando ID guardado una sola vez:', savedId);
       sendKickId(savedId);
     } else {
       setTimeout(resolveKickId, 1500);
     }
+  }
+  // Si Kick ya conectó, marcar como done para no volver a intentar
+  if (data.kick) {
+    autoKickDone = true;
   }
 }
 
@@ -470,7 +495,7 @@ function saveAndConnect() {
   if (!url) return toast('Introduce la URL del servidor');
   store.set('serverUrl', url);
   retryDelay = 1000;
-  autoKickDone = false;
+  autoKickDone = false; // Solo reset al cambiar de servidor manualmente
   connectWS(url);
   updateOverlayUrl();
   toast('Conectando a ' + url);
@@ -574,37 +599,40 @@ function sendCustomMessage() {
 
 function updateOverlayUrl() {
   var serverUrl = store.get('serverUrl');
+  var overlayBase = store.get('overlayBase');
   var box = document.getElementById('overlay-url');
-  if (!serverUrl) {
-    box.textContent = 'Configura el servidor primero...';
+
+  // Intentar auto-detectar si estamos en GitHub Pages (no file://)
+  if (!overlayBase && window.location.protocol !== 'file:') {
+    var loc = window.location;
+    var path = loc.pathname
+      .replace(/\/dashboard(\/.*)?$/, '/overlay/index.html')
+      .replace(/\/index\.html$/, '');
+    // Asegurarse de que termina en /overlay/index.html
+    if (!path.endsWith('overlay/index.html')) {
+      path = path.replace(/\/$/, '') + '/overlay/index.html';
+    }
+    overlayBase = loc.origin + path;
+  }
+
+  // Mostrar en el input
+  var inputEl = document.getElementById('overlayBase');
+  if (inputEl && overlayBase && !inputEl.value) {
+    inputEl.value = overlayBase;
+  }
+
+  if (!serverUrl || !overlayBase) {
+    box.textContent = 'Introduce la URL base del overlay arriba...';
     box.dataset.url = '';
     return;
   }
-  // Construir URL del overlay de forma robusta
-  // El dashboard está en /dashboard/index.html o /dashboard/
-  // El overlay está en /overlay/index.html
-  var loc = window.location;
-  var origin = loc.origin; // ej: https://usuario.github.io
-  var path = loc.pathname; // ej: /multichat/dashboard/index.html o /dashboard/
 
-  // Quitar el segmento "dashboard" y reemplazar por "overlay"
-  var overlayPath = path
-    .replace(/\/dashboard\/.*$/, '/overlay/index.html')
-    .replace(/\/dashboard$/, '/overlay/index.html');
-
-  // Si no se pudo reemplazar (path no contiene /dashboard/), construir manualmente
-  if (overlayPath === path) {
-    // Asumir que overlay está al mismo nivel que dashboard
-    var parts = path.split('/').filter(function(p) { return p !== ''; });
-    // Reemplazar el último segmento de directorio por overlay
-    parts[parts.length - 1] = 'overlay';
-    overlayPath = '/' + parts.join('/') + '/index.html';
-  }
-
-  var url = origin + overlayPath + '?server=' + encodeURIComponent(serverUrl);
+  var url = overlayBase + '?server=' + encodeURIComponent(serverUrl);
   box.textContent = url;
   box.dataset.url = url;
 }
+
+
 
 function copyOverlayUrl() {
   var url = document.getElementById('overlay-url').dataset.url;
