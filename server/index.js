@@ -1,13 +1,14 @@
 // ============================================================
-//  MEEVE MULTICHAT SERVER
-//  Fix: Kick avatar resuelto via kick.com/api/v2 en el servidor
-//  (el evento Pusher de Kick NO incluye foto de perfil)
+//  MEEVE MULTICHAT SERVER v2
+//  ✅ Chat: Twitch + Kick + TikTok + YouTube
+//  ✅ Donaciones: Twitch Bits/Subs | TikTok Gifts | Kick (browser) | YouTube SuperChats
+//  ✅ Kick avatar resuelto via kick.com/api/v2
 // ============================================================
 
 const express    = require('express');
 const http       = require('http');
 const https      = require('https');
-const { WebSocketServer, WebSocket } = require('ws');
+const { WebSocketServer } = require('ws');
 const tmi        = require('tmi.js');
 
 let WebcastPushConnection;
@@ -23,12 +24,14 @@ const wss    = new WebSocketServer({ server });
 
 // ── CONFIG ───────────────────────────────────────────────────
 const CONFIG = {
-  twitch:     process.env.TWITCH_CHANNEL  || '',
-  kick:       process.env.KICK_CHANNEL    || '',
-  kickId:     process.env.KICK_CHANNEL_ID || '',
-  tiktok:     process.env.TIKTOK_USERNAME || '',
-  port:       process.env.PORT            || 3000,
-  tiktokMode: process.env.TIKTOK_MODE     || 'connector',
+  twitch:       process.env.TWITCH_CHANNEL    || '',
+  kick:         process.env.KICK_CHANNEL      || '',
+  kickId:       process.env.KICK_CHANNEL_ID   || '',
+  tiktok:       process.env.TIKTOK_USERNAME   || '',
+  youtube:      process.env.YOUTUBE_CHANNEL_ID || '',  // ← NUEVO: ID de canal YT
+  youtubeKey:   process.env.YOUTUBE_API_KEY    || '',  // ← NUEVO: API Key de YT
+  port:         process.env.PORT              || 3000,
+  tiktokMode:   process.env.TIKTOK_MODE       || 'connector',
 };
 
 app.use(express.json());
@@ -46,17 +49,15 @@ const state = {
   tiktok:   { connected: false, lastMsg: 0, instance: null, restartCount: 0 },
   twitch:   { connected: false },
   kick:     { connected: false },
+  youtube:  { connected: false, liveChatId: null, nextPageToken: null, pollTimer: null },
   msgCount: 0,
 };
 
 // ══════════════════════════════════════════════════════════════
 // KICK AVATAR CACHE
-// El evento Pusher de Kick solo manda: id, username, slug, identity
-// NO incluye profile_pic. Lo resolvemos via kick.com/api/v2/channels/{slug}
-// y cacheamos en memoria para no repetir llamadas.
 // ══════════════════════════════════════════════════════════════
-const kickAvatarCache   = {};  // slug → avatarUrl
-const kickAvatarPending = {};  // slug → [callbacks]
+const kickAvatarCache   = {};
+const kickAvatarPending = {};
 
 function getKickAvatar(username, callback) {
   if (!username) return callback(null);
@@ -82,7 +83,6 @@ function getKickAvatar(username, callback) {
       let avatar = null;
       try {
         const data = JSON.parse(body);
-        // kick.com/api/v2/channels/{slug} → data.user.profile_pic
         avatar = (data.user && (data.user.profile_pic || data.user.profilePic))
                || data.profile_pic
                || null;
@@ -129,11 +129,13 @@ function broadcastStatus() {
     twitch:  state.twitch.connected,
     kick:    state.kick.connected,
     tiktok:  state.tiktok.connected,
+    youtube: state.youtube.connected,
     tiktokMode: CONFIG.tiktokMode,
     channels: {
       twitch:  CONFIG.twitch,
       kick:    CONFIG.kick,
       tiktok:  CONFIG.tiktok,
+      youtube: CONFIG.youtube,
     }
   });
 }
@@ -148,8 +150,9 @@ wss.on('connection', (ws) => {
     twitch:  state.twitch.connected,
     kick:    state.kick.connected,
     tiktok:  state.tiktok.connected,
+    youtube: state.youtube.connected,
     tiktokMode: CONFIG.tiktokMode,
-    channels: { twitch: CONFIG.twitch, kick: CONFIG.kick, tiktok: CONFIG.tiktok }
+    channels: { twitch: CONFIG.twitch, kick: CONFIG.kick, tiktok: CONFIG.tiktok, youtube: CONFIG.youtube }
   }));
 
   ws.on('close', () => {
@@ -175,6 +178,11 @@ wss.on('connection', (ws) => {
         handleKickMessageFromBrowser(msg);
       }
 
+      // ── Donación de Kick enviada desde el browser (ej: evento de Pusher)
+      if (msg.type === 'kick_donation') {
+        handleKickDonationFromBrowser(msg);
+      }
+
       if (msg.type === 'kick_disconnected') {
         state.kick.connected = false;
         broadcastStatus();
@@ -189,7 +197,9 @@ wss.on('connection', (ws) => {
   });
 });
 
-// ── TWITCH IRC ───────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  TWITCH IRC + DONACIONES (Bits / Subs / Resubs / GiftSubs)
+// ══════════════════════════════════════════════════════════════
 function connectTwitch() {
   if (!CONFIG.twitch) return console.log('[Twitch] Sin canal configurado');
 
@@ -215,8 +225,10 @@ function connectTwitch() {
     setTimeout(connectTwitch, 5000);
   });
 
+  // ── Chat normal ──────────────────────────────────────────────
   client.on('message', (channel, tags, message, self) => {
     if (self) return;
+
     const badges = tags.badges || {};
     const roles = [];
     if (badges.broadcaster)    roles.push({ type: 'broadcaster', label: 'Streamer' });
@@ -226,20 +238,109 @@ function connectTwitch() {
     if (badges.founder)        roles.push({ type: 'founder',     label: 'Founder' });
     if (badges['bits-leader']) roles.push({ type: 'bits',        label: 'Bits' });
 
+    // Detectar Bits en el mensaje (cheer100, Cheer500, etc.)
+    const bitsMatch = message.match(/cheer(\d+)/i);
+    const bitsAmount = tags.bits ? parseInt(tags.bits) : (bitsMatch ? parseInt(bitsMatch[1]) : 0);
+
+    if (bitsAmount > 0) {
+      // Emitir como donación de Bits
+      broadcast({
+        type:        'donation',
+        platform:    'twitch',
+        donationType: 'bits',
+        chatname:    tags['display-name'] || tags.username,
+        chatmessage: message.replace(/cheer\d+\s*/gi, '').trim() || `¡${bitsAmount} Bits!`,
+        amount:      bitsAmount,
+        currency:    'BITS',
+        nameColor:   tags.color || '#9146FF',
+        chatimg:     tags['profile-image-url'] || null,
+        roles,
+        mid:         'tw-bits-' + Date.now(),
+      });
+    } else {
+      broadcast({
+        type:        'twitch',
+        platform:    'twitch',
+        chatname:    tags['display-name'] || tags.username,
+        chatmessage: message,
+        nameColor:   tags.color || '#9146FF',
+        chatimg:     tags['profile-image-url'] || null,
+        roles,
+        mid:         tags.id || ('tw-' + Date.now()),
+      });
+    }
+  });
+
+  // ── Subscripción nueva ────────────────────────────────────────
+  client.on('subscription', (channel, username, method, message, userstate) => {
     broadcast({
-      type:        'twitch',
+      type:        'donation',
       platform:    'twitch',
-      chatname:    tags['display-name'] || tags.username,
-      chatmessage: message,
-      nameColor:   tags.color || '#9146FF',
-      chatimg:     tags['profile-image-url'] || null,
-      roles,
-      mid:         tags.id || ('tw-' + Date.now()),
+      donationType: 'sub',
+      chatname:    userstate['display-name'] || username,
+      chatmessage: message || '¡Nuevo suscriptor!',
+      subPlan:     method?.plan || 'Prime',
+      nameColor:   userstate?.color || '#9146FF',
+      chatimg:     null,
+      mid:         'tw-sub-' + Date.now(),
     });
+    console.log(`[Twitch] 🎉 Sub: ${username}`);
+  });
+
+  // ── Re-subscripción ───────────────────────────────────────────
+  client.on('resub', (channel, username, months, message, userstate, methods) => {
+    broadcast({
+      type:        'donation',
+      platform:    'twitch',
+      donationType: 'resub',
+      chatname:    userstate['display-name'] || username,
+      chatmessage: message || `¡${months} meses de sub!`,
+      months,
+      subPlan:     methods?.plan || 'Prime',
+      nameColor:   userstate?.color || '#9146FF',
+      chatimg:     null,
+      mid:         'tw-resub-' + Date.now(),
+    });
+    console.log(`[Twitch] 🔄 Resub: ${username} (${months} meses)`);
+  });
+
+  // ── Sub regalo (giftsub) ──────────────────────────────────────
+  client.on('subgift', (channel, username, streakMonths, recipient, methods, userstate) => {
+    broadcast({
+      type:        'donation',
+      platform:    'twitch',
+      donationType: 'subgift',
+      chatname:    userstate['display-name'] || username,
+      chatmessage: `¡Regaló una sub a ${recipient}!`,
+      recipient,
+      subPlan:     methods?.plan || '1000',
+      nameColor:   userstate?.color || '#9146FF',
+      chatimg:     null,
+      mid:         'tw-gift-' + Date.now(),
+    });
+    console.log(`[Twitch] 🎁 GiftSub: ${username} → ${recipient}`);
+  });
+
+  // ── Sub regalo masivo ─────────────────────────────────────────
+  client.on('submysterygift', (channel, username, numSubsGifted, methods, userstate) => {
+    broadcast({
+      type:        'donation',
+      platform:    'twitch',
+      donationType: 'subgift',
+      chatname:    userstate['display-name'] || username,
+      chatmessage: `¡Regaló ${numSubsGifted} subs a la comunidad!`,
+      amount:      numSubsGifted,
+      nameColor:   userstate?.color || '#9146FF',
+      chatimg:     null,
+      mid:         'tw-massgift-' + Date.now(),
+    });
+    console.log(`[Twitch] 🎁 Mass GiftSub: ${username} x${numSubsGifted}`);
   });
 }
 
-// ── KICK ─────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  KICK — Chat y Donaciones (gestionados desde el browser)
+// ══════════════════════════════════════════════════════════════
 app.get('/api/kick/channel-id', (req, res) => {
   res.json({ kickId: CONFIG.kickId || null, channel: CONFIG.kick });
 });
@@ -252,11 +353,8 @@ app.post('/api/kick/channel-id', (req, res) => {
   res.json({ ok: true, kickId: CONFIG.kickId });
 });
 
-// El dashboard reenvía mensajes de Kick recibidos via Pusher en el navegador.
-// El evento Pusher NO incluye profile_pic, así que lo resolvemos aquí via API.
 function handleKickMessageFromBrowser(data) {
   if (!data.chatname && !data.chatmessage) return;
-
   const username = data.chatname || 'Unknown';
 
   getKickAvatar(username, (avatar) => {
@@ -266,10 +364,32 @@ function handleKickMessageFromBrowser(data) {
       chatname:    username,
       chatmessage: data.chatmessage,
       nameColor:   data.nameColor || '#53FC18',
-      chatimg:     avatar || null,   // ← avatar resuelto via API
+      chatimg:     avatar || null,
       roles:       data.roles || [],
       mid:         data.mid || ('kick-' + Date.now()),
     });
+  });
+}
+
+// Donación/Gifted sub de Kick enviada desde el browser via Pusher
+function handleKickDonationFromBrowser(data) {
+  const username = data.chatname || 'Unknown';
+  getKickAvatar(username, (avatar) => {
+    broadcast({
+      type:         'donation',
+      platform:     'kick',
+      donationType: data.donationType || 'giftedsub', // 'giftedsub', 'sub', etc.
+      chatname:     username,
+      chatmessage:  data.chatmessage || '',
+      amount:       data.amount || null,
+      currency:     data.currency || null,
+      months:       data.months || null,
+      nameColor:    data.nameColor || '#53FC18',
+      chatimg:      avatar || null,
+      roles:        data.roles || [],
+      mid:          data.mid || ('kick-don-' + Date.now()),
+    });
+    console.log(`[Kick] 💰 Donación de ${username}: ${data.donationType}`);
   });
 }
 
@@ -280,7 +400,9 @@ function connectKick() {
   broadcastStatus();
 }
 
-// ── TIKTOK ───────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  TIKTOK — Chat + Regalos (Gifts/Donaciones)
+// ══════════════════════════════════════════════════════════════
 async function connectTikTokConnector() {
   if (!CONFIG.tiktok) return console.log('[TikTok] Sin usuario configurado');
   if (!WebcastPushConnection) { console.log('[TikTok] ❌ tiktok-live-connector no instalado'); return; }
@@ -295,7 +417,7 @@ async function connectTikTokConnector() {
 
   const conn = new WebcastPushConnection(username, {
     processInitialData: false,
-    enableExtendedGiftInfo: false,
+    enableExtendedGiftInfo: true,   // ← true para recibir nombre/costo del regalo
     enableWebsocketUpgrade: true,
     requestPollingIntervalMs: 2000,
     sessionId: process.env.TIKTOK_SESSION_ID || undefined,
@@ -324,6 +446,7 @@ async function connectTikTokConnector() {
     return;
   }
 
+  // ── Chat ────────────────────────────────────────────────────
   conn.on('chat', (data) => {
     state.tiktok.lastMsg = Date.now();
     broadcast({
@@ -335,6 +458,56 @@ async function connectTikTokConnector() {
       nameColor:   '#FF0050',
       mid:         'tt-' + Date.now() + '-' + Math.random(),
     });
+  });
+
+  // ── Regalos/Donaciones ──────────────────────────────────────
+  // giftType 1 = regalo tipo "streak" (se acumula), solo enviamos en repeatEnd
+  // giftType 2 = regalo puntual (se envía directamente)
+  conn.on('gift', (data) => {
+    state.tiktok.lastMsg = Date.now();
+
+    // Para regalos con streak, solo broadcastear al final del streak
+    if (data.giftType === 1 && !data.repeatEnd) return;
+
+    const giftName  = data.giftName  || data.extendedGiftInfo?.name || `Gift #${data.giftId}`;
+    const giftImg   = data.giftPictureUrl || data.extendedGiftInfo?.image?.url_list?.[0] || null;
+    const diamonds  = data.diamondCount || data.extendedGiftInfo?.diamond_count || 0;
+    const quantity  = data.repeatCount  || 1;
+    const totalDiamonds = diamonds * quantity;
+
+    broadcast({
+      type:         'donation',
+      platform:     'tiktok',
+      donationType: 'gift',
+      chatname:     data.uniqueId || data.nickname || 'TikToker',
+      chatmessage:  `¡Envió ${quantity}x ${giftName}! (${totalDiamonds} 💎)`,
+      giftName,
+      giftImg,
+      amount:       totalDiamonds,
+      currency:     'DIAMONDS',
+      quantity,
+      chatimg:      data.profilePictureUrl || null,
+      nameColor:    '#FF0050',
+      mid:          'tt-gift-' + Date.now() + '-' + Math.random(),
+    });
+
+    console.log(`[TikTok] 🎁 ${data.uniqueId} → ${quantity}x ${giftName} (${totalDiamonds}💎)`);
+  });
+
+  // ── Suscripciones de TikTok ────────────────────────────────
+  conn.on('subscribe', (data) => {
+    state.tiktok.lastMsg = Date.now();
+    broadcast({
+      type:         'donation',
+      platform:     'tiktok',
+      donationType: 'sub',
+      chatname:     data.uniqueId || 'TikToker',
+      chatmessage:  '¡Se suscribió al canal!',
+      chatimg:      data.profilePictureUrl || null,
+      nameColor:    '#FF0050',
+      mid:          'tt-sub-' + Date.now(),
+    });
+    console.log(`[TikTok] 🌟 Sub: ${data.uniqueId}`);
   });
 
   conn.on('disconnected', () => {
@@ -357,6 +530,201 @@ setInterval(() => {
   }
 }, 60000);
 
+// ══════════════════════════════════════════════════════════════
+//  YOUTUBE — Chat + SuperChats via YouTube Data API v3
+//  Requiere: YOUTUBE_CHANNEL_ID + YOUTUBE_API_KEY en env vars
+//
+//  Flujo:
+//  1) Busca el liveBroadcast activo del canal
+//  2) Obtiene el liveChatId del broadcast
+//  3) Hace polling del chat (messages + superchats)
+// ══════════════════════════════════════════════════════════════
+function fetchJSON(url) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { headers: { 'Accept': 'application/json' } }, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        try { resolve(JSON.parse(body)); }
+        catch(e) { reject(e); }
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
+  });
+}
+
+async function youtubeGetLiveChatId() {
+  if (!CONFIG.youtube || !CONFIG.youtubeKey) return null;
+
+  try {
+    // Buscar el broadcast en vivo activo del canal
+    const url = `https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet,status&broadcastType=all&broadcastStatus=active&key=${CONFIG.youtubeKey}&maxResults=5`;
+    const data = await fetchJSON(url);
+
+    if (!data.items || data.items.length === 0) {
+      console.log('[YouTube] No hay broadcast activo.');
+      return null;
+    }
+
+    // Filtrar por channelId si está configurado
+    let broadcast = data.items[0];
+    if (CONFIG.youtube) {
+      const match = data.items.find(b => b.snippet?.channelId === CONFIG.youtube);
+      if (match) broadcast = match;
+    }
+
+    const chatId = broadcast.snippet?.liveChatId;
+    console.log('[YouTube] ✅ LiveChatId encontrado:', chatId);
+    return chatId;
+  } catch(e) {
+    console.error('[YouTube] Error obteniendo liveChatId:', e.message);
+    return null;
+  }
+}
+
+async function youtubePollChat() {
+  if (!state.youtube.liveChatId || !CONFIG.youtubeKey) return;
+
+  let url = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${state.youtube.liveChatId}&part=snippet,authorDetails&maxResults=200&key=${CONFIG.youtubeKey}`;
+  if (state.youtube.nextPageToken) {
+    url += `&pageToken=${encodeURIComponent(state.youtube.nextPageToken)}`;
+  }
+
+  try {
+    const data = await fetchJSON(url);
+
+    if (data.error) {
+      console.error('[YouTube] API error:', data.error.message);
+      if (data.error.code === 403 || data.error.code === 404) {
+        // Chat terminó o no autorizado
+        clearInterval(state.youtube.pollTimer);
+        state.youtube.connected = false;
+        state.youtube.liveChatId = null;
+        broadcastStatus();
+        // Reintentar buscar chat en 60s
+        setTimeout(connectYouTube, 60000);
+      }
+      return;
+    }
+
+    state.youtube.nextPageToken = data.nextPageToken || state.youtube.nextPageToken;
+
+    for (const item of (data.items || [])) {
+      const snippet       = item.snippet || {};
+      const authorDetails = item.authorDetails || {};
+      const msgType       = snippet.type;
+
+      const base = {
+        chatname:  authorDetails.displayName || 'YouTuber',
+        chatimg:   authorDetails.profileImageUrl || null,
+        nameColor: '#FF0000',
+        isOwner:   authorDetails.isChatOwner || false,
+        isMod:     authorDetails.isChatModerator || false,
+        isMember:  authorDetails.isChatSponsor || false,
+      };
+
+      const roles = [];
+      if (base.isOwner)  roles.push({ type: 'broadcaster', label: 'Streamer' });
+      if (base.isMod)    roles.push({ type: 'moderator',   label: 'Mod' });
+      if (base.isMember) roles.push({ type: 'member',      label: 'Miembro' });
+
+      if (msgType === 'textMessageEvent') {
+        broadcast({
+          type:        'youtube',
+          platform:    'youtube',
+          ...base,
+          chatmessage: snippet.displayMessage || snippet.textMessageDetails?.messageText || '',
+          roles,
+          mid:         'yt-' + item.id,
+        });
+
+      } else if (msgType === 'superChatEvent') {
+        const sc = snippet.superChatDetails || {};
+        broadcast({
+          type:         'donation',
+          platform:     'youtube',
+          donationType: 'superchat',
+          ...base,
+          chatmessage:  sc.userComment || '¡Super Chat!',
+          amount:       sc.amountMicros ? sc.amountMicros / 1000000 : 0,
+          amountDisplay: sc.amountDisplayString || '',
+          currency:     sc.currency || 'USD',
+          tier:         sc.tier || 1,
+          roles,
+          mid:          'yt-sc-' + item.id,
+        });
+        console.log(`[YouTube] 💰 SuperChat de ${base.chatname}: ${sc.amountDisplayString}`);
+
+      } else if (msgType === 'superStickerEvent') {
+        const ss = snippet.superStickerDetails || {};
+        broadcast({
+          type:         'donation',
+          platform:     'youtube',
+          donationType: 'supersticker',
+          ...base,
+          chatmessage:  ss.superStickerMetadata?.altText || '¡Super Sticker!',
+          amount:       ss.amountMicros ? ss.amountMicros / 1000000 : 0,
+          amountDisplay: ss.amountDisplayString || '',
+          currency:     ss.currency || 'USD',
+          roles,
+          mid:          'yt-ss-' + item.id,
+        });
+        console.log(`[YouTube] 🎯 SuperSticker de ${base.chatname}: ${ss.amountDisplayString}`);
+
+      } else if (msgType === 'memberMilestoneChatEvent' || msgType === 'newSponsorEvent') {
+        const details = snippet.memberMilestoneChatDetails || snippet.newSponsorDetails || {};
+        broadcast({
+          type:         'donation',
+          platform:     'youtube',
+          donationType: 'member',
+          ...base,
+          chatmessage:  snippet.displayMessage || '¡Nuevo miembro!',
+          months:       details.memberMonth || null,
+          roles,
+          mid:          'yt-mem-' + item.id,
+        });
+        console.log(`[YouTube] 🌟 Miembro: ${base.chatname}`);
+      }
+    }
+
+    // Calcular siguiente intervalo de polling según la API
+    const pollingMs = Math.max((data.pollingIntervalMillis || 5000), 3000);
+    clearTimeout(state.youtube.pollTimer);
+    state.youtube.pollTimer = setTimeout(youtubePollChat, pollingMs);
+
+  } catch(e) {
+    console.error('[YouTube] Error en polling:', e.message);
+    clearTimeout(state.youtube.pollTimer);
+    state.youtube.pollTimer = setTimeout(youtubePollChat, 10000);
+  }
+}
+
+async function connectYouTube() {
+  if (!CONFIG.youtube || !CONFIG.youtubeKey) {
+    console.log('[YouTube] Sin canal o API key configurados (YOUTUBE_CHANNEL_ID + YOUTUBE_API_KEY)');
+    return;
+  }
+
+  console.log('[YouTube] Buscando broadcast activo para canal:', CONFIG.youtube);
+  const chatId = await youtubeGetLiveChatId();
+
+  if (!chatId) {
+    // No hay live activo — reintentar en 2 minutos
+    console.log('[YouTube] Sin live activo. Reintentando en 2 min...');
+    setTimeout(connectYouTube, 2 * 60 * 1000);
+    return;
+  }
+
+  state.youtube.liveChatId   = chatId;
+  state.youtube.nextPageToken = null;
+  state.youtube.connected    = true;
+  broadcastStatus();
+
+  // Primer poll
+  youtubePollChat();
+}
+
 // ── HTTP ENDPOINTS ───────────────────────────────────────────
 app.get('/health', (req, res) => res.json({
   ok: true,
@@ -366,6 +734,7 @@ app.get('/health', (req, res) => res.json({
   twitch:   state.twitch.connected,
   kick:     state.kick.connected,
   tiktok:   state.tiktok.connected,
+  youtube:  state.youtube.connected,
   kickAvatarsCached: Object.keys(kickAvatarCache).length,
 }));
 
@@ -386,10 +755,21 @@ app.post('/api/tiktok/restart', (req, res) => {
   res.json({ ok: true, restarts: state.tiktok.restartCount });
 });
 
+app.post('/api/youtube/restart', (req, res) => {
+  clearTimeout(state.youtube.pollTimer);
+  state.youtube.connected = false;
+  state.youtube.liveChatId = null;
+  state.youtube.nextPageToken = null;
+  broadcastStatus();
+  connectYouTube();
+  res.json({ ok: true });
+});
+
 app.get('/api/status', (req, res) => res.json({
   twitch:  { connected: state.twitch.connected, channel: CONFIG.twitch },
   kick:    { connected: state.kick.connected,   channel: CONFIG.kick, kickId: CONFIG.kickId, avatarsCached: Object.keys(kickAvatarCache).length },
   tiktok:  { connected: state.tiktok.connected, user: CONFIG.tiktok, mode: CONFIG.tiktokMode, lastMsg: state.tiktok.lastMsg },
+  youtube: { connected: state.youtube.connected, channelId: CONFIG.youtube, liveChatId: state.youtube.liveChatId },
   clients: state.clients.size,
   messages: state.msgCount,
   uptime:  Math.floor(process.uptime()),
@@ -397,14 +777,16 @@ app.get('/api/status', (req, res) => res.json({
 
 // ── ARRANCAR ─────────────────────────────────────────────────
 server.listen(CONFIG.port, () => {
-  console.log(`\n🎮 MEEVE MULTICHAT SERVER`);
+  console.log(`\n🎮 MEEVE MULTICHAT SERVER v2`);
   console.log(`   Puerto  : ${CONFIG.port}`);
   console.log(`   Twitch  : ${CONFIG.twitch  || '(no config)'}`);
   console.log(`   Kick    : ${CONFIG.kick    || '(no config)'}`);
   console.log(`   TikTok  : ${CONFIG.tiktok  || '(no config)'} [${CONFIG.tiktokMode}]`);
+  console.log(`   YouTube : ${CONFIG.youtube || '(no config)'} ${CONFIG.youtubeKey ? '🔑' : '⚠️ Sin API key'}`);
   console.log(`   Health  : /health\n`);
 
   connectTwitch();
   connectKick();
   connectTikTokConnector();
+  connectYouTube();
 });
