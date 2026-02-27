@@ -173,10 +173,23 @@ app.get('/api/kick/channel-id', async (req, res) => {
 app.post('/api/kick/channel-id', (req, res) => {
   const { channelId } = req.body;
   if (!channelId) return res.status(400).json({ error: 'channelId requerido' });
-  console.log('[Kick] ✅ Channel ID recibido desde dashboard:', channelId);
-  CONFIG.kickId = String(channelId);
-  // Arrancar Kick ahora que tenemos el ID
-  if (!state.kick.connected) _connectKickWS(CONFIG.kickId);
+
+  const newId = String(channelId);
+
+  // Si ya estamos conectados con este mismo ID, no hacer nada
+  if (state.kick.connected && CONFIG.kickId === newId) {
+    console.log('[Kick] Ya conectado con ID', newId, '— ignorando petición duplicada');
+    return res.json({ ok: true, kickId: newId, alreadyConnected: true });
+  }
+
+  console.log('[Kick] ✅ Channel ID recibido desde dashboard:', newId);
+  CONFIG.kickId = newId;
+
+  // Solo conectar si no está ya conectado
+  if (!state.kick.connected) {
+    _connectKickWS(CONFIG.kickId);
+  }
+
   res.json({ ok: true, kickId: CONFIG.kickId });
 });
 
