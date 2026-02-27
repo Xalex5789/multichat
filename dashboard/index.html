@@ -338,6 +338,127 @@ var autoKickDone = false;
 var currentChannels = { twitch: '', kick: '', tiktok: '' };
 var platformIcons = { twitch: '🟣', kick: '🟢', tiktok: '🎵', custom: '⭐' };
 
+// ── KICK BROWSER WEBSOCKET ──────────────────────────────────────
+// Kick bloquea IPs de datacenter — la conexión se hace AQUÍ, en el navegador
+var kickWs = null;
+var kickRetryDelay = 3000;
+var kickRetryTimeout = null;
+var kickChannelId = null;
+
+function connectKickBrowser(channelId) {
+  if (!channelId) return;
+  kickChannelId = channelId;
+
+  if (kickWs && kickWs.readyState <= 1) {
+    // Ya conectado o conectando con este ID
+    return;
+  }
+
+  if (kickRetryTimeout) { clearTimeout(kickRetryTimeout); kickRetryTimeout = null; }
+
+  var box = document.getElementById('kick-status-box');
+  if (box) {
+    box.className = 'info-box warn';
+    box.innerHTML = '⏳ Conectando a Kick desde el navegador...';
+  }
+
+  // Intentar con el nuevo endpoint de Kick primero, luego Pusher como fallback
+  var urls = [
+    'wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false',
+    'wss://ws-us2.pusher.com/app/eb1d5f283081a78b932c?protocol=7&client=js&version=7.6.0&flash=false',
+  ];
+  var urlIndex = parseInt(localStorage.getItem('kickWsUrlIndex') || '0');
+
+  tryKickUrl(channelId, urls, urlIndex);
+}
+
+function tryKickUrl(channelId, urls, idx) {
+  if (idx >= urls.length) idx = 0;
+  var url = urls[idx];
+  console.log('[Kick Browser] Intentando:', url.substring(0, 60) + '...');
+
+  try { kickWs = new WebSocket(url); } catch(e) {
+    console.error('[Kick Browser] No se pudo crear WS:', e.message);
+    kickRetryTimeout = setTimeout(function() { tryKickUrl(channelId, urls, (idx+1) % urls.length); }, 5000);
+    return;
+  }
+
+  kickWs.onopen = function() {
+    kickRetryDelay = 3000;
+    localStorage.setItem('kickWsUrlIndex', idx);
+    kickWs.send(JSON.stringify({
+      event: 'pusher:subscribe',
+      data: { auth: '', channel: 'chatrooms.' + channelId + '.v2' }
+    }));
+    console.log('[Kick Browser] Suscrito al chatroom', channelId);
+  };
+
+  kickWs.onmessage = function(e) {
+    try {
+      var msg = JSON.parse(e.data);
+      var event = msg.event || '';
+
+      if (event === 'pusher:connection_established') return;
+      if (event === 'pusher:pong') return;
+
+      if (event === 'pusher_internal:subscription_succeeded') {
+        console.log('[Kick Browser] ✅ Suscripción confirmada');
+        var box = document.getElementById('kick-status-box');
+        if (box) { box.className = 'info-box green'; box.innerHTML = '✅ Kick conectado desde el navegador (chatroom ' + channelId + ')'; }
+        // Informar al servidor
+        if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'kick_connected' }));
+        return;
+      }
+
+      if (event === 'pusher:error') {
+        var ed = typeof msg.data === 'string' ? JSON.parse(msg.data) : (msg.data || {});
+        console.warn('[Kick Browser] Error Pusher:', ed.message || JSON.stringify(ed));
+        // Intentar con otra URL
+        kickWs.close();
+        return;
+      }
+
+      if (event === 'App\Events\ChatMessageEvent') {
+        var d = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
+        var chatMsg = {
+          type: 'kick_message',
+          platform: 'kick',
+          chatname: (d.sender && d.sender.username) || 'Unknown',
+          chatmessage: d.content,
+          nameColor: (d.sender && d.sender.identity && d.sender.identity.color) || '#53FC18',
+          chatimg: (d.sender && d.sender.profile_pic) || null,
+          mid: d.id || ('kick-' + Date.now())
+        };
+        // Mostrar en el dashboard local
+        appendMessage(chatMsg);
+        // Reenviar al servidor para que lo mande al overlay
+        if (ws && ws.readyState === 1) ws.send(JSON.stringify(chatMsg));
+      }
+    } catch(err) { console.error('[Kick Browser] Error parseando:', err.message); }
+  };
+
+  kickWs.onclose = function(e) {
+    console.log('[Kick Browser] Desconectado (code:', e.code, '). Reintentando...');
+    var box = document.getElementById('kick-status-box');
+    if (box) { box.className = 'info-box warn'; box.innerHTML = '🔄 Kick desconectado, reintentando...'; }
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'kick_disconnected' }));
+    var nextIdx = e.code === 4001 ? (idx + 1) % urls.length : idx;
+    kickRetryDelay = Math.min(kickRetryDelay * 1.5, 30000);
+    kickRetryTimeout = setTimeout(function() { tryKickUrl(channelId, urls, nextIdx); }, kickRetryDelay);
+  };
+
+  kickWs.onerror = function(e) { console.error('[Kick Browser] Error WS'); };
+
+  // Ping cada 25s
+  var pingInt = setInterval(function() {
+    if (kickWs && kickWs.readyState === 1) {
+      kickWs.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
+    } else {
+      clearInterval(pingInt);
+    }
+  }, 25000);
+}
+
 // ── INIT ────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   var saved = store.get('serverUrl');
@@ -374,8 +495,12 @@ function connectWS(url) {
   ws.onopen = function() {
     isConnected = true;
     retryDelay = 1000;
-    // NO resetear autoKickDone aquí — evita el bucle de reconexión de Kick
     setStatus(true);
+    // Si tenemos un ID de Kick guardado, conectar desde el navegador
+    var savedKickId = store.get('kickChannelId');
+    if (savedKickId && (!kickWs || kickWs.readyState > 1)) {
+      connectKickBrowser(savedKickId);
+    }
   };
 
   ws.onmessage = function(e) {
@@ -425,20 +550,17 @@ function handleStatus(data) {
     modeTag.className = 'tag ' + (data.tiktokMode === 'puppeteer' ? 'tag-puppeteer' : 'tag-connector');
   }
 
-  // Auto-resolver Kick solo una vez por sesión, y solo si Kick NO está conectado
-  if (!data.kick && data.channels && data.channels.kick && !autoKickDone) {
-    autoKickDone = true;
+  // Si no tenemos Kick browser conectado y tenemos ID guardado, conectar
+  if (!data.kick && data.channels && data.channels.kick) {
     var savedId = store.get('kickChannelId');
     if (savedId) {
-      console.log('[Kick] Reenviando ID guardado una sola vez:', savedId);
-      sendKickId(savedId);
-    } else {
+      if (!kickWs || kickWs.readyState > 1) {
+        connectKickBrowser(savedId);
+      }
+    } else if (!autoKickDone) {
+      autoKickDone = true;
       setTimeout(resolveKickId, 1500);
     }
-  }
-  // Si Kick ya conectó, marcar como done para no volver a intentar
-  if (data.kick) {
-    autoKickDone = true;
   }
 }
 
