@@ -431,6 +431,21 @@ function tryKickUrl(channelId, urls, idx) {
       if (isChatEvent) {
         var d = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
         console.log('[Kick Browser] Mensaje de chat:', d.sender && d.sender.username, ':', d.content);
+
+        // Extraer roles de Kick
+        var kickRoles = [];
+        var badges = (d.sender && d.sender.identity && d.sender.identity.badges) || [];
+        for (var bi = 0; bi < badges.length; bi++) {
+          var b = badges[bi];
+          var btype = (b.type || '').toLowerCase();
+          if (btype === 'broadcaster' || btype === 'owner') kickRoles.push({ type: 'broadcaster', label: 'Owner' });
+          else if (btype === 'moderator' || btype === 'mod') kickRoles.push({ type: 'moderator', label: 'Mod' });
+          else if (btype === 'vip') kickRoles.push({ type: 'vip', label: 'VIP' });
+          else if (btype === 'subscriber' || btype === 'sub') kickRoles.push({ type: 'subscriber', label: 'Sub' });
+          else if (btype === 'og') kickRoles.push({ type: 'og', label: 'OG' });
+          else if (b.type) kickRoles.push({ type: btype, label: b.type });
+        }
+
         var chatMsg = {
           type: 'kick_message',
           platform: 'kick',
@@ -438,12 +453,17 @@ function tryKickUrl(channelId, urls, idx) {
           chatmessage: d.content,
           nameColor: (d.sender && d.sender.identity && d.sender.identity.color) || '#53FC18',
           chatimg: (d.sender && d.sender.profile_pic) || null,
+          roles: kickRoles,
           mid: d.id || ('kick-' + Date.now())
         };
-        // Mostrar en el dashboard local
-        appendMessage(chatMsg);
-        // Reenviar al servidor para que lo mande al overlay
-        if (ws && ws.readyState === 1) ws.send(JSON.stringify(chatMsg));
+        // Enviar al servidor — el servidor hace broadcast de vuelta a todos (incluido este dashboard)
+        // NO llamar appendMessage aquí para evitar duplicados
+        if (ws && ws.readyState === 1) {
+          ws.send(JSON.stringify(chatMsg));
+        } else {
+          // Si no hay conexión con servidor, mostrar localmente como fallback
+          appendMessage(chatMsg);
+        }
       }
     } catch(err) { console.error('[Kick Browser] Error parseando:', err.message); }
   };
@@ -730,33 +750,33 @@ function sendCustomMessage() {
   input.value = '';
 }
 
+function getAutoOverlayUrl() {
+  // Calcular automáticamente desde la URL del dashboard
+  // https://Xalex5789.github.io/multichat/dashboard/  →  https://Xalex5789.github.io/multichat/overlay/index.html
+  var href = window.location.href.split('?')[0].replace(/\/+$/, '');
+  // Reemplazar el segmento /dashboard por /overlay
+  var result = href.replace(/\/dashboard(\/.*)?$/, '/overlay/index.html');
+  // Si no cambió (no había /dashboard en la ruta), fallback
+  if (result === href) {
+    result = href.replace(/\/[^/]+$/, '/overlay/index.html');
+  }
+  return result;
+}
+
 function updateOverlayUrl() {
   var serverUrl = store.get('serverUrl');
   var box = document.getElementById('overlay-url');
   var inputEl = document.getElementById('overlayBase');
 
-  // Auto-detectar overlay URL basándose en la URL actual del dashboard
-  var autoOverlay = '';
-  if (window.location.protocol !== 'file:') {
-    // Estamos en GitHub Pages u otro servidor
-    // dashboard está en: https://user.github.io/repo/dashboard/index.html
-    // overlay está en:   https://user.github.io/repo/overlay/index.html
-    var href = window.location.href.split('?')[0]; // quitar query params
-    autoOverlay = href
-      .replace(/\/dashboard\/[^/]*$/, '/overlay/index.html')
-      .replace(/\/dashboard$/, '/overlay/index.html');
-    // Si no cambió nada, construir manualmente
-    if (autoOverlay === href) {
-      autoOverlay = href.replace(/\/[^/]*$/, '') + '/overlay/index.html';
-    }
-  }
+  // Auto-detectar siempre (no depender del valor guardado)
+  var autoOverlay = window.location.protocol !== 'file:' ? getAutoOverlayUrl() : '';
 
-  // Usar guardado > auto-detectado
-  var overlayBase = store.get('overlayBase') || autoOverlay;
-
-  if (inputEl && overlayBase && !inputEl.value) {
-    inputEl.value = overlayBase;
-    store.set('overlayBase', overlayBase);
+  // Si el input está vacío o tiene un valor incorrecto (sin /overlay/), usar auto
+  var currentInput = inputEl ? inputEl.value.trim() : '';
+  if (!currentInput || currentInput.indexOf('overlay') === -1) {
+    currentInput = autoOverlay;
+    if (inputEl) inputEl.value = currentInput;
+    if (currentInput) store.set('overlayBase', currentInput);
   }
 
   if (!serverUrl) {
@@ -765,15 +785,13 @@ function updateOverlayUrl() {
     return;
   }
 
-  var base = (inputEl && inputEl.value.trim()) || overlayBase;
-  if (!base) {
+  if (!currentInput) {
     box.textContent = 'Introduce la URL del overlay arriba...';
     box.dataset.url = '';
     return;
   }
 
-  // Limpiar la base (quitar ?server=... si ya tenía)
-  base = base.split('?')[0];
+  var base = currentInput.split('?')[0];
   var url = base + '?server=' + encodeURIComponent(serverUrl);
   box.textContent = url;
   box.dataset.url = url;
