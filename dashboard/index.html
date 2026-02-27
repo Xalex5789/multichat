@@ -418,8 +418,19 @@ function tryKickUrl(channelId, urls, idx) {
         return;
       }
 
-      if (event === 'App\Events\ChatMessageEvent') {
+      // Loggear todos los eventos desconocidos para debug
+      if (event && event !== 'pusher:pong' && event !== 'pusher:connection_established' && event !== 'pusher_internal:subscription_succeeded') {
+        console.log('[Kick Browser] Evento recibido:', event);
+      }
+
+      // Kick puede enviar el evento con o sin backslash — cubrir ambos casos
+      var isChatEvent = (event === 'App\Events\ChatMessageEvent') ||
+                        (event === 'App\\Events\\ChatMessageEvent') ||
+                        (event.indexOf('ChatMessageEvent') !== -1);
+
+      if (isChatEvent) {
         var d = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
+        console.log('[Kick Browser] Mensaje de chat:', d.sender && d.sender.username, ':', d.content);
         var chatMsg = {
           type: 'kick_message',
           platform: 'kick',
@@ -721,35 +732,49 @@ function sendCustomMessage() {
 
 function updateOverlayUrl() {
   var serverUrl = store.get('serverUrl');
-  var overlayBase = store.get('overlayBase');
   var box = document.getElementById('overlay-url');
+  var inputEl = document.getElementById('overlayBase');
 
-  // Intentar auto-detectar si estamos en GitHub Pages (no file://)
-  if (!overlayBase && window.location.protocol !== 'file:') {
-    var loc = window.location;
-    var path = loc.pathname
-      .replace(/\/dashboard(\/.*)?$/, '/overlay/index.html')
-      .replace(/\/index\.html$/, '');
-    // Asegurarse de que termina en /overlay/index.html
-    if (!path.endsWith('overlay/index.html')) {
-      path = path.replace(/\/$/, '') + '/overlay/index.html';
+  // Auto-detectar overlay URL basándose en la URL actual del dashboard
+  var autoOverlay = '';
+  if (window.location.protocol !== 'file:') {
+    // Estamos en GitHub Pages u otro servidor
+    // dashboard está en: https://user.github.io/repo/dashboard/index.html
+    // overlay está en:   https://user.github.io/repo/overlay/index.html
+    var href = window.location.href.split('?')[0]; // quitar query params
+    autoOverlay = href
+      .replace(/\/dashboard\/[^/]*$/, '/overlay/index.html')
+      .replace(/\/dashboard$/, '/overlay/index.html');
+    // Si no cambió nada, construir manualmente
+    if (autoOverlay === href) {
+      autoOverlay = href.replace(/\/[^/]*$/, '') + '/overlay/index.html';
     }
-    overlayBase = loc.origin + path;
   }
 
-  // Mostrar en el input
-  var inputEl = document.getElementById('overlayBase');
+  // Usar guardado > auto-detectado
+  var overlayBase = store.get('overlayBase') || autoOverlay;
+
   if (inputEl && overlayBase && !inputEl.value) {
     inputEl.value = overlayBase;
+    store.set('overlayBase', overlayBase);
   }
 
-  if (!serverUrl || !overlayBase) {
-    box.textContent = 'Introduce la URL base del overlay arriba...';
+  if (!serverUrl) {
+    box.textContent = 'Configura el servidor primero...';
     box.dataset.url = '';
     return;
   }
 
-  var url = overlayBase + '?server=' + encodeURIComponent(serverUrl);
+  var base = (inputEl && inputEl.value.trim()) || overlayBase;
+  if (!base) {
+    box.textContent = 'Introduce la URL del overlay arriba...';
+    box.dataset.url = '';
+    return;
+  }
+
+  // Limpiar la base (quitar ?server=... si ya tenía)
+  base = base.split('?')[0];
+  var url = base + '?server=' + encodeURIComponent(serverUrl);
   box.textContent = url;
   box.dataset.url = url;
 }
