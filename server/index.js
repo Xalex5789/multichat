@@ -603,36 +603,40 @@ async function youtubeResolveChannelId(handleOrName) {
 async function youtubeGetLiveChatId(channelId) {
   if (!channelId || !CONFIG.youtubeKey) return null;
 
-  // Buscar en varios estados porque YouTube a veces devuelve 'active' o 'live'
-  const statuses = ['active', 'all'];
+  try {
+    // Buscar el video en vivo usando Search API (funciona con API key, sin OAuth)
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&key=${CONFIG.youtubeKey}`;
+    const searchData = await fetchJSON(searchUrl);
 
-  for (const status of statuses) {
-    try {
-      const url = `https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet,status&broadcastType=all&broadcastStatus=${status}&key=${CONFIG.youtubeKey}&maxResults=10`;
-      const data = await fetchJSON(url);
-
-      if (!data.items || data.items.length === 0) continue;
-
-      // Buscar primero el que coincida con el channelId y esté en vivo
-      const match = data.items.find(b =>
-        b.snippet?.channelId === channelId &&
-        ['live', 'active'].includes(b.status?.lifeCycleStatus)
-      ) || data.items.find(b => b.snippet?.channelId === channelId);
-
-      if (match) {
-        const chatId = match.snippet?.liveChatId;
-        if (chatId) {
-          console.log(`[YouTube] ✅ LiveChatId encontrado (status: ${match.status?.lifeCycleStatus}):`, chatId);
-          return chatId;
-        }
-      }
-    } catch(e) {
-      console.error('[YouTube] Error obteniendo liveChatId:', e.message);
+    if (!searchData.items || searchData.items.length === 0) {
+      console.log('[YouTube] No hay stream en vivo en el canal.');
+      return null;
     }
-  }
 
-  console.log('[YouTube] No hay broadcast activo para el canal.');
-  return null;
+    const videoId = searchData.items[0].id?.videoId;
+    if (!videoId) {
+      console.log('[YouTube] No se encontró videoId.');
+      return null;
+    }
+    console.log('[YouTube] Video en vivo encontrado:', videoId);
+
+    // Obtener el liveChatId del video
+    const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${CONFIG.youtubeKey}`;
+    const videoData = await fetchJSON(videoUrl);
+
+    const chatId = videoData.items?.[0]?.liveStreamingDetails?.activeLiveChatId;
+    if (!chatId) {
+      console.log('[YouTube] El video no tiene liveChatId activo.');
+      return null;
+    }
+
+    console.log('[YouTube] ✅ LiveChatId encontrado:', chatId);
+    return chatId;
+
+  } catch(e) {
+    console.error('[YouTube] Error obteniendo liveChatId:', e.message);
+    return null;
+  }
 }
 
 async function youtubePollChat() {
