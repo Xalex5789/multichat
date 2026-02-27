@@ -603,28 +603,36 @@ async function youtubeResolveChannelId(handleOrName) {
 async function youtubeGetLiveChatId(channelId) {
   if (!channelId || !CONFIG.youtubeKey) return null;
 
-  try {
-    // Buscar el broadcast en vivo activo del canal
-    const url = `https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet,status&broadcastType=all&broadcastStatus=active&key=${CONFIG.youtubeKey}&maxResults=5`;
-    const data = await fetchJSON(url);
+  // Buscar en varios estados porque YouTube a veces devuelve 'active' o 'live'
+  const statuses = ['active', 'all'];
 
-    if (!data.items || data.items.length === 0) {
-      console.log('[YouTube] No hay broadcast activo.');
-      return null;
+  for (const status of statuses) {
+    try {
+      const url = `https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet,status&broadcastType=all&broadcastStatus=${status}&key=${CONFIG.youtubeKey}&maxResults=10`;
+      const data = await fetchJSON(url);
+
+      if (!data.items || data.items.length === 0) continue;
+
+      // Buscar primero el que coincida con el channelId y esté en vivo
+      const match = data.items.find(b =>
+        b.snippet?.channelId === channelId &&
+        ['live', 'active'].includes(b.status?.lifeCycleStatus)
+      ) || data.items.find(b => b.snippet?.channelId === channelId);
+
+      if (match) {
+        const chatId = match.snippet?.liveChatId;
+        if (chatId) {
+          console.log(`[YouTube] ✅ LiveChatId encontrado (status: ${match.status?.lifeCycleStatus}):`, chatId);
+          return chatId;
+        }
+      }
+    } catch(e) {
+      console.error('[YouTube] Error obteniendo liveChatId:', e.message);
     }
-
-    // Filtrar por channelId
-    let broadcast = data.items[0];
-    const match = data.items.find(b => b.snippet?.channelId === channelId);
-    if (match) broadcast = match;
-
-    const chatId = broadcast.snippet?.liveChatId;
-    console.log('[YouTube] ✅ LiveChatId encontrado:', chatId);
-    return chatId;
-  } catch(e) {
-    console.error('[YouTube] Error obteniendo liveChatId:', e.message);
-    return null;
   }
+
+  console.log('[YouTube] No hay broadcast activo para el canal.');
+  return null;
 }
 
 async function youtubePollChat() {
@@ -813,9 +821,10 @@ app.post('/api/tiktok/restart', (req, res) => {
 
 app.post('/api/youtube/restart', (req, res) => {
   clearTimeout(state.youtube.pollTimer);
-  state.youtube.connected = false;
-  state.youtube.liveChatId = null;
+  state.youtube.connected    = false;
+  state.youtube.liveChatId   = null;
   state.youtube.nextPageToken = null;
+  state.youtube.channelId    = null;  // forzar re-resolución del canal
   broadcastStatus();
   connectYouTube();
   res.json({ ok: true });
