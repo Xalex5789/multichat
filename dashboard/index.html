@@ -339,7 +339,6 @@ var currentChannels = { twitch: '', kick: '', tiktok: '' };
 var platformIcons = { twitch: '🟣', kick: '🟢', tiktok: '🎵', custom: '⭐' };
 
 // ── KICK BROWSER WEBSOCKET ──────────────────────────────────────
-// Kick bloquea IPs de datacenter — la conexión se hace AQUÍ, en el navegador
 var kickWs = null;
 var kickRetryDelay = 3000;
 var kickRetryTimeout = null;
@@ -349,10 +348,7 @@ function connectKickBrowser(channelId) {
   if (!channelId) return;
   kickChannelId = channelId;
 
-  if (kickWs && kickWs.readyState <= 1) {
-    // Ya conectado o conectando con este ID
-    return;
-  }
+  if (kickWs && kickWs.readyState <= 1) return;
 
   if (kickRetryTimeout) { clearTimeout(kickRetryTimeout); kickRetryTimeout = null; }
 
@@ -362,7 +358,6 @@ function connectKickBrowser(channelId) {
     box.innerHTML = '⏳ Conectando a Kick desde el navegador...';
   }
 
-  // Intentar con el nuevo endpoint de Kick primero, luego Pusher como fallback
   var urls = [
     'wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false',
     'wss://ws-us2.pusher.com/app/eb1d5f283081a78b932c?protocol=7&client=js&version=7.6.0&flash=false',
@@ -405,7 +400,6 @@ function tryKickUrl(channelId, urls, idx) {
         console.log('[Kick Browser] ✅ Suscripción confirmada');
         var box = document.getElementById('kick-status-box');
         if (box) { box.className = 'info-box green'; box.innerHTML = '✅ Kick conectado desde el navegador (chatroom ' + channelId + ')'; }
-        // Informar al servidor
         if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'kick_connected' }));
         return;
       }
@@ -413,17 +407,10 @@ function tryKickUrl(channelId, urls, idx) {
       if (event === 'pusher:error') {
         var ed = typeof msg.data === 'string' ? JSON.parse(msg.data) : (msg.data || {});
         console.warn('[Kick Browser] Error Pusher:', ed.message || JSON.stringify(ed));
-        // Intentar con otra URL
         kickWs.close();
         return;
       }
 
-      // Loggear todos los eventos desconocidos para debug
-      if (event && event !== 'pusher:pong' && event !== 'pusher:connection_established' && event !== 'pusher_internal:subscription_succeeded') {
-        console.log('[Kick Browser] Evento recibido:', event);
-      }
-
-      // Kick puede enviar el evento con o sin backslash — cubrir ambos casos
       var isChatEvent = (event === 'App\Events\ChatMessageEvent') ||
                         (event === 'App\\Events\\ChatMessageEvent') ||
                         (event.indexOf('ChatMessageEvent') !== -1);
@@ -431,6 +418,9 @@ function tryKickUrl(channelId, urls, idx) {
       if (isChatEvent) {
         var d = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
         console.log('[Kick Browser] Mensaje de chat:', d.sender && d.sender.username, ':', d.content);
+
+        // Debug: loguear el objeto sender completo para ver los campos disponibles
+        if (d.sender) console.log('[Kick Browser] sender:', JSON.stringify(d.sender));
 
         // Extraer roles de Kick
         var kickRoles = [];
@@ -446,22 +436,31 @@ function tryKickUrl(channelId, urls, idx) {
           else if (b.type) kickRoles.push({ type: btype, label: b.type });
         }
 
+        // ── FIX: cubrir todos los campos posibles donde Kick manda el avatar ──
+        var avatar = null;
+        if (d.sender) {
+          avatar = d.sender.profile_pic
+                || d.sender.profile_picture
+                || d.sender.profilePicture
+                || d.sender.profilePic
+                || d.sender.avatar
+                || null;
+        }
+
         var chatMsg = {
           type: 'kick_message',
           platform: 'kick',
           chatname: (d.sender && d.sender.username) || 'Unknown',
           chatmessage: d.content,
           nameColor: (d.sender && d.sender.identity && d.sender.identity.color) || '#53FC18',
-          chatimg: (d.sender && d.sender.profile_pic) || null,
+          chatimg: avatar,
           roles: kickRoles,
           mid: d.id || ('kick-' + Date.now())
         };
-        // Enviar al servidor — el servidor hace broadcast de vuelta a todos (incluido este dashboard)
-        // NO llamar appendMessage aquí para evitar duplicados
+
         if (ws && ws.readyState === 1) {
           ws.send(JSON.stringify(chatMsg));
         } else {
-          // Si no hay conexión con servidor, mostrar localmente como fallback
           appendMessage(chatMsg);
         }
       }
@@ -527,7 +526,6 @@ function connectWS(url) {
     isConnected = true;
     retryDelay = 1000;
     setStatus(true);
-    // Si tenemos un ID de Kick guardado, conectar desde el navegador
     var savedKickId = store.get('kickChannelId');
     if (savedKickId && (!kickWs || kickWs.readyState > 1)) {
       connectKickBrowser(savedKickId);
@@ -581,7 +579,6 @@ function handleStatus(data) {
     modeTag.className = 'tag ' + (data.tiktokMode === 'puppeteer' ? 'tag-puppeteer' : 'tag-connector');
   }
 
-  // Si no tenemos Kick browser conectado y tenemos ID guardado, conectar
   if (!data.kick && data.channels && data.channels.kick) {
     var savedId = store.get('kickChannelId');
     if (savedId) {
@@ -648,7 +645,7 @@ function saveAndConnect() {
   if (!url) return toast('Introduce la URL del servidor');
   store.set('serverUrl', url);
   retryDelay = 1000;
-  autoKickDone = false; // Solo reset al cambiar de servidor manualmente
+  autoKickDone = false;
   connectWS(url);
   updateOverlayUrl();
   toast('Conectando a ' + url);
@@ -711,6 +708,8 @@ async function sendKickId(idParam) {
     if (d.ok) {
       store.set('kickChannelId', String(id));
       toast('✅ Kick conectando con ID ' + id);
+      // Conectar desde el navegador con el ID nuevo
+      connectKickBrowser(String(id));
       var box = document.getElementById('kick-status-box');
       box.className = 'info-box green';
       box.innerHTML = '✅ Kick conectando con chatroom ID: <strong>' + id + '</strong>';
@@ -751,12 +750,8 @@ function sendCustomMessage() {
 }
 
 function getAutoOverlayUrl() {
-  // Calcular automáticamente desde la URL del dashboard
-  // https://Xalex5789.github.io/multichat/dashboard/  →  https://Xalex5789.github.io/multichat/overlay/index.html
   var href = window.location.href.split('?')[0].replace(/\/+$/, '');
-  // Reemplazar el segmento /dashboard por /overlay
   var result = href.replace(/\/dashboard(\/.*)?$/, '/overlay/index.html');
-  // Si no cambió (no había /dashboard en la ruta), fallback
   if (result === href) {
     result = href.replace(/\/[^/]+$/, '/overlay/index.html');
   }
@@ -768,10 +763,8 @@ function updateOverlayUrl() {
   var box = document.getElementById('overlay-url');
   var inputEl = document.getElementById('overlayBase');
 
-  // Auto-detectar siempre (no depender del valor guardado)
   var autoOverlay = window.location.protocol !== 'file:' ? getAutoOverlayUrl() : '';
 
-  // Si el input está vacío o tiene un valor incorrecto (sin /overlay/), usar auto
   var currentInput = inputEl ? inputEl.value.trim() : '';
   if (!currentInput || currentInput.indexOf('overlay') === -1) {
     currentInput = autoOverlay;
@@ -797,8 +790,6 @@ function updateOverlayUrl() {
   box.dataset.url = url;
 }
 
-
-
 function copyOverlayUrl() {
   var url = document.getElementById('overlay-url').dataset.url;
   if (!url) return toast('Configura el servidor primero');
@@ -814,7 +805,6 @@ function openOverlay() {
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-// Test local — inyecta un mensaje directamente sin pasar por el servidor
 function injectTestMessage() {
   appendMessage({
     type: 'custom',
