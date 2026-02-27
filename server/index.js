@@ -160,6 +160,17 @@ function connectTwitch() {
 
   client.on('message', (channel, tags, message, self) => {
     if (self) return;
+
+    // Extraer roles/badges de Twitch
+    const badges = tags.badges || {};
+    const roles = [];
+    if (badges.broadcaster)  roles.push({ type: 'broadcaster', label: 'Streamer' });
+    if (badges.moderator)    roles.push({ type: 'moderator',   label: 'Mod' });
+    if (badges.vip)          roles.push({ type: 'vip',         label: 'VIP' });
+    if (badges.subscriber)   roles.push({ type: 'subscriber',  label: 'Sub' });
+    if (badges.founder)      roles.push({ type: 'founder',     label: 'Founder' });
+    if (badges['bits-leader']) roles.push({ type: 'bits',      label: 'Bits' });
+
     broadcast({
       type:        'twitch',
       platform:    'twitch',
@@ -167,6 +178,7 @@ function connectTwitch() {
       chatmessage: message,
       nameColor:   tags.color || '#9146FF',
       chatimg:     tags['profile-image-url'] || null,
+      roles:       roles,
       mid:         tags.id || ('tw-' + Date.now()),
     });
   });
