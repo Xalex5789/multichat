@@ -28,8 +28,8 @@ const CONFIG = {
   kick:         process.env.KICK_CHANNEL      || '',
   kickId:       process.env.KICK_CHANNEL_ID   || '',
   tiktok:       process.env.TIKTOK_USERNAME   || '',
-  youtube:      process.env.YOUTUBE_CHANNEL_ID || '',  // ← NUEVO: ID de canal YT
-  youtubeKey:   process.env.YOUTUBE_API_KEY    || '',  // ← NUEVO: API Key de YT
+  youtubeHandle: process.env.YOUTUBE_HANDLE     || '',  // ← handle o nombre, ej: @Meevepics
+  youtubeKey:    process.env.YOUTUBE_API_KEY    || '',  // ← API Key de YT
   port:         process.env.PORT              || 3000,
   tiktokMode:   process.env.TIKTOK_MODE       || 'connector',
 };
@@ -49,7 +49,7 @@ const state = {
   tiktok:   { connected: false, lastMsg: 0, instance: null, restartCount: 0 },
   twitch:   { connected: false },
   kick:     { connected: false },
-  youtube:  { connected: false, liveChatId: null, nextPageToken: null, pollTimer: null },
+  youtube:  { connected: false, channelId: null, liveChatId: null, nextPageToken: null, pollTimer: null },
   msgCount: 0,
 };
 
@@ -135,7 +135,7 @@ function broadcastStatus() {
       twitch:  CONFIG.twitch,
       kick:    CONFIG.kick,
       tiktok:  CONFIG.tiktok,
-      youtube: CONFIG.youtube,
+      youtube: CONFIG.youtubeHandle,
     }
   });
 }
@@ -152,7 +152,7 @@ wss.on('connection', (ws) => {
     tiktok:  state.tiktok.connected,
     youtube: state.youtube.connected,
     tiktokMode: CONFIG.tiktokMode,
-    channels: { twitch: CONFIG.twitch, kick: CONFIG.kick, tiktok: CONFIG.tiktok, youtube: CONFIG.youtube }
+    channels: { twitch: CONFIG.twitch, kick: CONFIG.kick, tiktok: CONFIG.tiktok, youtube: CONFIG.youtubeHandle }
   }));
 
   ws.on('close', () => {
@@ -532,12 +532,14 @@ setInterval(() => {
 
 // ══════════════════════════════════════════════════════════════
 //  YOUTUBE — Chat + SuperChats via YouTube Data API v3
-//  Requiere: YOUTUBE_CHANNEL_ID + YOUTUBE_API_KEY en env vars
+//  Requiere: YOUTUBE_HANDLE + YOUTUBE_API_KEY en env vars
+//  Ej: YOUTUBE_HANDLE=@Meevepics  o  YOUTUBE_HANDLE=Meevepics
 //
 //  Flujo:
-//  1) Busca el liveBroadcast activo del canal
-//  2) Obtiene el liveChatId del broadcast
-//  3) Hace polling del chat (messages + superchats)
+//  1) Resuelve el Channel ID desde el handle/nombre automáticamente
+//  2) Busca el liveBroadcast activo del canal
+//  3) Obtiene el liveChatId del broadcast
+//  4) Hace polling del chat (messages + superchats)
 // ══════════════════════════════════════════════════════════════
 function fetchJSON(url) {
   return new Promise((resolve, reject) => {
@@ -554,8 +556,52 @@ function fetchJSON(url) {
   });
 }
 
-async function youtubeGetLiveChatId() {
-  if (!CONFIG.youtube || !CONFIG.youtubeKey) return null;
+// Resuelve el Channel ID a partir de un handle (@Meevepics) o nombre de canal
+async function youtubeResolveChannelId(handleOrName) {
+  if (!handleOrName || !CONFIG.youtubeKey) return null;
+
+  // Si ya es un Channel ID (empieza con UC), usarlo directamente
+  if (/^UC[\w-]{22}$/.test(handleOrName)) {
+    console.log('[YouTube] Channel ID directo:', handleOrName);
+    return handleOrName;
+  }
+
+  // Limpiar el @ si viene con él
+  const query = handleOrName.replace(/^@/, '');
+
+  try {
+    // Primero intentar con forHandle (soportado en API v3)
+    const handleUrl = `https://www.googleapis.com/youtube/v3/channels?part=id,snippet&forHandle=${encodeURIComponent(query)}&key=${CONFIG.youtubeKey}`;
+    const handleData = await fetchJSON(handleUrl);
+
+    if (handleData.items && handleData.items.length > 0) {
+      const channelId = handleData.items[0].id;
+      const channelName = handleData.items[0].snippet?.title;
+      console.log(`[YouTube] ✅ Canal resuelto por handle: ${channelName} → ${channelId}`);
+      return channelId;
+    }
+
+    // Si no encuentra por handle, buscar por nombre
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=channel&maxResults=5&key=${CONFIG.youtubeKey}`;
+    const searchData = await fetchJSON(searchUrl);
+
+    if (searchData.items && searchData.items.length > 0) {
+      const channelId = searchData.items[0].snippet?.channelId;
+      const channelName = searchData.items[0].snippet?.channelTitle;
+      console.log(`[YouTube] ✅ Canal resuelto por búsqueda: ${channelName} → ${channelId}`);
+      return channelId;
+    }
+
+    console.log('[YouTube] ⚠️ No se encontró el canal:', handleOrName);
+    return null;
+  } catch(e) {
+    console.error('[YouTube] Error resolviendo canal:', e.message);
+    return null;
+  }
+}
+
+async function youtubeGetLiveChatId(channelId) {
+  if (!channelId || !CONFIG.youtubeKey) return null;
 
   try {
     // Buscar el broadcast en vivo activo del canal
@@ -567,12 +613,10 @@ async function youtubeGetLiveChatId() {
       return null;
     }
 
-    // Filtrar por channelId si está configurado
+    // Filtrar por channelId
     let broadcast = data.items[0];
-    if (CONFIG.youtube) {
-      const match = data.items.find(b => b.snippet?.channelId === CONFIG.youtube);
-      if (match) broadcast = match;
-    }
+    const match = data.items.find(b => b.snippet?.channelId === channelId);
+    if (match) broadcast = match;
 
     const chatId = broadcast.snippet?.liveChatId;
     console.log('[YouTube] ✅ LiveChatId encontrado:', chatId);
@@ -701,13 +745,25 @@ async function youtubePollChat() {
 }
 
 async function connectYouTube() {
-  if (!CONFIG.youtube || !CONFIG.youtubeKey) {
-    console.log('[YouTube] Sin canal o API key configurados (YOUTUBE_CHANNEL_ID + YOUTUBE_API_KEY)');
+  if (!CONFIG.youtubeHandle || !CONFIG.youtubeKey) {
+    console.log('[YouTube] Sin canal o API key configurados (YOUTUBE_HANDLE + YOUTUBE_API_KEY)');
     return;
   }
 
-  console.log('[YouTube] Buscando broadcast activo para canal:', CONFIG.youtube);
-  const chatId = await youtubeGetLiveChatId();
+  // Resolver Channel ID desde handle si no lo tenemos aún
+  if (!state.youtube.channelId) {
+    console.log('[YouTube] Resolviendo canal:', CONFIG.youtubeHandle);
+    const channelId = await youtubeResolveChannelId(CONFIG.youtubeHandle);
+    if (!channelId) {
+      console.log('[YouTube] No se pudo resolver el canal. Reintentando en 2 min...');
+      setTimeout(connectYouTube, 2 * 60 * 1000);
+      return;
+    }
+    state.youtube.channelId = channelId;
+  }
+
+  console.log('[YouTube] Buscando broadcast activo para canal:', state.youtube.channelId);
+  const chatId = await youtubeGetLiveChatId(state.youtube.channelId);
 
   if (!chatId) {
     // No hay live activo — reintentar en 2 minutos
@@ -769,7 +825,7 @@ app.get('/api/status', (req, res) => res.json({
   twitch:  { connected: state.twitch.connected, channel: CONFIG.twitch },
   kick:    { connected: state.kick.connected,   channel: CONFIG.kick, kickId: CONFIG.kickId, avatarsCached: Object.keys(kickAvatarCache).length },
   tiktok:  { connected: state.tiktok.connected, user: CONFIG.tiktok, mode: CONFIG.tiktokMode, lastMsg: state.tiktok.lastMsg },
-  youtube: { connected: state.youtube.connected, channelId: CONFIG.youtube, liveChatId: state.youtube.liveChatId },
+  youtube: { connected: state.youtube.connected, channelId: state.youtube.channelId || CONFIG.youtubeHandle, liveChatId: state.youtube.liveChatId },
   clients: state.clients.size,
   messages: state.msgCount,
   uptime:  Math.floor(process.uptime()),
@@ -782,7 +838,7 @@ server.listen(CONFIG.port, () => {
   console.log(`   Twitch  : ${CONFIG.twitch  || '(no config)'}`);
   console.log(`   Kick    : ${CONFIG.kick    || '(no config)'}`);
   console.log(`   TikTok  : ${CONFIG.tiktok  || '(no config)'} [${CONFIG.tiktokMode}]`);
-  console.log(`   YouTube : ${CONFIG.youtube || '(no config)'} ${CONFIG.youtubeKey ? '🔑' : '⚠️ Sin API key'}`);
+  console.log(`   YouTube : ${CONFIG.youtubeHandle || '(no config)'} ${CONFIG.youtubeKey ? '🔑' : '⚠️ Sin API key'}`);
   console.log(`   Health  : /health\n`);
 
   connectTwitch();
