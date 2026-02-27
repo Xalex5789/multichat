@@ -17,6 +17,7 @@
       --twitch: #9146FF;
       --kick:   #53FC18;
       --tiktok: #FF0050;
+      --youtube:#FF0000;
       --custom: #FF6B9D;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -73,6 +74,8 @@
     .btn-secondary:hover { background:rgba(255,255,255,0.14); }
     .btn-tiktok { background:rgba(255,0,80,0.15); color:var(--tiktok); border:1px solid rgba(255,0,80,0.4); }
     .btn-tiktok:hover { background:rgba(255,0,80,0.25); }
+    .btn-youtube { background:rgba(255,0,0,0.15); color:var(--youtube); border:1px solid rgba(255,0,0,0.4); }
+    .btn-youtube:hover { background:rgba(255,0,0,0.25); }
     .btn-full { width:100%; }
     .hint { font-size:11px; color:var(--muted); margin-top:5px; }
 
@@ -95,6 +98,7 @@
     .info-box.green { background:rgba(83,252,24,0.07); border:1px solid rgba(83,252,24,0.2); color:#a7f3a0; }
     .info-box.red   { background:rgba(255,0,80,0.08); border:1px solid rgba(255,0,80,0.25); color:#ffaaaa; }
     .info-box.warn  { background:rgba(234,179,8,0.08); border:1px solid rgba(234,179,8,0.25); color:#fde68a; }
+    .info-box.youtube { background:rgba(255,0,0,0.07); border:1px solid rgba(255,0,0,0.25); color:#fca5a5; }
 
     .url-box {
       background:rgba(255,255,255,0.04); border:1px solid var(--border);
@@ -115,10 +119,11 @@
       animation:fadeIn 0.3s ease;
     }
     @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-    .msg-item.twitch { border-left-color:var(--twitch); }
-    .msg-item.kick   { border-left-color:var(--kick); }
-    .msg-item.tiktok { border-left-color:var(--tiktok); }
-    .msg-item.custom { border-left-color:var(--custom); }
+    .msg-item.twitch  { border-left-color:var(--twitch); }
+    .msg-item.kick    { border-left-color:var(--kick); }
+    .msg-item.tiktok  { border-left-color:var(--tiktok); }
+    .msg-item.youtube { border-left-color:var(--youtube); }
+    .msg-item.custom  { border-left-color:var(--custom); }
     .msg-avatar {
       width:32px; height:32px; border-radius:50%; background:var(--border);
       background-size:cover; background-position:center; flex-shrink:0;
@@ -128,10 +133,11 @@
     .msg-header { display:flex; align-items:center; gap:6px; margin-bottom:3px; flex-wrap:wrap; }
     .msg-user { font-weight:700; font-size:13px; }
     .msg-platform { font-size:10px; padding:1px 6px; border-radius:999px; font-weight:600; }
-    .msg-platform.twitch { background:rgba(145,70,255,0.2); color:var(--twitch); }
-    .msg-platform.kick   { background:rgba(83,252,24,0.15); color:var(--kick); }
-    .msg-platform.tiktok { background:rgba(255,0,80,0.15); color:var(--tiktok); }
-    .msg-platform.custom { background:rgba(255,107,157,0.15); color:var(--custom); }
+    .msg-platform.twitch  { background:rgba(145,70,255,0.2); color:var(--twitch); }
+    .msg-platform.kick    { background:rgba(83,252,24,0.15); color:var(--kick); }
+    .msg-platform.tiktok  { background:rgba(255,0,80,0.15); color:var(--tiktok); }
+    .msg-platform.youtube { background:rgba(255,0,0,0.15); color:var(--youtube); }
+    .msg-platform.custom  { background:rgba(255,107,157,0.15); color:var(--custom); }
     .msg-time { font-size:10px; color:var(--muted); margin-left:auto; }
     .msg-text { font-size:13px; color:var(--text); line-height:1.5; word-break:break-word; }
 
@@ -223,6 +229,14 @@
         </div>
         <span id="tiktok-mode-tag" class="tag tag-connector">connector</span>
       </div>
+      <div class="platform-row">
+        <span class="platform-dot" id="dot-youtube"></span>
+        <span class="platform-icon">▶️</span>
+        <div>
+          <div class="platform-name">YouTube</div>
+          <div class="platform-channel" id="ch-youtube">—</div>
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -257,6 +271,18 @@
         Si falla con error 403:
         <a href="#" onclick="openModal('tiktok-modal'); return false;" style="color:#FF6B9D;">¿Cómo usar TIKTOK_SESSION_ID?</a>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">YouTube — Control</div>
+      <div id="youtube-status-box" class="info-box youtube" style="margin-bottom:10px;">
+        ⏳ Esperando conexión con el servidor...
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-youtube btn-full" onclick="restartYouTube()">🔄 Reconectar ahora</button>
+        <button class="btn btn-secondary btn-full" onclick="openYouTubeLive()">📺 Abrir Live</button>
+      </div>
+      <div class="hint" style="margin-top:8px;">Úsalo cuando enciendas el directo en YouTube para conectar sin esperar.</div>
     </div>
 
     <div class="card">
@@ -325,17 +351,14 @@ var store = {
 
 // ── ESTADO ───────────────────────────────────────────────────
 var ws=null, retryDelay=1000, isConnected=false, autoKickDone=false;
-var currentChannels={twitch:'',kick:'',tiktok:''};
-var platformIcons={twitch:'🟣',kick:'🟢',tiktok:'🎵',custom:'⭐'};
+var currentChannels={twitch:'',kick:'',tiktok:'',youtube:''};
+var platformIcons={twitch:'🟣',kick:'🟢',tiktok:'🎵',youtube:'▶️',custom:'⭐'};
 
 // ── KICK WEBSOCKET ───────────────────────────────────────────
 var kickWs=null, kickRetryDelay=3000, kickRetryTimeout=null;
 
 function connectKickBrowser(channelId) {
   if (!channelId) return;
-
-  // SIEMPRE cerrar la conexión anterior antes de crear una nueva
-  // Esto evita que onmessage modificado desde consola siga activo
   if (kickWs) {
     try { kickWs.onmessage=null; kickWs.onclose=null; kickWs.onerror=null; kickWs.close(); } catch(e){}
     kickWs = null;
@@ -355,7 +378,6 @@ function connectKickBrowser(channelId) {
 
 function tryKickUrl(channelId, urls, idx) {
   if (idx >= urls.length) idx = 0;
-
   console.log('[Kick Browser] Conectando a Pusher, chatroom:', channelId);
 
   try { kickWs = new WebSocket(urls[idx]); } catch(e) {
@@ -390,7 +412,6 @@ function tryKickUrl(channelId, urls, idx) {
       if (event === 'pusher:error') {
         var ed = typeof msg.data==='string' ? JSON.parse(msg.data) : (msg.data||{});
         console.warn('[Kick Browser] Error Pusher:', ed.message);
-        // Si ya está suscrito no es un error real, ignorar
         if (ed.message && ed.message.indexOf('Existing subscription') !== -1) return;
         kickWs.close();
         return;
@@ -404,7 +425,6 @@ function tryKickUrl(channelId, urls, idx) {
       var d = typeof msg.data==='string' ? JSON.parse(msg.data) : msg.data;
       console.log('[Kick Browser] 💬 Mensaje de', d.sender && d.sender.username, ':', d.content);
 
-      // Roles
       var kickRoles = [];
       var badges = (d.sender && d.sender.identity && d.sender.identity.badges) || [];
       for (var bi=0; bi<badges.length; bi++) {
@@ -423,7 +443,7 @@ function tryKickUrl(channelId, urls, idx) {
         chatname:    (d.sender && d.sender.username) || 'Unknown',
         chatmessage: d.content,
         nameColor:   (d.sender && d.sender.identity && d.sender.identity.color) || '#53FC18',
-        chatimg:     null,  // El servidor lo resuelve via kick.com/api/v2
+        chatimg:     null,
         roles:       kickRoles,
         mid:         d.id || ('kick-'+Date.now())
       };
@@ -451,7 +471,6 @@ function tryKickUrl(channelId, urls, idx) {
 
   kickWs.onerror = function(e) { console.error('[Kick Browser] WS error'); };
 
-  // Ping cada 25s para mantener viva la conexión
   var pingInt = setInterval(function(){
     if (kickWs && kickWs.readyState===1) {
       kickWs.send(JSON.stringify({event:'pusher:ping',data:{}}));
@@ -487,7 +506,6 @@ function connectWS(url) {
   ws.onopen = function() {
     isConnected=true; retryDelay=1000; setStatus(true);
     console.log('[WS] Conectado al servidor');
-    // Al conectar al servidor, reconectar Kick siempre (fuerza nuevo onmessage limpio)
     var savedKickId = store.get('kickChannelId');
     if (savedKickId) {
       console.log('[WS] Iniciando Kick con ID:', savedKickId);
@@ -519,9 +537,10 @@ function setStatus(ok) {
 
 // ── STATUS ───────────────────────────────────────────────────
 function handleStatus(data) {
-  setPlatformStatus('twitch', data.twitch,  (data.channels&&data.channels.twitch) ||'—');
-  setPlatformStatus('kick',   data.kick,    (data.channels&&data.channels.kick)   ||'—');
-  setPlatformStatus('tiktok', data.tiktok,  (data.channels&&data.channels.tiktok)||'—');
+  setPlatformStatus('twitch',   data.twitch,   (data.channels&&data.channels.twitch)  ||'—');
+  setPlatformStatus('kick',     data.kick,     (data.channels&&data.channels.kick)    ||'—');
+  setPlatformStatus('tiktok',   data.tiktok,   (data.channels&&data.channels.tiktok)  ||'—');
+  setPlatformStatus('youtube',  data.youtube,  (data.channels&&data.channels.youtube) ||'—');
   if (data.channels) currentChannels = data.channels;
 
   var modeTag = document.getElementById('tiktok-mode-tag');
@@ -530,7 +549,21 @@ function handleStatus(data) {
     modeTag.className = 'tag '+(data.tiktokMode==='puppeteer'?'tag-puppeteer':'tag-connector');
   }
 
-  // Si Kick no está conectado y tenemos ID guardado, conectar
+  // Actualizar caja de estado YouTube
+  var ytBox = document.getElementById('youtube-status-box');
+  if (ytBox) {
+    if (data.youtube) {
+      ytBox.className='info-box green';
+      ytBox.innerHTML='✅ Conectado al chat en vivo';
+    } else if (data.channels && data.channels.youtube) {
+      ytBox.className='info-box youtube';
+      ytBox.innerHTML='⏳ Canal configurado (<strong>'+esc(data.channels.youtube)+'</strong>)<br>Sin live activo — pulsa Reconectar cuando estés en vivo.';
+    } else {
+      ytBox.className='info-box warn';
+      ytBox.innerHTML='⚠️ Configura <strong>YOUTUBE_HANDLE</strong> en las variables del servidor.';
+    }
+  }
+
   if (!data.kick) {
     var savedId = store.get('kickChannelId');
     if (savedId && (!kickWs || kickWs.readyState > 1)) {
@@ -659,10 +692,38 @@ async function restartTikTok() {
   } catch(e){ toast('❌ No se pudo contactar el servidor'); }
 }
 
+async function restartYouTube() {
+  var serverUrl=store.get('serverUrl');
+  if (!serverUrl) return toast('Configura la URL del servidor primero');
+  var httpUrl=serverUrl.replace(/^wss?/,'https').replace(/\/$/,'');
+  var ytBox=document.getElementById('youtube-status-box');
+  if (ytBox) { ytBox.className='info-box warn'; ytBox.innerHTML='⏳ Buscando live activo...'; }
+  try {
+    var r=await fetch(httpUrl+'/api/youtube/restart',{method:'POST'});
+    var d=await r.json();
+    if (d.ok) {
+      toast('🔄 YouTube reconectando...');
+    } else {
+      toast('❌ Error al reconectar YouTube');
+      if (ytBox) { ytBox.className='info-box youtube'; ytBox.innerHTML='❌ Error al reconectar. ¿Estás en vivo?'; }
+    }
+  } catch(e){
+    toast('❌ No se pudo contactar el servidor');
+    if (ytBox) { ytBox.className='info-box youtube'; ytBox.innerHTML='❌ No se pudo contactar el servidor.'; }
+  }
+}
+
 function openTikTokLive() {
   var user=currentChannels.tiktok||'';
   if (!user) return toast('TikTok no configurado');
   window.open('https://www.tiktok.com/@'+user+'/live','_blank','noopener');
+}
+
+function openYouTubeLive() {
+  var channel=currentChannels.youtube||'';
+  if (!channel) return toast('YouTube no configurado');
+  var handle=channel.startsWith('@')?channel:'@'+channel;
+  window.open('https://www.youtube.com/'+handle+'/live','_blank','noopener');
 }
 
 function sendCustomMessage() {
