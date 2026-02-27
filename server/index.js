@@ -8,9 +8,7 @@ const http       = require('http');
 const { WebSocketServer } = require('ws');
 const tmi        = require('tmi.js');
 const { WebcastPushConnection } = require('tiktok-live-connector');
-const puppeteer  = require('puppeteer-extra');
-const Stealth    = require('puppeteer-extra-plugin-stealth');
-puppeteer.use(Stealth());
+// Puppeteer desactivado en plan Free — usar TIKTOK_MODE=connector
 
 const app    = express();
 const server = http.createServer(app);
@@ -263,91 +261,10 @@ async function connectTikTokConnector() {
   });
 }
 
-// ── TIKTOK — MODO PUPPETEER ──────────────────────────────────
-let tiktokBrowser = null;
-
+// ── TIKTOK — MODO PUPPETEER (desactivado en plan Free) ───────
 async function connectTikTokPuppeteer() {
-  if (!CONFIG.tiktok) return;
-
-  const username = CONFIG.tiktok.startsWith('@') ? CONFIG.tiktok.slice(1) : CONFIG.tiktok;
-  const url = `https://www.tiktok.com/@${username}/live`;
-
-  console.log('[TikTok-Puppeteer] Abriendo:', url);
-
-  try {
-    if (tiktokBrowser) await tiktokBrowser.close().catch(() => {});
-
-    tiktokBrowser = await puppeteer.launch({
-      headless: 'new',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--window-size=1280,720',
-      ],
-    });
-
-    const page = await tiktokBrowser.newPage();
-    await page.setViewport({ width: 1280, height: 720 });
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    );
-
-    // Interceptar mensajes de chat del WebSocket interno de TikTok
-    await page.exposeFunction('__onTikTokChat', (user, text, avatar) => {
-      state.tiktok.lastMsg = Date.now();
-      broadcast({
-        type:        'tiktok',
-        platform:    'tiktok',
-        chatname:    user,
-        chatmessage: text,
-        chatimg:     avatar || null,
-        nameColor:   '#FF0050',
-        mid:         'tt-' + Date.now() + '-' + Math.random(),
-      });
-    });
-
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-
-    // Observar el DOM del chat (método fallback más robusto)
-    await page.evaluate(() => {
-      const seen = new Set();
-      const check = () => {
-        // Selector típico del chat de TikTok live
-        const items = document.querySelectorAll('[data-e2e="chat-item"], .TUXText--tiktok, .chat-content-group');
-        items.forEach(el => {
-          const key = el.innerText;
-          if (!seen.has(key) && key) {
-            seen.add(key);
-            const lines = el.innerText.split('\n').filter(Boolean);
-            if (lines.length >= 2) {
-              window.__onTikTokChat(lines[0], lines.slice(1).join(' '), null);
-            }
-          }
-        });
-        if (seen.size > 500) seen.clear();
-      };
-      setInterval(check, 800);
-    });
-
-    state.tiktok.connected = true;
-    broadcastStatus();
-    console.log('[TikTok-Puppeteer] ✅ Página abierta y observando chat');
-
-    page.on('close', () => {
-      state.tiktok.connected = false;
-      broadcastStatus();
-      console.log('[TikTok-Puppeteer] Página cerrada, reiniciando en 10s...');
-      setTimeout(connectTikTokPuppeteer, 10000);
-    });
-
-  } catch (e) {
-    state.tiktok.connected = false;
-    broadcastStatus();
-    console.error('[TikTok-Puppeteer] Error:', e.message);
-    setTimeout(connectTikTokPuppeteer, 15000);
-  }
+  console.log('[TikTok] Puppeteer no disponible en plan Free. Usando connector.');
+  await connectTikTokConnector();
 }
 
 // ── TIKTOK INIT (elige modo) ─────────────────────────────────
