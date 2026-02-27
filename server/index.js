@@ -97,6 +97,8 @@ wss.on('connection', (ws, req) => {
   ws.on('message', (data) => {
     try {
       const msg = JSON.parse(data);
+
+      // Mensaje personalizado desde el dashboard
       if (msg.type === 'custom_message') {
         broadcast({
           type: 'custom',
@@ -107,6 +109,24 @@ wss.on('connection', (ws, req) => {
           mid: 'custom-' + Date.now(),
         });
       }
+
+      // Mensaje de Kick reenviado desde el navegador del dashboard
+      if (msg.type === 'kick_message') {
+        handleKickMessageFromBrowser(msg);
+      }
+
+      // El dashboard informa que Kick se desconectó en el navegador
+      if (msg.type === 'kick_disconnected') {
+        state.kick.connected = false;
+        broadcastStatus();
+      }
+
+      // El dashboard informa que Kick conectó en el navegador
+      if (msg.type === 'kick_connected') {
+        state.kick.connected = true;
+        broadcastStatus();
+      }
+
     } catch (e) {}
   });
 });
@@ -153,174 +173,48 @@ function connectTwitch() {
 }
 
 // ── KICK ─────────────────────────────────────────────────────
-// Problema: kick.com/api devuelve 403 desde IPs de datacenter (Cloudflare).
-// Solución A: KICK_CHANNEL_ID en variables de entorno (recomendado).
-// Solución B: El dashboard lo resuelve desde el navegador del usuario y lo
-//             envía al servidor via WebSocket (kick_channel_id message).
-// Solución C: Proxy CORS del servidor para que el navegador haga la petición.
+// IMPORTANTE: Kick bloquea conexiones WebSocket desde IPs de datacenters
+// (Render, Railway, etc.) con código 4001.
+// SOLUCIÓN: El navegador del usuario (dashboard) se conecta a Kick directamente
+// y reenvía los mensajes al servidor via WebSocket. El servidor solo hace relay.
 
-// Endpoint proxy: el dashboard llama a /api/kick/resolve?channel=X
-// y este servidor reenvía la respuesta (el navegador no tiene restricción CORS
-// para la API de Kick, pero sí el servidor — por eso lo hacemos al revés)
-app.get('/api/kick/channel-id', async (req, res) => {
-  // Este endpoint es para que el DASHBOARD llame desde el navegador
-  // y nos devuelva el ID. En realidad el dashboard llama a kick.com directamente.
-  // Este endpoint solo sirve para leer el ID cacheado.
+app.get('/api/kick/channel-id', (req, res) => {
   res.json({ kickId: CONFIG.kickId || null, channel: CONFIG.kick });
 });
 
-// El dashboard envía el ID resuelto al servidor
 app.post('/api/kick/channel-id', (req, res) => {
   const { channelId } = req.body;
   if (!channelId) return res.status(400).json({ error: 'channelId requerido' });
-
-  const newId = String(channelId);
-
-  // Si ya estamos conectados con este mismo ID, no hacer nada
-  if (state.kick.connected && CONFIG.kickId === newId) {
-    console.log('[Kick] Ya conectado con ID', newId, '— ignorando petición duplicada');
-    return res.json({ ok: true, kickId: newId, alreadyConnected: true });
-  }
-
-  console.log('[Kick] ✅ Channel ID recibido desde dashboard:', newId);
-  CONFIG.kickId = newId;
-
-  // Solo conectar si no está ya conectado
-  if (!state.kick.connected) {
-    _connectKickWS(CONFIG.kickId);
-  }
-
+  CONFIG.kickId = String(channelId);
+  console.log('[Kick] Channel ID guardado:', CONFIG.kickId);
+  // NO intentar conectar desde el servidor — el navegador hace la conexión
   res.json({ ok: true, kickId: CONFIG.kickId });
 });
 
-async function connectKick() {
-  if (!CONFIG.kick) return console.log('[Kick] Sin canal configurado');
-
-  if (CONFIG.kickId) {
-    console.log('[Kick] Usando KICK_CHANNEL_ID configurado:', CONFIG.kickId);
-    _connectKickWS(CONFIG.kickId);
-    return;
-  }
-
-  // Sin ID — esperar a que el dashboard lo resuelva y lo envíe
-  console.log('[Kick] ⚠️  Sin KICK_CHANNEL_ID.');
-  console.log('[Kick] 💡 El dashboard lo resolverá automáticamente.');
-  console.log('[Kick] 💡 O añade KICK_CHANNEL_ID en las variables de entorno de Render.');
-  console.log('[Kick] 💡 Para encontrarlo: ve a kick.com/' + CONFIG.kick + ' → F12 → Network → busca "chatrooms.XXXXXX"');
+// El dashboard envía mensajes de Kick que recibió en el navegador
+// Estos llegan via WebSocket con type: 'kick_message'
+function handleKickMessageFromBrowser(data) {
+  if (!data.chatname && !data.chatmessage) return;
+  state.kick.connected = true;
+  state.kick.lastMsg = Date.now();
+  broadcast({
+    type:        'kick',
+    platform:    'kick',
+    chatname:    data.chatname || 'Unknown',
+    chatmessage: data.chatmessage,
+    nameColor:   data.nameColor || '#53FC18',
+    chatimg:     data.chatimg || null,
+    mid:         data.mid || ('kick-' + Date.now()),
+  });
 }
 
-function _connectKickWS(channelId, attempt = 1) {
-  if (state.kick.ws) {
-    try { state.kick.ws.terminate(); } catch(e) {}
-    state.kick.ws = null;
-  }
-
-  // Kick migró de Pusher a su propio WebSocket en wss://ws.kick.com
-  const kickWsUrl = 'wss://ws.kick.com/';
-
-  let ws;
-  try {
-    ws = new WebSocket(kickWsUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Origin': 'https://kick.com',
-      }
-    });
-  } catch(e) {
-    console.error('[Kick] No se pudo crear WebSocket:', e.message);
-    const delay = Math.min(10000 * attempt, 60000);
-    setTimeout(() => _connectKickWS(channelId, attempt + 1), delay);
-    return;
-  }
-
-  state.kick.ws = ws;
-  let pingInterval = null;
-  let socketId = null;
-
-  ws.on('open', () => {
-    console.log(`[Kick] WS abierto, esperando connection_established... (intento #${attempt})`);
-  });
-
-  ws.on('message', (raw) => {
-    try {
-      const msg = JSON.parse(raw);
-      const event = msg.event || '';
-
-      // 1. Conexión establecida → suscribirse al canal
-      if (event === 'pusher:connection_established') {
-        const connData = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
-        socketId = connData.socket_id;
-        console.log('[Kick] Conexión establecida, socket_id:', socketId);
-
-        // Suscribirse al chatroom
-        ws.send(JSON.stringify({
-          event: 'pusher:subscribe',
-          data:  { auth: '', channel: `chatrooms.${channelId}.v2` }
-        }));
-
-        // Ping cada 30s
-        pingInterval = setInterval(() => {
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
-          }
-        }, 30000);
-        return;
-      }
-
-      if (event === 'pusher:pong') return;
-
-      // 2. Suscripción confirmada
-      if (event === 'pusher_internal:subscription_succeeded') {
-        state.kick.connected = true;
-        console.log(`[Kick] ✅ Suscrito al chatroom ${channelId}`);
-        broadcastStatus();
-        return;
-      }
-
-      // 3. Error de suscripción
-      if (event === 'pusher:error') {
-        const errData = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
-        console.error('[Kick] Error Pusher:', errData?.message || JSON.stringify(errData));
-        return;
-      }
-
-      // 4. Mensaje de chat
-      if (event === 'App\Events\ChatMessageEvent') {
-        const d = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
-        broadcast({
-          type:        'kick',
-          platform:    'kick',
-          chatname:    d.sender?.username || d.sender?.slug || 'Unknown',
-          chatmessage: d.content,
-          nameColor:   d.sender?.identity?.color || '#53FC18',
-          chatimg:     d.sender?.profile_pic || null,
-          mid:         d.id || ('kick-' + Date.now()),
-        });
-        return;
-      }
-
-      // Log de eventos desconocidos para debug
-      if (event && event !== 'pusher:pong') {
-        console.log('[Kick] Evento:', event);
-      }
-
-    } catch (e) {
-      console.error('[Kick] Error parseando mensaje:', e.message);
-    }
-  });
-
-  ws.on('close', (code) => {
-    state.kick.connected = false;
-    broadcastStatus();
-    if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
-    const delay = Math.min(5000 * Math.min(attempt, 8), 60000);
-    console.log(`[Kick] Desconectado (code: ${code}). Reconectando en ${delay/1000}s...`);
-    setTimeout(() => _connectKickWS(channelId, attempt + 1), delay);
-  });
-
-  ws.on('error', (e) => {
-    console.error('[Kick] Error WS:', e.message);
-  });
+function connectKick() {
+  if (!CONFIG.kick) return console.log('[Kick] Sin canal configurado');
+  console.log('[Kick] ⚠️  Kick se conecta desde el navegador del dashboard (IP de datacenter bloqueada por Kick).');
+  console.log('[Kick] 💡 Abre el dashboard y el indicador de Kick se pondrá verde automáticamente.');
+  // Marcar como esperando
+  state.kick.connected = false;
+  broadcastStatus();
 }
 
 // ── TIKTOK — CONNECTOR (mejorado para cloud) ─────────────────
