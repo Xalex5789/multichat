@@ -229,6 +229,27 @@ wss.on('connection', (ws) => {
         });
       }
 
+      // ── Mensaje destacado — enviado desde el dashboard al hacer click en un mensaje
+      if (msg.type === 'highlight') {
+        broadcast({
+          type:        'highlight',
+          platform:    msg.platform    || 'custom',
+          chatname:    msg.chatname    || '',
+          chatmessage: msg.chatmessage || '',
+          chatimg:     msg.chatimg     || null,
+          nameColor:   msg.nameColor   || '#FF6B9D',
+          roles:       msg.roles       || [],
+          mid:         msg.mid         || ('hl-' + Date.now()),
+        });
+        console.log(`[Highlight] 📌 Mensaje destacado de ${msg.chatname}: "${(msg.chatmessage||'').substring(0,60)}"`);
+      }
+
+      // ── Limpiar destacado (dashboard envía clear)
+      if (msg.type === 'highlight_clear') {
+        broadcast({ type: 'highlight_clear' });
+        console.log('[Highlight] 🧹 Destacado limpiado');
+      }
+
       if (msg.type === 'kick_message') {
         handleKickMessageFromBrowser(msg);
       }
