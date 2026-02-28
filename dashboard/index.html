@@ -437,24 +437,31 @@ function tryKickUrl(channelId, urls, idx) {
         else if (b.type)                                 kickRoles.push({type:btype,label:b.type});
       }
 
-      var chatMsg = {
-        type:        'kick_message',
-        platform:    'kick',
-        chatname:    (d.sender && d.sender.username) || 'Unknown',
-        chatmessage: d.content,
-        nameColor:   (d.sender && d.sender.identity && d.sender.identity.color) || '#53FC18',
-        chatimg:     null,
-        roles:       kickRoles,
-        mid:         d.id || ('kick-'+Date.now())
-      };
+      var username = (d.sender && d.sender.username) || 'Unknown';
+      var nameColor = (d.sender && d.sender.identity && d.sender.identity.color) || '#53FC18';
+      var msgId = d.id || ('kick-'+Date.now());
 
-      if (ws && ws.readyState===1) {
-        ws.send(JSON.stringify(chatMsg));
-        console.log('[Kick Browser] ✉️ Enviado al servidor');
-      } else {
-        console.warn('[Kick Browser] ⚠️ No hay conexión con el servidor, mostrando local');
-        appendMessage(chatMsg);
-      }
+      // Resolver avatar desde el navegador (el servidor no puede acceder a kick.com)
+      getKickAvatarBrowser(username, function(avatar) {
+        var chatMsg = {
+          type:        'kick_message',
+          platform:    'kick',
+          chatname:    username,
+          chatmessage: d.content,
+          nameColor:   nameColor,
+          chatimg:     avatar || null,
+          roles:       kickRoles,
+          mid:         msgId
+        };
+
+        if (ws && ws.readyState===1) {
+          ws.send(JSON.stringify(chatMsg));
+          console.log('[Kick Browser] ✉️ Enviado al servidor');
+        } else {
+          console.warn('[Kick Browser] ⚠️ No hay conexión con el servidor, mostrando local');
+          appendMessage(chatMsg);
+        }
+      });
 
     } catch(err) { console.error('[Kick Browser] Error parseando:', err.message); }
   };
@@ -478,6 +485,37 @@ function tryKickUrl(channelId, urls, idx) {
       clearInterval(pingInt);
     }
   }, 25000);
+}
+
+// ── KICK AVATAR CACHE (browser-side) ────────────────────────
+var kickAvatarCacheBrowser = {};
+var kickAvatarPendingBrowser = {};
+
+function getKickAvatarBrowser(username, callback) {
+  if (!username) return callback(null);
+  var slug = username.toLowerCase();
+  if (kickAvatarCacheBrowser[slug]) return callback(kickAvatarCacheBrowser[slug]);
+  if (kickAvatarPendingBrowser[slug]) { kickAvatarPendingBrowser[slug].push(callback); return; }
+  kickAvatarPendingBrowser[slug] = [callback];
+
+  fetch('https://kick.com/api/v2/channels/' + slug, { headers: { 'Accept': 'application/json' } })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var avatar = (data.user && (data.user.profile_pic || data.user.profilePic))
+                 || data.profile_pic || null;
+      if (avatar) {
+        kickAvatarCacheBrowser[slug] = avatar;
+        console.log('[Kick Avatar Browser] ✅', slug, '→', avatar.substring(0,50));
+      }
+      var cbs = kickAvatarPendingBrowser[slug] || [];
+      delete kickAvatarPendingBrowser[slug];
+      cbs.forEach(function(cb){ cb(avatar); });
+    })
+    .catch(function() {
+      var cbs = kickAvatarPendingBrowser[slug] || [];
+      delete kickAvatarPendingBrowser[slug];
+      cbs.forEach(function(cb){ cb(null); });
+    });
 }
 
 // ── INIT ─────────────────────────────────────────────────────
