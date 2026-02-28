@@ -157,6 +157,44 @@
     ::-webkit-scrollbar-track { background:transparent; }
     ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
 
+    /* ── HIGHLIGHT ── */
+    .msg-item {
+      cursor: pointer;
+    }
+    .msg-item:hover {
+      background: rgba(255,107,157,0.08);
+      border-left-color: #FF6B9D !important;
+      transition: background 0.15s, border-left-color 0.15s;
+    }
+    .msg-item.highlighted {
+      background: rgba(255,107,157,0.18);
+      border-left-color: #FF6B9D !important;
+      outline: 2px solid rgba(255,107,157,0.5);
+      animation: hl-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes hl-pulse {
+      0%,100%{ outline-color: rgba(255,107,157,0.4); }
+      50%{ outline-color: rgba(255,107,157,0.9); }
+    }
+    .msg-highlight-btn {
+      margin-left: auto;
+      padding: 3px 8px; font-size: 11px; border-radius: 6px;
+      border: 1px solid rgba(255,107,157,0.5);
+      background: rgba(255,107,157,0.12); color: #FF6B9D;
+      cursor: pointer; white-space: nowrap; display: none;
+      font-weight:700;
+    }
+    .msg-item:hover .msg-highlight-btn { display: inline-block; }
+    .msg-item.highlighted .msg-highlight-btn { display: inline-block; background: rgba(255,107,157,0.35); }
+
+    #hl-bar {
+      padding:8px 16px; background: rgba(255,107,157,0.12);
+      border-top:1px solid rgba(255,107,157,0.3);
+      display:none; align-items:center; gap:10px; font-size:12px; color:#FF6B9D;
+    }
+    #hl-bar.active { display:flex; }
+    #hl-bar strong { color: var(--text); max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
     #toast {
       position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
       background:#1e293b; border:1px solid #334155; color:var(--text);
@@ -292,22 +330,53 @@
     </div>
 
     <div class="card">
-      <div class="card-title">URL del Overlay (OBS)</div>
-      <div class="info-box warn" style="margin-bottom:10px; font-size:11px;">
-        Introduce la URL donde está tu <strong>overlay/index.html</strong><br>
-        (GitHub Pages, servidor local, etc.)
+      <div class="card-title">URLs para OBS</div>
+      <div class="info-box warn" style="margin-bottom:12px; font-size:11px;">
+        Las URLs se generan automáticamente desde la ubicación del dashboard en GitHub Pages.<br>
+        Asegúrate de tener el servidor configurado arriba.
       </div>
-      <div class="form-group">
-        <label>URL base del overlay</label>
-        <input id="overlayBase" type="text" placeholder="https://usuario.github.io/repo/overlay/index.html" />
-        <div class="hint">La URL completa de tu overlay/index.html</div>
+
+      <!-- Overlay chat multichat -->
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px; font-weight:700; color:var(--muted); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:5px;">
+          💬 Chat multichat (burbujas)
+        </div>
+        <div class="url-box" id="url-chat" onclick="copyUrl('url-chat')" title="Click para copiar" style="margin-bottom:5px; font-size:11px;">
+          Configura el servidor primero...
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-secondary btn-full" style="font-size:11px; padding:5px 10px;" onclick="copyUrl('url-chat')">📋 Copiar</button>
+          <button class="btn btn-secondary btn-full" style="font-size:11px; padding:5px 10px;" onclick="openUrl('url-chat')">🔗 Abrir</button>
+        </div>
       </div>
-      <div class="url-box" id="overlay-url" onclick="copyOverlayUrl()" title="Click para copiar" style="margin-bottom:8px;">
-        Configura la URL del overlay...
+
+      <!-- Chat un mensaje -->
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px; font-weight:700; color:var(--muted); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:5px;">
+          🗨️ Chat un mensaje
+        </div>
+        <div class="url-box" id="url-chatuno" onclick="copyUrl('url-chatuno')" title="Click para copiar" style="margin-bottom:5px; font-size:11px;">
+          Configura el servidor primero...
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-secondary btn-full" style="font-size:11px; padding:5px 10px;" onclick="copyUrl('url-chatuno')">📋 Copiar</button>
+          <button class="btn btn-secondary btn-full" style="font-size:11px; padding:5px 10px;" onclick="openUrl('url-chatuno')">🔗 Abrir</button>
+        </div>
       </div>
-      <div style="display:flex; gap:8px;">
-        <button class="btn btn-secondary btn-full" style="font-size:12px;" onclick="copyOverlayUrl()">📋 Copiar URL OBS</button>
-        <button class="btn btn-secondary btn-full" style="font-size:12px;" onclick="openOverlay()">🔗 Abrir</button>
+
+      <!-- Destacador -->
+      <div>
+        <div style="font-size:11px; font-weight:700; color:var(--muted); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:5px;">
+          📌 Destacador de mensajes
+        </div>
+        <div class="url-box" id="url-destacador" onclick="copyUrl('url-destacador')" title="Click para copiar" style="margin-bottom:5px; font-size:11px;">
+          Configura el servidor primero...
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-secondary btn-full" style="font-size:11px; padding:5px 10px;" onclick="copyUrl('url-destacador')">📋 Copiar</button>
+          <button class="btn btn-secondary btn-full" style="font-size:11px; padding:5px 10px;" onclick="openUrl('url-destacador')">🔗 Abrir</button>
+        </div>
+        <div class="hint" style="margin-top:5px;">Tiempo visible: <input id="showtime-input" type="number" style="width:60px;padding:2px 5px;font-size:11px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:4px;color:var(--text);" value="12" min="1" max="120" onchange="updateOverlayUrls()"> seg</div>
       </div>
     </div>
 
@@ -318,6 +387,10 @@
       <div id="chat-placeholder" style="text-align:center; color:var(--muted); margin:auto; font-size:14px;">
         Los mensajes aparecerán aquí cuando el servidor esté conectado ✨
       </div>
+    </div>
+    <div id="hl-bar">
+      📌 Destacando: <strong id="hl-bar-text">—</strong>
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;margin-left:auto;" onclick="clearHighlight()">✕ Quitar destacado</button>
     </div>
     <div class="input-bar">
       <input id="custom-msg-input" type="text" placeholder="Escribe un mensaje personalizado y pulsa Enter…"
@@ -542,15 +615,7 @@ function getKickAvatarBrowser(username, callback) {
 document.addEventListener('DOMContentLoaded', function() {
   var saved = store.get('serverUrl');
   document.getElementById('serverUrl').value = saved;
-
-  var overlayInput = document.getElementById('overlayBase');
-  if (overlayInput) {
-    overlayInput.value = store.get('overlayBase') || '';
-    overlayInput.addEventListener('input', function(){
-      store.set('overlayBase', overlayInput.value.trim()); updateOverlayUrl();
-    });
-  }
-  updateOverlayUrl();
+  updateOverlayUrls();
   if (saved) connectWS(saved);
 });
 
@@ -641,6 +706,8 @@ function setPlatformStatus(platform, connected, channel) {
 }
 
 // ── MENSAJES ─────────────────────────────────────────────────
+var currentHighlightMid = null;
+
 function appendMessage(data) {
   var panel = document.getElementById('chat-panel');
   var ph = document.getElementById('chat-placeholder');
@@ -652,6 +719,7 @@ function appendMessage(data) {
   var time = new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
   var el = document.createElement('div');
   el.className = 'msg-item '+platform;
+  el.dataset.mid = data.mid || '';
 
   var avatarStyle   = data.chatimg ? "background-image:url('"+data.chatimg+"');background-size:cover;background-position:center;" : '';
   var avatarContent = data.chatimg ? '' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box;">'+logo+'</div>';
@@ -671,14 +739,63 @@ function appendMessage(data) {
         '<span class="msg-user" style="'+nameStyle+'">'+esc(data.chatname||'?')+'</span>'+
         platformBadge+
         '<span class="msg-time">'+time+'</span>'+
+        '<button class="msg-highlight-btn" onclick="event.stopPropagation();sendHighlight(this.closest(\'.msg-item\'))">📌 Destacar</button>'+
       '</div>'+
       '<div class="msg-text">'+esc(data.chatmessage||'')+'</div>'+
     '</div>';
+
+  // Guardar data para poder enviarla al destacar
+  el._msgData = data;
+
+  // Click en el mensaje → destacar
+  el.addEventListener('click', function() {
+    sendHighlight(el);
+  });
 
   panel.appendChild(el);
   var msgs = panel.querySelectorAll('.msg-item');
   if (msgs.length > 200) msgs[0].remove();
   panel.scrollTop = panel.scrollHeight;
+}
+
+function sendHighlight(el) {
+  if (!isConnected || !ws) return toast('⚠️ No hay conexión con el servidor');
+  var data = el._msgData;
+  if (!data) return;
+
+  // Quitar highlight anterior
+  document.querySelectorAll('.msg-item.highlighted').forEach(function(m){ m.classList.remove('highlighted'); });
+
+  // Marcar nuevo
+  el.classList.add('highlighted');
+  currentHighlightMid = el.dataset.mid;
+
+  // Barra de estado
+  var bar = document.getElementById('hl-bar');
+  var txt = document.getElementById('hl-bar-text');
+  bar.classList.add('active');
+  txt.textContent = (data.chatname||'?') + ': ' + (data.chatmessage||'');
+
+  ws.send(JSON.stringify({
+    type:        'highlight',
+    platform:    data.platform || data.type || 'custom',
+    chatname:    data.chatname || '',
+    chatmessage: data.chatmessage || '',
+    chatimg:     data.chatimg || null,
+    nameColor:   data.nameColor || null,
+    roles:       data.roles || [],
+    mid:         data.mid || '',
+  }));
+  toast('📌 Mensaje destacado');
+}
+
+function clearHighlight() {
+  if (!isConnected || !ws) return;
+  ws.send(JSON.stringify({ type: 'highlight_clear' }));
+  document.querySelectorAll('.msg-item.highlighted').forEach(function(m){ m.classList.remove('highlighted'); });
+  currentHighlightMid = null;
+  document.getElementById('hl-bar').classList.remove('active');
+  toast('🧹 Destacado quitado');
 }
 
 function esc(str) {
@@ -801,41 +918,58 @@ function sendCustomMessage() {
   input.value='';
 }
 
-function getAutoOverlayUrl() {
-  var href=window.location.href.split('?')[0].replace(/\/+$/,'');
-  var result=href.replace(/\/dashboard(\/.*)?$/,'/overlay/index.html');
-  if (result===href) result=href.replace(/\/[^/]+$/,'/overlay/index.html');
-  return result;
-}
-
-function updateOverlayUrl() {
-  var serverUrl=store.get('serverUrl');
-  var box=document.getElementById('overlay-url');
-  var inputEl=document.getElementById('overlayBase');
-  var autoOverlay=window.location.protocol!=='file:'?getAutoOverlayUrl():'';
-  var currentInput=inputEl?inputEl.value.trim():'';
-  if (!currentInput||currentInput.indexOf('overlay')===-1) {
-    currentInput=autoOverlay;
-    if (inputEl) inputEl.value=currentInput;
-    if (currentInput) store.set('overlayBase',currentInput);
+function getBaseOverlayDir() {
+  // Calcula la URL base de la carpeta overlay/ partiendo de donde está el dashboard
+  var href = window.location.href.split('?')[0].replace(/\/+$/, '');
+  // Si estamos en dashboard/index.html → subir un nivel y entrar a overlay/
+  var base = href.replace(/\/dashboard(\/[^?]*)?$/, '/overlay');
+  if (base === href) {
+    // Fallback: subir un nivel desde el archivo actual
+    base = href.replace(/\/[^/]+$/, '/overlay');
   }
-  if (!serverUrl){ box.textContent='Configura el servidor primero...'; box.dataset.url=''; return; }
-  if (!currentInput){ box.textContent='Introduce la URL del overlay arriba...'; box.dataset.url=''; return; }
-  var url=currentInput.split('?')[0]+'?server='+encodeURIComponent(serverUrl);
-  box.textContent=url; box.dataset.url=url;
+  return base;
 }
 
-function copyOverlayUrl() {
-  var url=document.getElementById('overlay-url').dataset.url;
-  if (!url) return toast('Configura el servidor primero');
-  navigator.clipboard.writeText(url).then(function(){ toast('✅ URL copiada'); });
+function updateOverlayUrls() {
+  var serverUrl = store.get('serverUrl');
+  var showtime  = (parseInt(document.getElementById('showtime-input').value) || 12) * 1000;
+  var base      = (window.location.protocol !== 'file:') ? getBaseOverlayDir() : '';
+
+  var ids = {
+    'url-chat':        { file: 'index.html',      params: '' },
+    'url-chatuno':     { file: 'chat_uno.html',    params: '' },
+    'url-destacador':  { file: 'destacador.html',  params: '&showtime=' + showtime },
+  };
+
+  Object.keys(ids).forEach(function(id) {
+    var box = document.getElementById(id);
+    if (!box) return;
+    if (!serverUrl) { box.textContent = 'Configura el servidor primero...'; box.dataset.url = ''; return; }
+    if (!base)      { box.textContent = 'No disponible en local (usa GitHub Pages)'; box.dataset.url = ''; return; }
+    var url = base + '/' + ids[id].file + '?server=' + encodeURIComponent(serverUrl) + ids[id].params;
+    box.textContent = url;
+    box.dataset.url = url;
+  });
 }
 
-function openOverlay() {
-  var url=document.getElementById('overlay-url').dataset.url;
+// Mantener updateOverlayUrl como alias para compatibilidad con saveAndConnect()
+function updateOverlayUrl() { updateOverlayUrls(); }
+
+function copyUrl(id) {
+  var url = document.getElementById(id).dataset.url;
   if (!url) return toast('Configura el servidor primero');
-  window.open(url,'_blank');
+  navigator.clipboard.writeText(url).then(function() { toast('✅ URL copiada'); });
 }
+
+function openUrl(id) {
+  var url = document.getElementById(id).dataset.url;
+  if (!url) return toast('Configura el servidor primero');
+  window.open(url, '_blank');
+}
+
+// Mantener compatibilidad si algo llama a las funciones viejas
+function copyOverlayUrl() { copyUrl('url-chat'); }
+function openOverlay()    { openUrl('url-chat'); }
 
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
