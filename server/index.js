@@ -414,18 +414,33 @@ function handleKickMessageFromBrowser(data) {
   if (!data.chatname && !data.chatmessage) return;
   const username = data.chatname || 'Unknown';
 
-  getKickAvatar(username, (avatar) => {
+  // Si el browser ya resolvió el avatar, usarlo directamente
+  if (data.chatimg) {
     broadcast({
       type:        'kick',
       platform:    'kick',
       chatname:    username,
       chatmessage: data.chatmessage,
       nameColor:   data.nameColor || '#53FC18',
-      chatimg:     avatar || null,
+      chatimg:     data.chatimg,
       roles:       data.roles || [],
       mid:         data.mid || ('kick-' + Date.now()),
     });
-  });
+  } else {
+    // Fallback: intentar resolverlo desde el servidor
+    getKickAvatar(username, (avatar) => {
+      broadcast({
+        type:        'kick',
+        platform:    'kick',
+        chatname:    username,
+        chatmessage: data.chatmessage,
+        nameColor:   data.nameColor || '#53FC18',
+        chatimg:     avatar || null,
+        roles:       data.roles || [],
+        mid:         data.mid || ('kick-' + Date.now()),
+      });
+    });
+  }
 }
 
 // Donación/Gifted sub de Kick enviada desde el browser via Pusher
