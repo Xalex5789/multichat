@@ -1,556 +1,1054 @@
-// ============================================================
-//  MEEVE MULTICHAT SERVER v2 — FIXED
-//  ✅ Chat: Twitch + Kick + TikTok + YouTube
-//  ✅ Donaciones: Twitch Bits/Subs | TikTok Gifts | Kick (browser) | YouTube SuperChats
-//  ✅ Kick avatar resuelto via kick.com/api/v2
-//  ✅ FIXED: Twitch emotes → chatemotes [{text,url,start,end}]
-// ============================================================
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeve — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Special+Elite&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Rajdhani:wght@400;700&family=Orbitron:wght@400;700&family=Share+Tech+Mono&family=VT323&family=Exo+2:wght@400;700&family=Russo+One&family=Michroma&family=Nova+Square&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --traje:        #1e1c1a;
+      --traje-light:  #2a2826;
+      --guante:       #363432;
 
-const express    = require('express');
-const http       = require('http');
-const https      = require('https');
-const { WebSocketServer } = require('ws');
-const tmi        = require('tmi.js');
+      --camisa:       #dedad4;
+      --camisa-dim:   rgba(222,218,212,0.55);
+      --camisa-muted: rgba(222,218,212,0.35);
 
-let WebcastPushConnection;
-try {
-  ({ WebcastPushConnection } = require('tiktok-live-connector'));
-} catch(e) {
-  console.log('[TikTok] tiktok-live-connector no disponible');
+      --corbata:      #c8251c;
+      --corbata-soft: rgba(200,37,28,0.15);
+      --corbata-dim:  rgba(200,37,28,0.08);
+
+      --checker-dark:  #5a5856;
+      --checker-mid:   #686664;
+      --checker-light: #747270;
+      --checker-pale:  #807e7c;
+
+      --stroke-dark:  rgba(10,8,6,0.5);
+
+      --shadow: 2px 3px 0 rgba(10,8,6,0.3);
+
+      --font-title: 'Zen Antique', serif;
+      --font-body:  'Crimson Pro', serif;
+      --font-mono:  'Special Elite', monospace;
+      --ov-emote-size: 24px;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      background: var(--checker-mid);
+      color: var(--traje);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    body.no-glow .platform-dot.ok { box-shadow:none!important; }
+    body.no-glow #ws-dot.ok       { box-shadow:none!important; }
+    body.no-glow .msg-item.highlighted { box-shadow:none!important; }
+
+    .particles { position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden; }
+    .particle  { position:absolute;background:var(--traje);opacity:0;border-radius:1px;animation:floatUp linear infinite; }
+    @keyframes floatUp {
+      0%  {opacity:0;   transform:translateY(105vh) rotate(var(--r,10deg));}
+      12% {opacity:0.04;}
+      88% {opacity:0.015;}
+      100%{opacity:0;   transform:translateY(-8vh) rotate(calc(var(--r)+20deg));}
+    }
+
+    header {
+      position:fixed;top:0;left:0;right:0;height:54px;
+      background:var(--traje);
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 20px;z-index:200;
+      border-bottom:2px solid var(--corbata);
+      box-shadow:0 2px 0 rgba(200,37,28,0.2), 0 6px 24px rgba(10,8,6,0.5);
+    }
+    .header-left{display:flex;align-items:center;gap:11px;}
+    .logo-img {
+      width:40px;height:40px;border-radius:50%;object-fit:cover;
+      filter:grayscale(100%) contrast(1.35) brightness(0.8);
+      border:1.5px solid var(--corbata);
+      box-shadow:2px 2px 0 rgba(10,8,6,0.4),0 0 0 1px rgba(200,37,28,0.25);
+      animation:logoWobble 6s ease-in-out infinite;flex-shrink:0;
+    }
+    @keyframes logoWobble {
+      0%,100%{transform:rotate(-1.5deg) translateY(0);}
+      35%    {transform:rotate(1.2deg)  translateY(-2px);}
+      65%    {transform:rotate(-0.4deg) translateY(-1px);}
+    }
+    .header-text{display:flex;flex-direction:column;gap:1px;}
+    .header-title   {font-family:var(--font-title);font-size:16px;letter-spacing:5px;color:var(--camisa);text-transform:uppercase;line-height:1;}
+    .header-subtitle{font-family:var(--font-body);font-size:9px;font-style:italic;color:var(--camisa-dim);letter-spacing:1.5px;}
+    .header-right{display:flex;align-items:center;gap:8px;}
+    #ws-dot{width:7px;height:7px;border-radius:50%;background:var(--guante);border:1.5px solid var(--stroke-dark);transition:all 0.4s;flex-shrink:0;}
+    #ws-dot.ok{background:var(--corbata);box-shadow:0 0 0 3px rgba(200,37,28,0.2);border-color:var(--corbata);animation:dotPulse 2.5s ease-in-out infinite;}
+    @keyframes dotPulse{0%,100%{box-shadow:0 0 0 3px rgba(200,37,28,0.2);}50%{box-shadow:0 0 0 6px rgba(200,37,28,0.06);}}
+    #ws-label{font-family:var(--font-mono);font-size:10px;color:var(--camisa-dim);letter-spacing:1px;text-transform:uppercase;}
+
+    .layout{position:fixed;top:54px;left:0;right:0;bottom:0;display:flex;z-index:10;overflow:hidden;align-items:stretch;}
+
+    .sidebar{
+      width:294px;min-width:294px;
+      /* FIX SCROLL: block + height fija = scroll nativo sin colapso flex */
+      height: calc(100vh - 54px);
+      background:var(--checker-dark);
+      border-right:1px solid rgba(10,8,6,0.4);
+      box-shadow:2px 0 12px rgba(10,8,6,0.3);
+      overflow-y:auto;overflow-x:hidden;
+      padding:11px 10px 20px;
+      /* display:block en vez de flex — flex comprime los hijos impidiendo el scroll */
+      display:block;
+      transition:transform 0.4s cubic-bezier(0.4,0,0.2,1),min-width 0.4s,width 0.4s,border-color 0.3s,padding 0.4s;
+      flex-shrink:0;z-index:20;
+    }
+    /* Separación entre cards con margin en vez de gap */
+    .sidebar .card { margin-bottom:7px; }
+    .sidebar .card:last-child { margin-bottom:0; }
+    .sidebar.collapsed{transform:translateX(-294px);min-width:0;width:0;border-color:transparent;padding:0;}
+    .sidebar::-webkit-scrollbar{width:4px;}
+    .sidebar::-webkit-scrollbar-track{background:rgba(10,8,6,0.2);}
+    .sidebar::-webkit-scrollbar-thumb{background:var(--corbata);border-radius:2px;opacity:0.6;}
+    .sidebar::-webkit-scrollbar-thumb:hover{background:var(--corbata);opacity:1;}
+
+    #sidebar-toggle{
+      position:fixed;top:50%;left:294px;
+      transform:translateY(-50%) translateX(-50%);
+      width:16px;height:44px;
+      background:var(--checker-dark);
+      border:1px solid rgba(10,8,6,0.35);border-left:none;
+      border-radius:0 5px 5px 0;cursor:pointer;z-index:300;
+      display:flex;align-items:center;justify-content:center;
+      transition:left 0.4s cubic-bezier(0.4,0,0.2,1),background 0.2s;
+    }
+    #sidebar-toggle:hover{background:var(--guante);}
+    #sidebar-toggle.collapsed{left:0;border-left:1px solid rgba(10,8,6,0.35);border-right:none;border-radius:5px 0 0 5px;}
+    .toggle-arrow{font-size:9px;color:var(--camisa-muted);user-select:none;transition:transform 0.4s;}
+    #sidebar-toggle.collapsed .toggle-arrow{transform:rotate(180deg);}
+
+    .card{
+      background:var(--guante);
+      border-top:   1.5px solid rgba(10,8,6,0.5);
+      border-left:  1.5px solid rgba(10,8,6,0.5);
+      border-right: 1px   solid rgba(10,8,6,0.2);
+      border-bottom:1px   solid rgba(10,8,6,0.2);
+      border-radius:2px 5px 3px 4px;
+      padding:10px 12px;
+      box-shadow:var(--shadow);
+      position:relative;
+      flex-shrink:0;
+      overflow:visible;
+    }
+    .card::before{
+      content:'';position:absolute;top:0;left:0;right:0;height:2px;
+      background:linear-gradient(90deg,var(--corbata),rgba(200,37,28,0.2) 55%,transparent);
+    }
+    .card-title{
+      font-family:var(--font-title);font-size:8.5px;letter-spacing:3px;
+      text-transform:uppercase;color:var(--camisa-dim);margin-bottom:8px;
+      display:flex;align-items:center;gap:6px;
+    }
+    .card-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(200,37,28,0.3),transparent);}
+
+    label{display:block;font-family:var(--font-mono);font-size:8.5px;color:var(--camisa-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;}
+    .input-row{display:flex;gap:5px;}
+
+    input[type=text],input[type=number],select{
+      background:var(--traje-light);
+      border-top:  1px solid rgba(10,8,6,0.5);
+      border-left: 1px solid rgba(10,8,6,0.5);
+      border-right:1px solid rgba(10,8,6,0.15);
+      border-bottom:1px solid rgba(10,8,6,0.15);
+      border-radius:2px 4px 3px 3px;
+      padding:6px 9px;color:var(--camisa);
+      font-family:var(--font-body);font-size:12px;outline:none;flex:1;
+      transition:border-color 0.2s,box-shadow 0.2s;
+    }
+    input[type=text]:focus,input[type=number]:focus,select:focus{
+      border-color:var(--corbata);box-shadow:0 0 0 2px var(--corbata-dim);
+    }
+    input::placeholder{color:var(--camisa-muted);}
+    select{
+      cursor:pointer;-webkit-appearance:none;appearance:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23dedad4'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;background-position:right 9px center;
+      padding-right:26px;background-color:var(--traje-light);
+    }
+
+    .btn{
+      padding:6px 13px;border-radius:2px 4px 3px 3px;border:none;
+      font-family:var(--font-mono);font-size:9.5px;font-weight:700;
+      cursor:pointer;transition:all 0.13s;white-space:nowrap;letter-spacing:0.7px;text-transform:uppercase;
+    }
+    .btn-primary{
+      background:var(--corbata);color:var(--camisa);
+      border-top: 1.5px solid rgba(200,37,28,0.9);
+      border-left:1.5px solid rgba(200,37,28,0.9);
+      border-right:1.5px solid rgba(200,37,28,0.4);
+      border-bottom:1.5px solid rgba(200,37,28,0.4);
+      box-shadow:var(--shadow);
+    }
+    .btn-primary:hover {background:#a01e16;transform:translate(-1px,-1px);box-shadow:3px 4px 0 rgba(10,8,6,0.3);}
+    .btn-primary:active{transform:translate(1px,1px);box-shadow:none;}
+    .btn-secondary{
+      background:var(--traje-light);color:var(--camisa);
+      border-top: 1px solid rgba(10,8,6,0.5);
+      border-left:1px solid rgba(10,8,6,0.5);
+      border-right:1px solid rgba(10,8,6,0.15);
+      border-bottom:1px solid rgba(10,8,6,0.15);
+      box-shadow:var(--shadow);
+    }
+    .btn-secondary:hover {background:var(--guante);border-color:rgba(10,8,6,0.7);transform:translate(-1px,-1px);box-shadow:3px 4px 0 rgba(10,8,6,0.2);}
+    .btn-secondary:active{transform:translate(1px,1px);box-shadow:none;}
+    .btn-full{width:100%;}
+    .btn-danger{
+      background:var(--corbata-dim);color:var(--corbata);
+      border:1.5px solid rgba(200,37,28,0.35);box-shadow:var(--shadow);
+    }
+    .btn-danger:hover{background:var(--corbata-soft);border-color:var(--corbata);}
+    .btn-row{display:flex;gap:5px;}
+
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:3px 0;}
+    .toggle-label{font-family:var(--font-mono);font-size:9.5px;color:var(--camisa);flex:1;}
+    .toggle-switch{position:relative;width:34px;height:17px;flex-shrink:0;}
+    .toggle-switch input{opacity:0;width:0;height:0;position:absolute;}
+    .toggle-slider{position:absolute;inset:0;background:var(--traje);border:1px solid rgba(10,8,6,0.5);border-radius:17px;cursor:pointer;transition:all 0.22s;}
+    .toggle-slider::before{content:'';position:absolute;width:11px;height:11px;left:2px;top:50%;transform:translateY(-50%);background:var(--checker-light);border-radius:50%;transition:all 0.22s;}
+    .toggle-switch input:checked+.toggle-slider{background:var(--corbata);border-color:var(--corbata);}
+    .toggle-switch input:checked+.toggle-slider::before{left:19px;background:var(--camisa);}
+
+    .platform-row{
+      display:flex;align-items:center;gap:8px;padding:6px 9px;
+      background:var(--traje-light);
+      border-top:  1px solid rgba(10,8,6,0.45);
+      border-left: 1px solid rgba(10,8,6,0.45);
+      border-right:1px solid rgba(10,8,6,0.12);
+      border-bottom:1px solid rgba(10,8,6,0.12);
+      border-radius:2px 4px 3px 3px;margin-bottom:4px;
+      box-shadow:1px 2px 0 rgba(10,8,6,0.15);transition:border-color 0.2s;
+    }
+    .platform-row:last-child{margin-bottom:0;}
+    .platform-row:hover{border-color:rgba(200,37,28,0.35);}
+    .platform-dot{width:6px;height:6px;border-radius:50%;background:var(--guante);flex-shrink:0;border:1px solid rgba(10,8,6,0.4);transition:all 0.3s;}
+    .platform-dot.ok{background:var(--corbata);box-shadow:0 0 0 3px rgba(200,37,28,0.18);border-color:var(--corbata);}
+    .platform-icon{font-size:13px;filter:grayscale(100%) contrast(0.5) brightness(1.8);}
+    .platform-info{flex:1;min-width:0;}
+    .platform-name{font-family:var(--font-title);font-size:11.5px;color:var(--camisa);letter-spacing:0.3px;}
+    .platform-channel{font-family:var(--font-mono);font-size:8.5px;color:var(--camisa-muted);}
+    .tag{display:inline-block;padding:1px 6px;border-radius:999px;font-family:var(--font-mono);font-size:7.5px;font-weight:700;letter-spacing:0.5px;}
+    .tag-connector{background:rgba(222,218,212,0.08);border:1px solid rgba(222,218,212,0.18);color:var(--camisa-dim);}
+    .tag-puppeteer{background:var(--corbata-dim);border:1px solid rgba(200,37,28,0.3);color:var(--corbata);}
+
+    .info-box{border-radius:2px 4px 3px 3px;padding:7px 9px;font-family:var(--font-mono);font-size:9px;line-height:1.7;}
+    .info-box a{color:inherit;}
+    .info-red   {background:var(--corbata-soft);border:1px solid rgba(200,37,28,0.4);color:var(--corbata);}
+    .info-yellow{background:rgba(180,130,30,0.12);border:1px solid rgba(180,130,30,0.3);color:#c8a040;}
+    .info-green {background:rgba(222,218,212,0.08);border:1px solid rgba(222,218,212,0.2);color:var(--camisa-dim);}
+
+    .url-box{background:var(--traje);border:1px solid rgba(10,8,6,0.4);border-radius:2px 4px 3px 3px;padding:6px 9px;font-family:monospace;font-size:9.5px;color:var(--camisa-dim);word-break:break-all;cursor:pointer;transition:all 0.15s;line-height:1.5;opacity:0.8;}
+    .url-box:hover{border-color:var(--corbata);opacity:1;}
+    .hint{font-family:var(--font-mono);font-size:8.5px;color:var(--camisa-muted);line-height:1.6;}
+    .font-preview{padding:6px 9px;background:var(--traje-light);border:1px solid rgba(10,8,6,0.4);border-radius:2px;font-size:13px;color:var(--camisa);text-align:center;min-height:30px;display:flex;align-items:center;justify-content:center;}
+    .config-row{display:flex;align-items:center;gap:8px;}
+    .value-display{font-family:var(--font-mono);color:var(--camisa);font-size:9.5px;min-width:32px;}
+    input[type=range]{width:100%;cursor:pointer;-webkit-appearance:none;appearance:none;height:2px;background:rgba(222,218,212,0.15);border-radius:1px;outline:none;border:none;}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--corbata);cursor:pointer;border:2px solid var(--guante);box-shadow:1px 1px 0 rgba(10,8,6,0.3);}
+    input[type=color]{width:32px;height:24px;border:1px solid rgba(200,37,28,0.4);border-radius:2px;cursor:pointer;background:transparent;padding:1px;}
+    .separator{border-top:1px solid rgba(200,37,28,0.15);margin:5px 0;}
+
+    /* ══ MAIN ══ */
+    .main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;background:var(--checker-mid);position:relative;}
+    .main::before{
+      content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+      background-image:repeating-linear-gradient(
+        to bottom,transparent,transparent 29px,
+        rgba(10,8,6,0.1) 29px,rgba(10,8,6,0.1) 30px
+      );
+    }
+
+    .chat-panel{
+      flex:1;overflow-y:auto;overflow-x:hidden;
+      padding:13px 15px;display:flex;flex-direction:column;gap:5px;
+      position:relative;z-index:1;
+    }
+    .chat-panel::-webkit-scrollbar{width:3px;}
+    .chat-panel::-webkit-scrollbar-track{background:transparent;}
+    .chat-panel::-webkit-scrollbar-thumb{background:rgba(10,8,6,0.25);border-radius:2px;}
+    .chat-panel::-webkit-scrollbar-thumb:hover{background:rgba(200,37,28,0.4);}
+    .chat-spacer{flex:1;min-height:0;}
+
+    #chat-placeholder{
+      text-align:center;color:rgba(10,8,6,0.4);
+      font-family:var(--font-title);font-size:14px;font-style:italic;
+      padding:70px 20px;letter-spacing:2px;line-height:2.8;
+    }
+
+    /* ══ MENSAJES ══
+       FIX VISUAL: fondo más oscuro para que el texto sea legible
+       --traje-light (#2a2826) con texto --camisa (#dedad4)
+       en lugar de checker-light gris sobre gris
+    */
+    .msg-item{
+      position:relative;display:flex;align-items:flex-start;gap:9px;
+      padding:8px 11px;
+      background:var(--traje-light);           /* ← oscuro, legible */
+      border-top:  1.5px solid rgba(10,8,6,0.35);
+      border-left: 3px   solid rgba(10,8,6,0.35);
+      border-right:1px   solid rgba(10,8,6,0.12);
+      border-bottom:1px  solid rgba(10,8,6,0.12);
+      border-radius:1px 4px 3px 2px;
+      cursor:pointer;
+      animation:msgIn 0.25s cubic-bezier(0.2,0.9,0.3,1);
+      transition:background 0.14s,border-left-color 0.14s,transform 0.12s,box-shadow 0.12s;
+      flex-shrink:0;box-shadow:var(--shadow);
+    }
+    @keyframes msgIn{from{opacity:0;transform:translateX(-9px);}to{opacity:1;transform:translateX(0);}}
+    .msg-item:hover{background:var(--guante);border-left-color:var(--corbata);transform:translateX(2px);box-shadow:3px 4px 0 rgba(10,8,6,0.2);}
+
+    /* Borde izquierdo por plataforma — colores tenues para no saturar */
+    .msg-item.twitch {border-left-color:#7b5ea7;}
+    .msg-item.kick   {border-left-color:#3a8a2a;}
+    .msg-item.tiktok {border-left-color:#b0003a;}
+    .msg-item.youtube{border-left-color:#a01010;}
+    .msg-item.custom {border-left-color:rgba(200,37,28,0.6);}
+    .msg-item.system {border-left-color:var(--corbata);}
+
+    .msg-item.highlighted{
+      background:rgba(200,37,28,0.18);
+      border-left:3px solid var(--corbata)!important;
+      border-color:rgba(200,37,28,0.3);
+      box-shadow:0 0 0 2px rgba(200,37,28,0.12),var(--shadow);
+      animation:msgIn 0.25s cubic-bezier(0.2,0.9,0.3,1),hlPulse 3s ease-in-out infinite;
+    }
+    @keyframes hlPulse{0%,100%{box-shadow:0 0 0 2px rgba(200,37,28,0.12);}50%{box-shadow:0 0 0 5px rgba(200,37,28,0.06);}}
+
+    .chat-panel.single-line .msg-item{align-items:center;padding:5px 11px;gap:7px;}
+    .chat-panel.single-line .msg-avatar{width:20px!important;height:20px!important;min-width:20px;}
+    .chat-panel.single-line .msg-body{display:flex;align-items:center;gap:5px;flex:1;min-width:0;overflow:hidden;}
+    .chat-panel.single-line .msg-header{display:contents;}
+    .chat-panel.single-line .msg-time{display:none;}
+    .chat-panel.single-line .msg-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+    .msg-avatar{
+      width:32px;height:32px;border-radius:50%;
+      border:1.5px solid rgba(10,8,6,0.4);flex-shrink:0;
+      overflow:hidden;background:var(--checker-dark);
+      filter:grayscale(45%);box-shadow:1px 1px 0 rgba(10,8,6,0.25);
+    }
+    .msg-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+    .msg-avatar-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;opacity:0.45;color:var(--camisa);}
+
+    .msg-body{flex:1;min-width:0;}
+    .msg-header{display:flex;align-items:center;gap:5px;margin-bottom:3px;flex-wrap:wrap;}
+
+    /* FIX: nombre en camisa claro, legible sobre fondo oscuro */
+    .msg-user{
+      font-family:var(--font-title);font-size:13px;
+      color:var(--camisa);          /* ← siempre legible */
+      letter-spacing:0.3px;white-space:nowrap;
+    }
+
+    .msg-platform{
+      display:inline-flex;align-items:center;gap:2px;
+      font-family:var(--font-mono);font-size:7.5px;padding:1px 5px;border-radius:2px;
+      font-weight:700;letter-spacing:0.5px;
+      background:rgba(222,218,212,0.07);border:1px solid rgba(222,218,212,0.15);
+      color:var(--camisa-dim);
+    }
+    .msg-platform svg{width:8px;height:8px;flex-shrink:0;}
+    .msg-badge{height:13px;width:auto;vertical-align:middle;filter:grayscale(100%);}
+    .msg-time{font-family:var(--font-mono);font-size:8.5px;color:var(--camisa-muted);margin-left:auto;white-space:nowrap;}
+
+    /* FIX: texto del mensaje en camisa claro */
+    .msg-text{
+      font-size:13px;
+      color:var(--camisa);          /* ← antes era --traje (negro sobre gris → invisible) */
+      line-height:1.55;word-break:break-word;font-family:var(--font-body);
+    }
+    .msg-text img.emote{height:var(--ov-emote-size,24px);width:auto;vertical-align:middle;margin:0 2px;filter:grayscale(40%);}
+
+    .msg-role{font-family:var(--font-mono);font-size:7.5px;padding:1px 4px;background:rgba(222,218,212,0.08);border:1px solid rgba(222,218,212,0.15);border-radius:2px;color:var(--camisa-dim);letter-spacing:0.5px;}
+    .msg-highlight-btn{
+      margin-left:auto;padding:2px 7px;font-size:7.5px;border-radius:2px;
+      border:1px solid rgba(200,37,28,0.3);background:var(--corbata-dim);
+      color:var(--corbata);cursor:pointer;display:none;
+      font-family:var(--font-mono);font-weight:700;letter-spacing:0.5px;text-transform:uppercase;transition:all 0.12s;
+    }
+    .msg-highlight-btn:hover{background:var(--corbata);color:var(--camisa);border-color:var(--corbata);}
+    .msg-item:hover .msg-highlight-btn,.msg-item.highlighted .msg-highlight-btn{display:inline-block;}
+
+    .msg-donation-tag{
+      margin-top:4px;padding:3px 9px;
+      background:var(--corbata-soft);border:1px solid rgba(200,37,28,0.3);
+      border-radius:2px;font-family:var(--font-mono);font-size:8.5px;font-weight:700;
+      color:var(--corbata);text-align:center;text-transform:uppercase;letter-spacing:1.5px;
+    }
+
+    #hl-bar{
+      padding:7px 14px;background:rgba(200,37,28,0.1);
+      border-top:1px solid rgba(200,37,28,0.25);
+      display:none;align-items:center;gap:9px;
+      font-family:var(--font-mono);font-size:8.5px;color:var(--corbata);
+      letter-spacing:0.5px;text-transform:uppercase;z-index:1;position:relative;
+    }
+    #hl-bar.active{display:flex;}
+    #hl-bar strong{color:var(--camisa);max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-body);font-size:12px;text-transform:none;font-weight:400;}
+
+    .input-bar{
+      padding:9px 13px;
+      border-top:2px solid var(--corbata);
+      background:var(--traje);
+      display:flex;gap:7px;position:relative;z-index:1;
+    }
+    .input-bar input[type=text]{background:var(--traje-light);color:var(--camisa);}
+
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,8,6,0.7);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+    .modal-overlay.open{display:flex;}
+    .modal-box{
+      background:var(--traje-light);
+      border-top:2px solid var(--corbata);
+      border-left:2px solid rgba(10,8,6,0.5);
+      border-right:1.5px solid rgba(10,8,6,0.2);
+      border-bottom:1.5px solid rgba(10,8,6,0.2);
+      border-radius:2px 6px 4px 5px;padding:26px;max-width:480px;width:90%;position:relative;
+      box-shadow:5px 6px 0 rgba(10,8,6,0.3),0 20px 50px rgba(10,8,6,0.5);
+    }
+    .modal-title{font-family:var(--font-title);font-size:16px;color:var(--camisa);margin-bottom:14px;letter-spacing:1px;}
+    .modal-close{position:absolute;top:11px;right:13px;background:none;border:none;color:var(--camisa-muted);font-size:17px;cursor:pointer;}
+    .modal-close:hover{color:var(--corbata);}
+    .modal-box ol{padding-left:17px;line-height:2.3;font-size:11.5px;color:var(--camisa-dim);font-family:var(--font-mono);}
+    .modal-box ol strong{color:var(--camisa);}
+    .modal-box code{background:var(--traje);border:1px solid rgba(10,8,6,0.4);padding:2px 6px;border-radius:2px;font-size:10.5px;color:var(--camisa);}
+
+    #toast{
+      position:fixed;bottom:18px;left:50%;
+      transform:translateX(-50%) translateY(50px);
+      background:var(--corbata);color:var(--camisa);
+      padding:8px 16px;border-radius:2px 4px 3px 3px;
+      font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.8px;text-transform:uppercase;
+      z-index:999;opacity:0;
+      transition:all 0.28s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events:none;white-space:nowrap;
+      box-shadow:3px 4px 0 rgba(10,8,6,0.35);
+    }
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  </style>
+</head>
+<body>
+
+<div class="particles" id="particles"></div>
+
+<header>
+  <div class="header-left">
+    <img class="logo-img"
+      src="https://i.ibb.co/7xhK7QHb/279-sin-t-tulo-20250219223210.png"
+      alt="Meeve" onerror="this.style.display='none'" />
+    <div class="header-text">
+      <div class="header-title">Meeve</div>
+      <div class="header-subtitle">multichat dashboard</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div id="ws-dot"></div>
+    <span id="ws-label">Desconectado</span>
+  </div>
+</header>
+
+<div class="layout">
+  <button id="sidebar-toggle" onclick="toggleSidebar()" title="Panel">
+    <span class="toggle-arrow">◀</span>
+  </button>
+
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-title">○ Servidor</div>
+      <label>URL del servidor</label>
+      <div class="input-row" style="margin-bottom:5px;">
+        <input id="serverUrl" type="text" placeholder="wss://tu-app.onrender.com" />
+        <button class="btn btn-primary" onclick="saveAndConnect()">Conectar</button>
+      </div>
+      <div class="hint">Se guarda en el navegador automáticamente</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">◎ Estado Conexiones</div>
+      <div class="platform-row">
+        <span class="platform-dot" id="dot-twitch"></span>
+        <span class="platform-icon">🟣</span>
+        <div class="platform-info"><div class="platform-name">Twitch</div><div class="platform-channel" id="ch-twitch">—</div></div>
+      </div>
+      <div class="platform-row">
+        <span class="platform-dot" id="dot-kick"></span>
+        <span class="platform-icon">🟢</span>
+        <div class="platform-info"><div class="platform-name">Kick</div><div class="platform-channel" id="ch-kick">—</div></div>
+      </div>
+      <div class="platform-row">
+        <span class="platform-dot" id="dot-tiktok"></span>
+        <span class="platform-icon">🎵</span>
+        <div class="platform-info"><div class="platform-name">TikTok</div><div class="platform-channel" id="ch-tiktok">—</div></div>
+        <span id="tiktok-mode-tag" class="tag tag-connector">connector</span>
+      </div>
+      <div class="platform-row">
+        <span class="platform-dot" id="dot-youtube"></span>
+        <span class="platform-icon">▶️</span>
+        <div class="platform-info"><div class="platform-name">YouTube</div><div class="platform-channel" id="ch-youtube">—</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">◉ Kick — Chatroom</div>
+      <div id="kick-status-box" class="info-box info-green" style="margin-bottom:8px;">Kick bloquea servidores. El navegador actúa como puente.</div>
+      <div class="btn-row">
+        <button class="btn btn-secondary btn-full" onclick="resolveKickId()">🔍 Automático</button>
+        <button class="btn btn-secondary btn-full" onclick="toggleKickManual()">✏ Manual</button>
+      </div>
+      <div id="kick-manual-wrap" style="display:none;margin-top:8px;">
+        <label>Kick Channel ID</label>
+        <div class="input-row">
+          <input id="kickChannelId" type="text" placeholder="ej: 1234567" />
+          <button class="btn btn-primary" onclick="sendKickId()">OK</button>
+        </div>
+        <div class="hint">F12 → Network → chatrooms.XXXXXX</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">◎ TikTok</div>
+      <div class="btn-row" style="margin-bottom:8px;">
+        <button class="btn btn-secondary btn-full" onclick="restartTikTok()">↺ Reconectar</button>
+        <button class="btn btn-secondary btn-full" onclick="openTikTokLive()">▶ Live</button>
+      </div>
+      <div class="info-box info-red">Error 403: <a href="#" onclick="openModal('tiktok-modal');return false;">usar SESSION_ID</a></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">○ YouTube</div>
+      <div id="youtube-status-box" class="info-box info-yellow" style="margin-bottom:8px;">⏳ Esperando conexión...</div>
+      <div class="btn-row">
+        <button class="btn btn-secondary btn-full" onclick="restartYouTube()">↺ Reconectar</button>
+        <button class="btn btn-secondary btn-full" onclick="openYouTubeLive()">▶ Live</button>
+      </div>
+      <div class="hint" style="margin-top:5px;">Reconectar al encender el directo.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">◎ URLs para OBS</div>
+      <label>💬 Chat multichat</label>
+      <div class="url-box" id="url-chat" onclick="copyUrl('url-chat')" title="Click para copiar">Configura el servidor...</div>
+      <div class="btn-row" style="margin:4px 0 8px;">
+        <button class="btn btn-secondary btn-full" style="font-size:8.5px;padding:4px;" onclick="copyUrl('url-chat')">Copiar</button>
+        <button class="btn btn-secondary btn-full" style="font-size:8.5px;padding:4px;" onclick="openUrl('url-chat')">Abrir</button>
+      </div>
+      <label>🗨 Chat un mensaje</label>
+      <div class="url-box" id="url-chatuno" onclick="copyUrl('url-chatuno')" title="Click para copiar">Configura el servidor...</div>
+      <div class="btn-row" style="margin:4px 0 8px;">
+        <button class="btn btn-secondary btn-full" style="font-size:8.5px;padding:4px;" onclick="copyUrl('url-chatuno')">Copiar</button>
+        <button class="btn btn-secondary btn-full" style="font-size:8.5px;padding:4px;" onclick="openUrl('url-chatuno')">Abrir</button>
+      </div>
+      <label>📌 Destacador</label>
+      <div class="url-box" id="url-destacador" onclick="copyUrl('url-destacador')" title="Click para copiar">Configura el servidor...</div>
+      <div class="btn-row" style="margin:4px 0 6px;">
+        <button class="btn btn-secondary btn-full" style="font-size:8.5px;padding:4px;" onclick="copyUrl('url-destacador')">Copiar</button>
+        <button class="btn btn-secondary btn-full" style="font-size:8.5px;padding:4px;" onclick="openUrl('url-destacador')">Abrir</button>
+      </div>
+      <div class="hint">Tiempo visible: <input id="showtime-input" type="number" style="width:42px;padding:2px 4px;font-size:8.5px;" value="12" min="1" max="120" onchange="updateOverlayUrls()"> seg</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">◑ Configuración Visual</div>
+      <label>Fuente del dashboard</label>
+      <select id="fontSelector" onchange="applyFont(this.value)" style="margin-bottom:6px;">
+        <option value="'Crimson Pro', serif">Crimson Pro (por defecto)</option>
+        <option value="'Libre Baskerville', serif">Libre Baskerville</option>
+        <option value="'Zen Antique', serif">Zen Antique</option>
+        <option value="'Special Elite', monospace">Special Elite — Máquina</option>
+        <option value="'Rajdhani', sans-serif">Rajdhani</option>
+        <option value="'Orbitron', sans-serif">Orbitron — Cyberpunk</option>
+        <option value="'Share Tech Mono', monospace">Share Tech Mono</option>
+        <option value="'VT323', monospace">VT323 — Retro</option>
+        <option value="'Exo 2', sans-serif">Exo 2</option>
+        <option value="'Russo One', sans-serif">Russo One</option>
+        <option value="'Michroma', sans-serif">Michroma</option>
+        <option value="'Nova Square', sans-serif">Nova Square</option>
+      </select>
+      <div class="font-preview" id="font-preview">Meeve Dashboard — Preview 123</div>
+      <div class="separator" style="margin:7px 0;"></div>
+      <div class="toggle-row">
+        <span class="toggle-label">Brillo / glow</span>
+        <label class="toggle-switch"><input type="checkbox" id="glowToggle" checked onchange="toggleGlow(this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Modo línea única</span>
+        <label class="toggle-switch"><input type="checkbox" id="singleLineToggle" onchange="toggleSingleLine(this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="separator" style="margin:7px 0;"></div>
+      <label>Tamaño emotes: <span class="value-display" id="val-emote">24px</span></label>
+      <input type="range" id="emoteSize" min="16" max="60" value="24" oninput="setCfgVar('--ov-emote-size',this.value+'px','val-emote')" style="margin-bottom:6px;">
+      <label>Tamaño nombre: <span class="value-display" id="val-fontName">13px</span></label>
+      <input type="range" id="fontNameSize" min="8" max="22" value="13" oninput="setMsgNameSize(this.value)" style="margin-bottom:6px;">
+      <label>Máx. mensajes: <span class="value-display" id="val-maxMsg">200</span></label>
+      <input type="range" id="maxMsgRange" min="20" max="1000" value="200" step="10" oninput="document.getElementById('val-maxMsg').textContent=this.value;MAX_MESSAGES=parseInt(this.value);" style="margin-bottom:6px;">
+      <label>Color acento:</label>
+      <div class="config-row" style="margin-bottom:8px;">
+        <input type="color" id="colorPrimary" value="#c8251c" oninput="applyColorPrimary(this.value)">
+        <span class="hint">Color de acento (corbata)</span>
+      </div>
+      <div class="separator" style="margin:4px 0 8px;"></div>
+      <button class="btn btn-danger btn-full" style="margin-bottom:5px;" onclick="clearChat()">Limpiar chat</button>
+      <button class="btn btn-secondary btn-full" onclick="exportMessages()">Exportar mensajes</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="chat-panel" id="chat-panel">
+      <div class="chat-spacer" id="chat-spacer"></div>
+      <div id="chat-placeholder">Los mensajes aparecerán aquí<br><span style="font-size:11px;letter-spacing:3px;">— ひとつめ様 —</span></div>
+    </div>
+    <div id="hl-bar">
+      📌 Destacando:&nbsp;<strong id="hl-bar-text">—</strong>
+      <button class="btn btn-secondary" style="font-size:8.5px;padding:3px 8px;margin-left:auto;" onclick="clearHighlight()">✕ Quitar</button>
+    </div>
+    <div class="input-bar">
+      <input id="custom-msg-input" type="text" placeholder="Escribe un mensaje personalizado y pulsa Enter…" onkeydown="if(event.key==='Enter')sendCustomMessage()" />
+      <button class="btn btn-primary" onclick="sendCustomMessage()">Enviar</button>
+      <button class="btn btn-secondary" onclick="injectTestMessage()" title="Mensaje de prueba">🧪</button>
+    </div>
+  </div>
+</div>
+
+<div id="tiktok-modal" class="modal-overlay">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('tiktok-modal')">✕</button>
+    <div class="modal-title">Obtener TIKTOK_SESSION_ID</div>
+    <ol>
+      <li>Abre <strong>tiktok.com</strong> en Chrome e inicia sesión</li>
+      <li>Pulsa <strong>F12</strong> → pestaña <strong>Application</strong></li>
+      <li>Panel: <strong>Cookies → https://www.tiktok.com</strong></li>
+      <li>Busca la cookie <strong>sessionid</strong> → copia el valor</li>
+      <li>En Render/Railway:<br><code>TIKTOK_SESSION_ID = (el valor)</code></li>
+      <li>Reinicia el servidor</li>
+    </ol>
+    <p style="margin-top:11px;" class="hint">⚠ El sessionid caduca cada ~30 días.</p>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══ PARTÍCULAS ═══
+(function(){
+  var c=document.getElementById('particles');
+  for(var i=0;i<16;i++){
+    var p=document.createElement('div');p.className='particle';
+    var s=Math.random()>0.45;
+    p.style.cssText=['left:'+(Math.random()*100)+'%','width:'+(s?(Math.random()*0.7+0.3):(Math.random()*2+0.6))+'px','height:'+(s?(Math.random()*12+4):(Math.random()*2+1))+'px','animation-duration:'+(Math.random()*30+25)+'s','animation-delay:'+(Math.random()*22)+'s','--r:'+(Math.random()*40-20)+'deg'].join(';');
+    c.appendChild(p);
+  }
+})();
+
+// ═══ STORAGE ═══
+var store={
+  get:function(k,d){try{return localStorage.getItem(k)||d||'';}catch(e){return d||'';}},
+  set:function(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+};
+
+// ═══ ESTADO ═══
+var ws=null,retryDelay=1000,isConnected=false,autoKickDone=false;
+var currentChannels={twitch:'',kick:'',tiktok:'',youtube:''};
+var MAX_MESSAGES=200,messages=[],currentHighlightMid=null,autoScroll=true;
+
+var LOGOS={
+  twitch:'<svg viewBox="0 0 24 28" fill="currentColor"><path d="M2.149 0L.537 4.119v19.63h6.72V28l4.123-4.25h3.29L22.463 14V0H2.149zm18.24 13.18l-3.29 3.387h-3.948l-2.886 2.973v-2.973H6.584V2.387h13.805v10.793zM17.07 5.367h-2.148v6.42h2.148V5.367zm-5.907 0h-2.15v6.42h2.15V5.367z"/></svg>',
+  kick:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 3h4v7l4.5-7H17L12 12l5.5 9H13L8.5 14v7H4V3z"/></svg>',
+  tiktok:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V9.05a8.16 8.16 0 0 0 4.77 1.52V7.12a4.85 4.85 0 0 1-1-.43z"/></svg>',
+  youtube:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>',
+  custom:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
+  system:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>'
+};
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function processTwitchEmotes(t,e){
+  if(!e||!e.length)return esc(t);
+  var s=e.slice().sort(function(a,b){return a.start-b.start;}),r='',c=0;
+  for(var i=0;i<s.length;i++){var x=s[i];if(x.start>c)r+=esc(t.slice(c,x.start));r+='<img class="emote" src="'+esc(x.url)+'" alt="'+esc(x.text)+'" onerror="this.style.display=\'none\'">';c=x.end+1;}
+  if(c<t.length)r+=esc(t.slice(c));
+  return r;
+}
+function parseKickEmotes(t){
+  return esc(t).replace(/\[emote:(\d+):([^\]]+)\]/g,function(m,id,n){
+    return '<img class="emote" src="https://files.kick.com/emotes/'+id+'/fullsize" alt="'+esc(n)+'" onerror="this.style.display=\'none\'">';
+  });
+}
+function processMessageHTML(d){
+  var t=d.chatmessage||'',p=d.platform||d.type||'';
+  if(p==='twitch'&&d.chatemotes&&d.chatemotes.length)return processTwitchEmotes(t,d.chatemotes);
+  if(p==='kick')return parseKickEmotes(t);
+  return esc(t);
 }
 
-const app    = express();
-const server = http.createServer(app);
-const wss    = new WebSocketServer({ server });
+// ═══ SIDEBAR ═══
+function toggleSidebar(){
+  var s=document.querySelector('.sidebar'),b=document.getElementById('sidebar-toggle');
+  var c=s.classList.toggle('collapsed');
+  b.classList.toggle('collapsed',c);
+  store.set('sidebarCollapsed',c?'1':'0');
+}
 
-// ── CONFIG ───────────────────────────────────────────────────
-const CONFIG = {
-  twitch:       process.env.TWITCH_CHANNEL    || '',
-  kick:         process.env.KICK_CHANNEL      || '',
-  kickId:       process.env.KICK_CHANNEL_ID   || '',
-  tiktok:       process.env.TIKTOK_USERNAME   || '',
-  youtubeHandle: process.env.YOUTUBE_HANDLE     || '',
-  youtubeKey:    process.env.YOUTUBE_API_KEY    || '',
-  port:         process.env.PORT              || 3000,
-  tiktokMode:   process.env.TIKTOK_MODE       || 'connector',
-};
-
-app.use(express.json());
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.sendStatus(200);
-  next();
+// ═══ INIT ═══
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('serverUrl').value=store.get('serverUrl');
+  updateOverlayUrls();
+  if(store.get('serverUrl'))connectWS(store.get('serverUrl'));
+  if(store.get('sidebarCollapsed')==='1'){document.querySelector('.sidebar').classList.add('collapsed');document.getElementById('sidebar-toggle').classList.add('collapsed');}
+  var sf=store.get('chatFont');
+  if(sf){var sel=document.getElementById('fontSelector');for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===sf){sel.selectedIndex=i;break;}}applyFont(sf,true);}
+  if(store.get('glowOff')==='1'){document.getElementById('glowToggle').checked=false;toggleGlow(false,true);}
+  if(store.get('singleLine')==='1'){document.getElementById('singleLineToggle').checked=true;toggleSingleLine(true,true);}
+  var sc=store.get('accentColor');if(sc){document.getElementById('colorPrimary').value=sc;applyColorPrimary(sc,true);}
+  var se=store.get('emoteSize');if(se){document.getElementById('emoteSize').value=se;setCfgVar('--ov-emote-size',se+'px','val-emote');}
+  var sm=store.get('maxMsg');if(sm){var n=parseInt(sm);MAX_MESSAGES=n;document.getElementById('maxMsgRange').value=n;document.getElementById('val-maxMsg').textContent=n;}
+  document.getElementById('chat-panel').addEventListener('scroll',function(){autoScroll=(this.scrollHeight-this.scrollTop-this.clientHeight)<80;});
 });
 
-// ── ESTADO ───────────────────────────────────────────────────
-const state = {
-  clients:  new Set(),
-  tiktok:   { connected: false, lastMsg: 0, instance: null, restartCount: 0 },
-  twitch:   { connected: false },
-  kick:     { connected: false },
-  youtube:  { connected: false, channelId: null, liveChatId: null, nextPageToken: null, pollTimer: null },
-  msgCount: 0,
-};
+// ═══ FONT / GLOW / SINGLELINE ═══
+function applyFont(v,s){document.documentElement.style.setProperty('--font-body',v);document.getElementById('font-preview').style.fontFamily=v;store.set('chatFont',v);if(!s)toast('Fuente cambiada');}
+function toggleGlow(e,s){store.set('glowOff',e?'0':'1');if(e){document.body.classList.remove('no-glow');if(!s)toast('Brillo activado');}else{document.body.classList.add('no-glow');if(!s)toast('Brillo desactivado');}}
+function toggleSingleLine(e,s){store.set('singleLine',e?'1':'0');var p=document.getElementById('chat-panel');if(e){p.classList.add('single-line');if(!s)toast('Línea única activado');}else{p.classList.remove('single-line');if(!s)toast('Modo normal');}}
+function setCfgVar(cv,v,did){document.documentElement.style.setProperty(cv,v);if(did)document.getElementById(did).textContent=v;if(cv==='--ov-emote-size')store.set('emoteSize',parseInt(v));}
+function setMsgNameSize(v){document.getElementById('val-fontName').textContent=v+'px';var el=document.getElementById('dyn-name');if(!el){el=document.createElement('style');el.id='dyn-name';document.head.appendChild(el);}el.textContent='.msg-user{font-size:'+v+'px!important;}';}
+function applyColorPrimary(v,s){document.documentElement.style.setProperty('--corbata',v);if(!s){store.set('accentColor',v);toast('Color aplicado');}}
 
-// ══════════════════════════════════════════════════════════════
-// ★ NUEVA FUNCIÓN: Parsear emotes de Twitch
-//   tmi.js entrega tags.emotes como:
-//   { '25': ['0-4', '12-16'], '1902': ['6-10'] }
-//   Lo convertimos a: [{ text, url, start, end }]
-// ══════════════════════════════════════════════════════════════
-function parseTwitchEmotes(message, emotesTag) {
-  if (!emotesTag || typeof emotesTag !== 'object') return [];
-  const result = [];
-  for (const [emoteId, positions] of Object.entries(emotesTag)) {
-    for (const pos of positions) {
-      const [start, end] = pos.split('-').map(Number);
-      const text = message.slice(start, end + 1);
-      result.push({
-        text,
-        url: `https://static-cdn.jtvnw.net/emoticons/v2/${emoteId}/default/dark/1.0`,
-        start,
-        end,
+// ═══ WEBSOCKET ═══
+function connectWS(url){
+  if(!url)return;
+  if(ws){try{ws.close();}catch(e){}}
+  var wu=url.replace(/^https?/,'ws').replace(/\/$/,'');
+  try{ws=new WebSocket(wu);}catch(e){setStatus(false);scheduleRetry(url);return;}
+  ws.onopen=function(){isConnected=true;retryDelay=1000;setStatus(true);var id=store.get('kickChannelId');if(id)connectKickBrowser(id);};
+  ws.onmessage=function(e){
+    try{
+      var d=JSON.parse(e.data);
+      if(d.type==='status')handleStatus(d);
+      else if(d.type==='highlight'||d.type==='highlight_clear')return;
+      // FIX DUPLICADOS: ignorar mensajes que el propio bridge envió al servidor
+      // (kick_message se reenvía al WS; el servidor NO debe rebotarlo al dashboard)
+      // Si llega igual, lo mostramos solo si NO viene de kick_bridge local
+      else appendMessage(d);
+    }catch(err){}
+  };
+  ws.onclose=function(){isConnected=false;setStatus(false);scheduleRetry(url);};
+  ws.onerror=function(){ws.close();};
+}
+function scheduleRetry(url){retryDelay=Math.min(retryDelay*2,30000);setTimeout(function(){connectWS(url);},retryDelay);}
+function setStatus(ok){document.getElementById('ws-dot').className=ok?'ok':'';document.getElementById('ws-label').textContent=ok?'Conectado':'Desconectado';}
+
+function handleStatus(data){
+  setPlatformStatus('twitch',data.twitch,(data.channels&&data.channels.twitch)||'—');
+  setPlatformStatus('kick',data.kick,(data.channels&&data.channels.kick)||'—');
+  setPlatformStatus('tiktok',data.tiktok,(data.channels&&data.channels.tiktok)||'—');
+  setPlatformStatus('youtube',data.youtube,(data.channels&&data.channels.youtube)||'—');
+  if(data.channels)currentChannels=data.channels;
+  var mt=document.getElementById('tiktok-mode-tag');
+  if(mt){mt.textContent=data.tiktokMode||'connector';mt.className='tag '+(data.tiktokMode==='puppeteer'?'tag-puppeteer':'tag-connector');}
+  var ytBox=document.getElementById('youtube-status-box');
+  if(ytBox){
+    if(data.youtube){ytBox.className='info-box info-green';ytBox.innerHTML='✓ Conectado al chat en vivo';}
+    else if(data.channels&&data.channels.youtube){ytBox.className='info-box info-yellow';ytBox.innerHTML='⏳ '+esc(data.channels.youtube)+' — Sin live activo.';}
+    else{ytBox.className='info-box info-red';ytBox.innerHTML='Configura YOUTUBE_HANDLE en el servidor.';}
+  }
+  if(!data.kick){
+    var sid=store.get('kickChannelId');
+    if(sid&&(!kickWs||kickWs.readyState>1))connectKickBrowser(sid);
+    else if(!sid&&!autoKickDone&&data.channels&&data.channels.kick){autoKickDone=true;setTimeout(resolveKickId,1500);}
+  }
+}
+function setPlatformStatus(p,c,ch){var dot=document.getElementById('dot-'+p),el=document.getElementById('ch-'+p);if(dot)dot.className='platform-dot'+(c?' ok':'');if(el)el.textContent=ch||'—';}
+
+// ═══ APPEND MESSAGE ═══
+// FIX DUPLICADOS: de-duplication por mid con TTL corto
+var _recentMids={};
+function _isDuplicate(mid){
+  if(!mid)return false;
+  var now=Date.now();
+  if(_recentMids[mid]&&(now-_recentMids[mid])<4000)return true;
+  _recentMids[mid]=now;
+  // Limpiar cache vieja cada ~100 msgs
+  var keys=Object.keys(_recentMids);
+  if(keys.length>200)keys.slice(0,100).forEach(function(k){delete _recentMids[k];});
+  return false;
+}
+
+function appendMessage(data){
+  if(!data.chatname&&!data.chatmessage)return;
+
+  // FIX DUPLICADOS: verificar mid antes de renderizar
+  if(data.mid&&_isDuplicate(data.mid))return;
+
+  var panel=document.getElementById('chat-panel');
+  var ph=document.getElementById('chat-placeholder');if(ph)ph.remove();
+
+  var platform=data.platform||data.type||'custom';
+  var logo=LOGOS[platform]||LOGOS.custom;
+  var time=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+  var el=document.createElement('div');
+  el.className='msg-item '+platform;
+  el.dataset.mid=data.mid||'';
+
+  // FIX AVATAR onerror: construir el fallback sin comillas problemáticas en el atributo
+  var avatarInner='';
+  if(data.chatimg){
+    avatarInner='<img src="'+esc(data.chatimg)+'" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display=\'none\'">';
+  }
+  var aHTML='<div class="msg-avatar">'+avatarInner+'<div class="msg-avatar-fallback" style="'+(data.chatimg?'display:none':'')+'">'+logo+'</div></div>';
+
+  var pLabel=platform.charAt(0).toUpperCase()+platform.slice(1);
+  var pBadge='<span class="msg-platform"><span style="width:8px;height:8px;display:inline-flex;opacity:0.5;">'+logo+'</span>'+pLabel+'</span>';
+
+  var bHTML='';
+  if(data.roles&&data.roles.length)data.roles.forEach(function(r){bHTML+='<span class="msg-role">'+esc(r.label||r.type)+'</span>';});
+
+  // FIX NOMBRE: si hay nameColor lo usamos pero con mezcla para que siga legible
+  // ignoramos el filtro grayscale que ocultaba el color — simplemente lo ponemos
+  var nStyle=data.nameColor?'color:'+esc(data.nameColor)+';':'';
+
+  var mHTML=processMessageHTML(data);
+  var dHTML='';
+  if(data.type==='donation'&&(data.amount||data.donationType)){
+    var dl=data.donationType==='bits'?'💎 '+data.amount+' Bits':data.donationType==='sub'?'★ Nuevo Sub':data.donationType==='resub'?'↺ '+data.months+' meses':data.donationType==='subgift'?'✦ Sub regalada':data.donationType==='superchat'?'✦ '+(data.amountDisplay||data.amount):data.donationType==='member'?'★ Nuevo Miembro':data.donationType==='gift'?'✦ Regalo TikTok':data.amount?'✦ '+data.amount:'';
+    if(dl)dHTML='<div class="msg-donation-tag">'+dl+'</div>';
+  }
+
+  el.innerHTML=
+    aHTML+
+    '<div class="msg-body">'+
+      '<div class="msg-header">'+
+        '<span class="msg-user" style="'+nStyle+'">'+esc(data.chatname||'?')+'</span>'+
+        pBadge+bHTML+
+        '<span class="msg-time">'+time+'</span>'+
+        '<button class="msg-highlight-btn" onclick="event.stopPropagation();sendHighlight(this.closest(\'.msg-item\'))">📌 Destacar</button>'+
+      '</div>'+
+      '<div class="msg-text">'+mHTML+'</div>'+
+      dHTML+
+    '</div>';
+
+  el._msgData=data;
+  el.addEventListener('click',function(){sendHighlight(el);});
+  panel.appendChild(el);
+  messages.push({el:el,data:data});
+
+  if(messages.length>MAX_MESSAGES){var old=messages.shift();if(old.el.parentNode)old.el.parentNode.removeChild(old.el);}
+  if(autoScroll)requestAnimationFrame(function(){panel.scrollTop=panel.scrollHeight;});
+}
+
+// ═══ HIGHLIGHT ═══
+function sendHighlight(el){
+  if(!isConnected||!ws)return toast('Sin conexión');
+  var data=el._msgData;if(!data)return;
+  document.querySelectorAll('.msg-item.highlighted').forEach(function(m){m.classList.remove('highlighted');});
+  el.classList.add('highlighted');currentHighlightMid=el.dataset.mid;
+  document.getElementById('hl-bar').classList.add('active');
+  document.getElementById('hl-bar-text').textContent=(data.chatname||'?')+': '+(data.chatmessage||'');
+  ws.send(JSON.stringify({type:'highlight',platform:data.platform||data.type||'custom',chatname:data.chatname||'',chatmessage:data.chatmessage||'',chatimg:data.chatimg||null,nameColor:data.nameColor||null,roles:data.roles||[],chatemotes:data.chatemotes||[],mid:data.mid||''}));
+  toast('📌 Mensaje destacado');
+}
+function clearHighlight(){
+  if(!isConnected||!ws)return;
+  ws.send(JSON.stringify({type:'highlight_clear'}));
+  document.querySelectorAll('.msg-item.highlighted').forEach(function(m){m.classList.remove('highlighted');});
+  currentHighlightMid=null;document.getElementById('hl-bar').classList.remove('active');
+  toast('Destacado quitado');
+}
+
+// ═══ KICK BRIDGE ═══
+// FIX DUPLICADOS: cuando el bridge manda al WS (ws.send) el servidor lo reenvía
+// a todos los clientes incluido este mismo dashboard → mensaje duplicado.
+// Solución: el bridge ya NO hace appendMessage local; solo envía al WS.
+// Si el WS no está conectado, ENTONCES sí renderiza local (fallback).
+var kickWs=null,kickRetryDelay=3000,kickRetryTimeout=null;
+
+function connectKickBrowser(channelId){
+  if(!channelId)return;
+  if(kickWs){try{kickWs.onmessage=null;kickWs.onclose=null;kickWs.onerror=null;kickWs.close();}catch(e){}kickWs=null;}
+  if(kickRetryTimeout){clearTimeout(kickRetryTimeout);kickRetryTimeout=null;}
+  var box=document.getElementById('kick-status-box');
+  if(box){box.className='info-box info-yellow';box.innerHTML='⏳ Conectando a Kick...';}
+  var urls=[
+    'wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false',
+    'wss://ws-us2.pusher.com/app/eb1d5f283081a78b932c?protocol=7&client=js&version=7.6.0&flash=false'
+  ];
+  var idx=parseInt(localStorage.getItem('kickWsUrlIndex')||'0');
+  tryKickUrl(channelId,urls,idx);
+}
+
+function tryKickUrl(c,u,i){
+  if(i>=u.length)i=0;
+  try{kickWs=new WebSocket(u[i]);}catch(e){kickRetryTimeout=setTimeout(function(){tryKickUrl(c,u,(i+1)%u.length);},5000);return;}
+
+  kickWs.onopen=function(){
+    kickRetryDelay=3000;
+    localStorage.setItem('kickWsUrlIndex',i);
+    kickWs.send(JSON.stringify({event:'pusher:subscribe',data:{auth:'',channel:'chatrooms.'+c+'.v2'}}));
+  };
+
+  kickWs.onmessage=function(e){
+    try{
+      var msg=JSON.parse(e.data),ev=msg.event||'';
+      if(ev==='pusher:connection_established'||ev==='pusher:pong')return;
+      if(ev==='pusher_internal:subscription_succeeded'){
+        var box=document.getElementById('kick-status-box');
+        if(box){box.className='info-box info-green';box.innerHTML='✓ Kick conectado (chatroom '+c+')';}
+        if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'kick_connected'}));
+        return;
+      }
+      if(ev==='pusher:error'){kickWs.close();return;}
+      if(ev.indexOf('ChatMessageEvent')===-1)return;
+
+      var d=typeof msg.data==='string'?JSON.parse(msg.data):msg.data;
+      var kr=[],badges=(d.sender&&d.sender.identity&&d.sender.identity.badges)||[];
+      badges.forEach(function(b){
+        var bt=(b.type||'').toLowerCase();
+        if(bt==='broadcaster'||bt==='owner')kr.push({type:'broadcaster',label:'Owner'});
+        else if(bt==='moderator'||bt==='mod')kr.push({type:'moderator',label:'Mod'});
+        else if(bt==='vip')kr.push({type:'vip',label:'VIP'});
+        else if(bt==='subscriber'||bt==='sub')kr.push({type:'subscriber',label:'Sub'});
+        else kr.push({type:bt,label:b.type});
       });
-    }
-  }
-  // Ordenar por posición
-  result.sort((a, b) => a.start - b.start);
-  return result;
+      var un=(d.sender&&d.sender.username)||'Unknown';
+      var nc=(d.sender&&d.sender.identity&&d.sender.identity.color)||'#888';
+
+      getKickAvatarBrowser(un,function(av){
+        var cm={
+          type:'kick_message',platform:'kick',
+          chatname:un,chatmessage:d.content,
+          nameColor:nc,chatimg:av||null,
+          roles:kr,
+          mid:d.id||('kick-'+Date.now())
+        };
+        if(ws&&ws.readyState===1){
+          // FIX DUPLICADOS: enviamos al servidor; él lo reenvía a todos.
+          // Registramos el mid localmente ANTES de enviar para que cuando
+          // el WS nos lo rebote, _isDuplicate() lo descarte.
+          if(cm.mid)_recentMids[cm.mid]=Date.now();
+          ws.send(JSON.stringify(cm));
+          // Renderizamos aquí directamente (1 vez) sin esperar el rebote
+          appendMessage(cm);
+        } else {
+          // Sin WS, mostrar directo
+          appendMessage(cm);
+        }
+      });
+    }catch(err){}
+  };
+
+  kickWs.onclose=function(e){
+    var box=document.getElementById('kick-status-box');
+    if(box){box.className='info-box info-yellow';box.innerHTML='↺ Kick desconectado...';}
+    if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'kick_disconnected'}));
+    var ni=e.code===4001?(i+1)%u.length:i;
+    kickRetryDelay=Math.min(kickRetryDelay*1.5,30000);
+    kickRetryTimeout=setTimeout(function(){tryKickUrl(c,u,ni);},kickRetryDelay);
+  };
+  kickWs.onerror=function(){};
+
+  var pi=setInterval(function(){
+    if(kickWs&&kickWs.readyState===1)kickWs.send(JSON.stringify({event:'pusher:ping',data:{}}));
+    else clearInterval(pi);
+  },25000);
 }
 
-// ══════════════════════════════════════════════════════════════
-// KICK AVATAR CACHE
-// ══════════════════════════════════════════════════════════════
-const kickAvatarCache   = {};
-const kickAvatarPending = {};
-
-// ── TWITCH AVATAR CACHE ──────────────────────────────────────
-const twitchAvatarCache   = {};
-const twitchAvatarPending = {};
-
-function getTwitchAvatar(username, callback) {
-  if (!username) return callback(null);
-  const slug = username.toLowerCase();
-  if (twitchAvatarCache[slug])   return callback(twitchAvatarCache[slug]);
-  if (twitchAvatarPending[slug]) { twitchAvatarPending[slug].push(callback); return; }
-  twitchAvatarPending[slug] = [callback];
-  const url = `https://decapi.me/twitch/avatar/${slug}`;
-  const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
-    let body = '';
-    res.on('data', chunk => body += chunk);
-    res.on('end', () => {
-      const avatar = body.trim().startsWith('http') ? body.trim() : null;
-      if (avatar) twitchAvatarCache[slug] = avatar;
-      const cbs = twitchAvatarPending[slug] || [];
-      delete twitchAvatarPending[slug];
-      cbs.forEach(cb => cb(avatar));
+var kickAvatarCache={},kickAvatarPending={};
+function getKickAvatarBrowser(username,cb){
+  if(!username)return cb(null);
+  var slug=username.toLowerCase();
+  if(kickAvatarCache[slug])return cb(kickAvatarCache[slug]);
+  if(kickAvatarPending[slug]){kickAvatarPending[slug].push(cb);return;}
+  kickAvatarPending[slug]=[cb];
+  fetch('https://kick.com/api/v2/channels/'+slug,{headers:{'Accept':'application/json'}})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var av=(data.user&&(data.user.profile_pic||data.user.profilePic))||data.profile_pic||null;
+      if(av)kickAvatarCache[slug]=av;
+      var cbs=kickAvatarPending[slug]||[];delete kickAvatarPending[slug];
+      cbs.forEach(function(c){c(av);});
+    }).catch(function(){
+      var cbs=kickAvatarPending[slug]||[];delete kickAvatarPending[slug];
+      cbs.forEach(function(c){c(null);});
     });
-  });
-  req.on('error', () => {
-    const cbs = twitchAvatarPending[slug] || [];
-    delete twitchAvatarPending[slug];
-    cbs.forEach(cb => cb(null));
-  });
-  req.setTimeout(5000, () => { req.destroy(); });
 }
 
-function getKickAvatar(username, callback) {
-  if (!username) return callback(null);
-  const slug = username.toLowerCase();
-  if (kickAvatarCache[slug])   return callback(kickAvatarCache[slug]);
-  if (kickAvatarPending[slug]) { kickAvatarPending[slug].push(callback); return; }
-  kickAvatarPending[slug] = [callback];
-  const url = `https://kick.com/api/v2/channels/${slug}`;
-  const req = https.get(url, {
-    headers: {
-      'Accept': 'application/json',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    }
-  }, (res) => {
-    let body = '';
-    res.on('data', chunk => body += chunk);
-    res.on('end', () => {
-      let avatar = null;
-      try {
-        const data = JSON.parse(body);
-        avatar = (data.user && (data.user.profile_pic || data.user.profilePic)) || data.profile_pic || null;
-      } catch(e) {}
-      if (avatar) kickAvatarCache[slug] = avatar;
-      const cbs = kickAvatarPending[slug] || [];
-      delete kickAvatarPending[slug];
-      cbs.forEach(cb => cb(avatar));
-    });
-  });
-  req.on('error', () => {
-    const cbs = kickAvatarPending[slug] || [];
-    delete kickAvatarPending[slug];
-    cbs.forEach(cb => cb(null));
-  });
-  req.setTimeout(8000, () => { req.destroy(); });
+// ═══ ACCIONES ═══
+function saveAndConnect(){var url=document.getElementById('serverUrl').value.trim();if(!url)return toast('Introduce la URL');store.set('serverUrl',url);retryDelay=1000;autoKickDone=false;connectWS(url);updateOverlayUrls();toast('Conectando...');}
+function toggleKickManual(){var el=document.getElementById('kick-manual-wrap');el.style.display=el.style.display==='none'?'block':'none';}
+
+async function resolveKickId(){
+  var channel=currentChannels.kick||store.get('kickChannel')||'';
+  var box=document.getElementById('kick-status-box');
+  if(!channel){box.className='info-box info-red';box.innerHTML='Sin KICK_CHANNEL configurado.';return;}
+  box.className='info-box info-yellow';box.innerHTML='⏳ Resolviendo ID...';
+  try{
+    var r=await fetch('https://kick.com/api/v2/channels/'+channel,{headers:{'Accept':'application/json'}});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    var d=await r.json();
+    var id=String((d.chatroom&&d.chatroom.id)||d.id||'');
+    if(!id)throw new Error('Sin chatroom.id');
+    box.className='info-box info-green';box.innerHTML='✓ ID: <strong>'+id+'</strong>';
+    document.getElementById('kickChannelId').value=id;
+    await sendKickId(id);
+  }catch(e){box.className='info-box info-red';box.innerHTML='Error: '+e.message;document.getElementById('kick-manual-wrap').style.display='block';}
 }
 
-// ── BROADCAST ────────────────────────────────────────────────
-function broadcast(msg) {
-  const raw = JSON.stringify(msg);
-  state.clients.forEach(ws => {
-    if (ws.readyState === 1) ws.send(raw);
-  });
-  state.msgCount++;
+async function sendKickId(idParam){
+  var id=idParam||document.getElementById('kickChannelId').value.trim();
+  if(!id)return toast('Introduce el Channel ID');
+  var su=store.get('serverUrl');if(!su)return toast('Conecta al servidor primero');
+  var hu=su.replace(/^wss?/,'https').replace(/\/$/,'');
+  try{
+    var r=await fetch(hu+'/api/kick/channel-id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channelId:id})});
+    var d=await r.json();
+    if(d.ok){store.set('kickChannelId',String(id));toast('✓ Kick ID '+id);connectKickBrowser(String(id));}
+    else toast('Servidor rechazó el ID');
+  }catch(e){toast('Error: '+e.message);}
 }
 
-function broadcastStatus() {
-  broadcast({
-    type:    'status',
-    twitch:  state.twitch.connected,
-    kick:    state.kick.connected,
-    tiktok:  state.tiktok.connected,
-    youtube: state.youtube.connected,
-    tiktokMode: CONFIG.tiktokMode,
-    channels: {
-      twitch:  CONFIG.twitch,
-      kick:    CONFIG.kick,
-      tiktok:  CONFIG.tiktok,
-      youtube: CONFIG.youtubeHandle,
-    }
+async function restartTikTok(){var su=store.get('serverUrl');if(!su)return toast('Configura la URL');var hu=su.replace(/^wss?/,'https').replace(/\/$/,'');try{var r=await fetch(hu+'/api/tiktok/restart',{method:'POST'});var d=await r.json();toast(d.ok?'↺ TikTok reconectando...':'Error');}catch(e){toast('No se pudo conectar');}}
+async function restartYouTube(){var su=store.get('serverUrl');if(!su)return toast('Configura la URL');var hu=su.replace(/^wss?/,'https').replace(/\/$/,'');var ytBox=document.getElementById('youtube-status-box');if(ytBox){ytBox.className='info-box info-yellow';ytBox.innerHTML='⏳ Buscando live...';}try{var r=await fetch(hu+'/api/youtube/restart',{method:'POST'});var d=await r.json();toast(d.ok?'↺ YouTube reconectando...':'Error');}catch(e){toast('No se pudo conectar');}}
+function openTikTokLive(){var u=currentChannels.tiktok||'';if(!u)return toast('TikTok no configurado');window.open('https://www.tiktok.com/@'+u+'/live','_blank','noopener');}
+function openYouTubeLive(){var c=currentChannels.youtube||'';if(!c)return toast('YouTube no configurado');var h=c.startsWith('@')?c:'@'+c;window.open('https://www.youtube.com/'+h+'/live','_blank','noopener');}
+function sendCustomMessage(){var input=document.getElementById('custom-msg-input'),text=input.value.trim();if(!text)return;if(!isConnected||!ws)return toast('Sin conexión');ws.send(JSON.stringify({type:'custom_message',user:'Tú (dashboard)',text:text}));input.value='';}
+
+// ═══ OVERLAY URLS ═══
+function getBaseOverlayDir(){var href=window.location.href.split('?')[0].replace(/\/+$/,'');var base=href.replace(/\/dashboard(\/[^?]*)?$/,'/overlay');if(base===href)base=href.replace(/\/[^/]+$/,'/overlay');return base;}
+function updateOverlayUrls(){
+  var su=store.get('serverUrl');
+  var st=(parseInt(document.getElementById('showtime-input').value)||12)*1000;
+  var base=(window.location.protocol!=='file:')?getBaseOverlayDir():'';
+  var ids={'url-chat':{file:'index.html',params:''},'url-chatuno':{file:'chat_uno.html',params:''},'url-destacador':{file:'destacador.html',params:'&showtime='+st}};
+  Object.keys(ids).forEach(function(id){
+    var box=document.getElementById(id);if(!box)return;
+    if(!su){box.textContent='Configura el servidor primero...';box.dataset.url='';return;}
+    if(!base){box.textContent='No disponible en local';box.dataset.url='';return;}
+    var url=base+'/'+ids[id].file+'?server='+encodeURIComponent(su)+ids[id].params;
+    box.textContent=url;box.dataset.url=url;
   });
 }
+function copyUrl(id){var url=document.getElementById(id).dataset.url;if(!url)return toast('Configura el servidor primero');navigator.clipboard.writeText(url).then(function(){toast('URL copiada');});}
+function openUrl(id){var url=document.getElementById(id).dataset.url;if(!url)return toast('Configura el servidor primero');window.open(url,'_blank');}
 
-// ── WEBSOCKET CLIENTS ────────────────────────────────────────
-wss.on('connection', (ws) => {
-  state.clients.add(ws);
-  ws.send(JSON.stringify({
-    type: 'status',
-    twitch:  state.twitch.connected,
-    kick:    state.kick.connected,
-    tiktok:  state.tiktok.connected,
-    youtube: state.youtube.connected,
-    tiktokMode: CONFIG.tiktokMode,
-    channels: { twitch: CONFIG.twitch, kick: CONFIG.kick, tiktok: CONFIG.tiktok, youtube: CONFIG.youtubeHandle }
-  }));
+function clearChat(){if(!confirm('¿Limpiar mensajes?'))return;var panel=document.getElementById('chat-panel');panel.innerHTML='<div class="chat-spacer" id="chat-spacer"></div><div id="chat-placeholder">Los mensajes aparecerán aquí<br><span style="font-size:11px;letter-spacing:3px;">— ひとつめ様 —</span></div>';messages=[];toast('Chat limpiado');}
+function exportMessages(){var data=messages.map(function(m,i){return{id:i+1,name:m.data.chatname,message:m.data.chatmessage,platform:m.data.platform||m.data.type,timestamp:new Date().toISOString()};});var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='meeve_messages_'+Date.now()+'.json';a.click();URL.revokeObjectURL(url);toast('Exportado');}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
 
-  ws.on('close', () => { state.clients.delete(ws); });
-
-  ws.on('message', (data) => {
-    try {
-      const msg = JSON.parse(data);
-
-      if (msg.type === 'custom_message') {
-        broadcast({ type: 'custom', platform: 'custom', chatname: msg.user || 'Tú', chatmessage: msg.text, nameColor: '#FF6B9D', mid: 'custom-' + Date.now() });
-      }
-
-      if (msg.type === 'highlight') {
-        broadcast({
-          type: 'highlight', platform: msg.platform || 'custom',
-          chatname: msg.chatname || '', chatmessage: msg.chatmessage || '',
-          chatimg: msg.chatimg || null, nameColor: msg.nameColor || '#FF6B9D',
-          roles: msg.roles || [], chatemotes: msg.chatemotes || [],
-          mid: msg.mid || ('hl-' + Date.now()),
-        });
-      }
-
-      if (msg.type === 'highlight_clear') broadcast({ type: 'highlight_clear' });
-
-      if (msg.type === 'kick_message') handleKickMessageFromBrowser(msg);
-      if (msg.type === 'kick_donation') handleKickDonationFromBrowser(msg);
-      if (msg.type === 'kick_disconnected') { state.kick.connected = false; broadcastStatus(); }
-      if (msg.type === 'kick_connected') { state.kick.connected = true; broadcastStatus(); }
-    } catch(e) {}
-  });
-});
-
-// ══════════════════════════════════════════════════════════════
-//  TWITCH IRC + DONACIONES
-// ══════════════════════════════════════════════════════════════
-function connectTwitch() {
-  if (!CONFIG.twitch) return;
-
-  const client = new tmi.Client({ options: { debug: false }, channels: [CONFIG.twitch] });
-
-  client.connect().catch(() => setTimeout(connectTwitch, 10000));
-
-  client.on('connected', () => {
-    state.twitch.connected = true;
-    broadcastStatus();
-  });
-
-  client.on('disconnected', () => {
-    state.twitch.connected = false;
-    broadcastStatus();
-    setTimeout(connectTwitch, 5000);
-  });
-
-  client.on('message', (channel, tags, message, self) => {
-    if (self) return;
-
-    const badges = tags.badges || {};
-    const roles = [];
-    if (badges.broadcaster) roles.push({ type: 'broadcaster', label: 'Streamer' });
-    if (badges.moderator)   roles.push({ type: 'moderator',   label: 'Mod' });
-    if (badges.vip)         roles.push({ type: 'vip',         label: 'VIP' });
-    if (badges.subscriber)  roles.push({ type: 'subscriber',  label: 'Sub' });
-    if (badges.founder)     roles.push({ type: 'founder',     label: 'Founder' });
-
-    // ★ PARSEAR EMOTES DE TWITCH
-    const chatemotes = parseTwitchEmotes(message, tags.emotes);
-
-    const bitsMatch = message.match(/cheer(\d+)/i);
-    const bitsAmount = tags.bits ? parseInt(tags.bits) : (bitsMatch ? parseInt(bitsMatch[1]) : 0);
-    const twitchUser = tags['display-name'] || tags.username || '';
-
-    getTwitchAvatar(twitchUser, (avatar) => {
-      if (bitsAmount > 0) {
-        broadcast({
-          type: 'donation', platform: 'twitch', donationType: 'bits',
-          chatname: twitchUser,
-          chatmessage: message.replace(/cheer\d+\s*/gi, '').trim() || `¡${bitsAmount} Bits!`,
-          chatemotes,
-          amount: bitsAmount, currency: 'BITS',
-          nameColor: tags.color || '#9146FF',
-          chatimg: avatar || null, roles,
-          mid: 'tw-bits-' + Date.now(),
-        });
-      } else {
-        broadcast({
-          type: 'twitch', platform: 'twitch',
-          chatname: twitchUser,
-          chatmessage: message,
-          chatemotes,   // ← INCLUIR EMOTES
-          nameColor: tags.color || '#9146FF',
-          chatimg: avatar || null, roles,
-          mid: tags.id || ('tw-' + Date.now()),
-        });
-      }
-    });
-  });
-
-  client.on('subscription', (channel, username, method, message, userstate) => {
-    broadcast({ type: 'donation', platform: 'twitch', donationType: 'sub', chatname: userstate['display-name'] || username, chatmessage: message || '¡Nuevo suscriptor!', subPlan: method?.plan || 'Prime', nameColor: userstate?.color || '#9146FF', chatimg: null, mid: 'tw-sub-' + Date.now() });
-  });
-
-  client.on('resub', (channel, username, months, message, userstate, methods) => {
-    broadcast({ type: 'donation', platform: 'twitch', donationType: 'resub', chatname: userstate['display-name'] || username, chatmessage: message || `¡${months} meses de sub!`, months, subPlan: methods?.plan || 'Prime', nameColor: userstate?.color || '#9146FF', chatimg: null, mid: 'tw-resub-' + Date.now() });
-  });
-
-  client.on('subgift', (channel, username, streakMonths, recipient, methods, userstate) => {
-    broadcast({ type: 'donation', platform: 'twitch', donationType: 'subgift', chatname: userstate['display-name'] || username, chatmessage: `¡Regaló una sub a ${recipient}!`, recipient, subPlan: methods?.plan || '1000', nameColor: userstate?.color || '#9146FF', chatimg: null, mid: 'tw-gift-' + Date.now() });
-  });
-
-  client.on('submysterygift', (channel, username, numSubsGifted, methods, userstate) => {
-    broadcast({ type: 'donation', platform: 'twitch', donationType: 'subgift', chatname: userstate['display-name'] || username, chatmessage: `¡Regaló ${numSubsGifted} subs!`, amount: numSubsGifted, nameColor: userstate?.color || '#9146FF', chatimg: null, mid: 'tw-massgift-' + Date.now() });
-  });
+function injectTestMessage(){
+  appendMessage({type:'twitch',platform:'twitch',chatname:'TestViewer',chatmessage:'Hola! Kappa que tal PogChamp',nameColor:'#b892e8',chatemotes:[{text:'Kappa',url:'https://static-cdn.jtvnw.net/emoticons/v2/25/default/dark/1.0',start:7,end:11},{text:'PogChamp',url:'https://static-cdn.jtvnw.net/emoticons/v2/305954156/default/dark/1.0',start:18,end:25}],mid:'test-tw-'+Date.now()});
+  setTimeout(function(){appendMessage({type:'kick',platform:'kick',chatname:'TestKick',chatmessage:'Hola [emote:1:GreenBalloon] como van',nameColor:'#7ecf6e',mid:'test-kick-'+Date.now()});},400);
+  setTimeout(function(){appendMessage({type:'donation',platform:'twitch',donationType:'bits',chatname:'Donator',chatmessage:'Gran stream!',amount:500,nameColor:'#e8a0a0',mid:'test-bits-'+Date.now()});},800);
+  toast('Mensajes de prueba listos');
 }
 
-// ══════════════════════════════════════════════════════════════
-//  KICK
-// ══════════════════════════════════════════════════════════════
-app.get('/api/kick/channel-id', (req, res) => res.json({ kickId: CONFIG.kickId || null, channel: CONFIG.kick }));
-
-app.post('/api/kick/channel-id', (req, res) => {
-  const { channelId } = req.body;
-  if (!channelId) return res.status(400).json({ error: 'channelId requerido' });
-  CONFIG.kickId = String(channelId);
-  res.json({ ok: true, kickId: CONFIG.kickId });
-});
-
-function handleKickMessageFromBrowser(data) {
-  if (!data.chatname && !data.chatmessage) return;
-  const username = data.chatname || 'Unknown';
-  if (data.chatimg) {
-    broadcast({ type: 'kick', platform: 'kick', chatname: username, chatmessage: data.chatmessage, nameColor: data.nameColor || '#53FC18', chatimg: data.chatimg, roles: data.roles || [], chatemotes: data.chatemotes || [], mid: data.mid || ('kick-' + Date.now()) });
-  } else {
-    getKickAvatar(username, (avatar) => {
-      broadcast({ type: 'kick', platform: 'kick', chatname: username, chatmessage: data.chatmessage, nameColor: data.nameColor || '#53FC18', chatimg: avatar || null, roles: data.roles || [], chatemotes: data.chatemotes || [], mid: data.mid || ('kick-' + Date.now()) });
-    });
-  }
-}
-
-function handleKickDonationFromBrowser(data) {
-  const username = data.chatname || 'Unknown';
-  getKickAvatar(username, (avatar) => {
-    broadcast({ type: 'donation', platform: 'kick', donationType: data.donationType || 'giftedsub', chatname: username, chatmessage: data.chatmessage || '', amount: data.amount || null, currency: data.currency || null, months: data.months || null, nameColor: data.nameColor || '#53FC18', chatimg: avatar || null, roles: data.roles || [], mid: data.mid || ('kick-don-' + Date.now()) });
-  });
-}
-
-function connectKick() {
-  if (!CONFIG.kick) return;
-  state.kick.connected = false;
-  broadcastStatus();
-}
-
-// ══════════════════════════════════════════════════════════════
-//  TIKTOK
-// ══════════════════════════════════════════════════════════════
-async function connectTikTokConnector() {
-  if (!CONFIG.tiktok) return;
-  if (!WebcastPushConnection) return;
-
-  const username = CONFIG.tiktok.startsWith('@') ? CONFIG.tiktok : '@' + CONFIG.tiktok;
-
-  if (state.tiktok.instance) {
-    try { state.tiktok.instance.disconnect(); } catch(e) {}
-    state.tiktok.instance = null;
-  }
-
-  const conn = new WebcastPushConnection(username, {
-    processInitialData: false, enableExtendedGiftInfo: true,
-    enableWebsocketUpgrade: true, requestPollingIntervalMs: 2000,
-    sessionId: process.env.TIKTOK_SESSION_ID || undefined,
-  });
-
-  state.tiktok.instance = conn;
-
-  try {
-    const info = await conn.connect();
-    state.tiktok.connected = true;
-    state.tiktok.lastMsg   = Date.now();
-    broadcastStatus();
-  } catch(e) {
-    broadcastStatus();
-    const delay = e.message?.includes('LIVE_NOT_FOUND') ? 60000 : e.message?.includes('403') ? 300000 : 15000;
-    setTimeout(() => connectTikTokConnector(), delay);
-    return;
-  }
-
-  conn.on('chat', (data) => {
-    state.tiktok.lastMsg = Date.now();
-    broadcast({ type: 'tiktok', platform: 'tiktok', chatname: data.uniqueId || data.nickname || 'TikToker', chatmessage: data.comment, chatimg: data.profilePictureUrl || null, nameColor: '#FF0050', mid: 'tt-' + Date.now() + '-' + Math.random() });
-  });
-
-  conn.on('gift', (data) => {
-    state.tiktok.lastMsg = Date.now();
-    if (data.giftType === 1 && !data.repeatEnd) return;
-    const giftName = data.giftName || data.extendedGiftInfo?.name || `Gift #${data.giftId}`;
-    const diamonds = data.diamondCount || 0;
-    const quantity = data.repeatCount || 1;
-    broadcast({ type: 'donation', platform: 'tiktok', donationType: 'gift', chatname: data.uniqueId || 'TikToker', chatmessage: `¡Envió ${quantity}x ${giftName}! (${diamonds * quantity} 💎)`, giftName, amount: diamonds * quantity, currency: 'DIAMONDS', quantity, chatimg: data.profilePictureUrl || null, nameColor: '#FF0050', mid: 'tt-gift-' + Date.now() });
-  });
-
-  conn.on('subscribe', (data) => {
-    broadcast({ type: 'donation', platform: 'tiktok', donationType: 'sub', chatname: data.uniqueId || 'TikToker', chatmessage: '¡Se suscribió al canal!', chatimg: data.profilePictureUrl || null, nameColor: '#FF0050', mid: 'tt-sub-' + Date.now() });
-  });
-
-  conn.on('disconnected', () => {
-    state.tiktok.connected = false;
-    broadcastStatus();
-    setTimeout(() => connectTikTokConnector(), 10000);
-  });
-
-  conn.on('error', (e) => console.error('[TikTok] Error:', e?.message || e));
-}
-
-setInterval(() => {
-  if (state.tiktok.connected && state.tiktok.lastMsg > 0 && Date.now() - state.tiktok.lastMsg > 3 * 60 * 1000) {
-    state.tiktok.connected = false;
-    broadcastStatus();
-    connectTikTokConnector();
-  }
-}, 60000);
-
-// ══════════════════════════════════════════════════════════════
-//  YOUTUBE
-// ══════════════════════════════════════════════════════════════
-function fetchJSON(url) {
-  return new Promise((resolve, reject) => {
-    const req = https.get(url, { headers: { 'Accept': 'application/json' } }, (res) => {
-      let body = '';
-      res.on('data', chunk => body += chunk);
-      res.on('end', () => { try { resolve(JSON.parse(body)); } catch(e) { reject(e); } });
-    });
-    req.on('error', reject);
-    req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
-  });
-}
-
-async function youtubeResolveChannelId(handleOrName) {
-  if (!handleOrName || !CONFIG.youtubeKey) return null;
-  if (/^UC[\w-]{22}$/.test(handleOrName)) return handleOrName;
-  const query = handleOrName.replace(/^@/, '');
-  try {
-    const handleData = await fetchJSON(`https://www.googleapis.com/youtube/v3/channels?part=id,snippet&forHandle=${encodeURIComponent(query)}&key=${CONFIG.youtubeKey}`);
-    if (handleData.items?.length > 0) return handleData.items[0].id;
-    const searchData = await fetchJSON(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=channel&maxResults=5&key=${CONFIG.youtubeKey}`);
-    if (searchData.items?.length > 0) return searchData.items[0].snippet?.channelId;
-    return null;
-  } catch(e) { return null; }
-}
-
-async function youtubeGetLiveChatId(channelId) {
-  if (!channelId || !CONFIG.youtubeKey) return null;
-  try {
-    const searchData = await fetchJSON(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&key=${CONFIG.youtubeKey}`);
-    if (!searchData.items?.length) return null;
-    const videoId = searchData.items[0].id?.videoId;
-    if (!videoId) return null;
-    const videoData = await fetchJSON(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${CONFIG.youtubeKey}`);
-    return videoData.items?.[0]?.liveStreamingDetails?.activeLiveChatId || null;
-  } catch(e) { return null; }
-}
-
-async function youtubePollChat() {
-  if (!state.youtube.liveChatId || !CONFIG.youtubeKey) return;
-  let url = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${state.youtube.liveChatId}&part=snippet,authorDetails&maxResults=200&key=${CONFIG.youtubeKey}`;
-  if (state.youtube.nextPageToken) url += `&pageToken=${encodeURIComponent(state.youtube.nextPageToken)}`;
-
-  try {
-    const data = await fetchJSON(url);
-    if (data.error) {
-      if (data.error.code === 403 || data.error.code === 404) {
-        clearInterval(state.youtube.pollTimer);
-        state.youtube.connected = false; state.youtube.liveChatId = null;
-        broadcastStatus();
-        setTimeout(connectYouTube, 60000);
-      }
-      return;
-    }
-    state.youtube.nextPageToken = data.nextPageToken || state.youtube.nextPageToken;
-
-    for (const item of (data.items || [])) {
-      const snippet = item.snippet || {};
-      const authorDetails = item.authorDetails || {};
-      const msgType = snippet.type;
-      const base = { chatname: authorDetails.displayName || 'YouTuber', chatimg: authorDetails.profileImageUrl || null, nameColor: '#FF0000', isOwner: authorDetails.isChatOwner || false, isMod: authorDetails.isChatModerator || false, isMember: authorDetails.isChatSponsor || false };
-      const roles = [];
-      if (base.isOwner) roles.push({ type: 'broadcaster', label: 'Streamer' });
-      if (base.isMod)   roles.push({ type: 'moderator', label: 'Mod' });
-      if (base.isMember) roles.push({ type: 'member', label: 'Miembro' });
-
-      if (msgType === 'textMessageEvent') {
-        broadcast({ type: 'youtube', platform: 'youtube', ...base, chatmessage: snippet.displayMessage || snippet.textMessageDetails?.messageText || '', roles, mid: 'yt-' + item.id });
-      } else if (msgType === 'superChatEvent') {
-        const sc = snippet.superChatDetails || {};
-        broadcast({ type: 'donation', platform: 'youtube', donationType: 'superchat', ...base, chatmessage: sc.userComment || '¡Super Chat!', amount: sc.amountMicros ? sc.amountMicros / 1000000 : 0, amountDisplay: sc.amountDisplayString || '', currency: sc.currency || 'USD', tier: sc.tier || 1, roles, mid: 'yt-sc-' + item.id });
-      } else if (msgType === 'newSponsorEvent' || msgType === 'memberMilestoneChatEvent') {
-        broadcast({ type: 'donation', platform: 'youtube', donationType: 'member', ...base, chatmessage: snippet.displayMessage || '¡Nuevo miembro!', roles, mid: 'yt-mem-' + item.id });
-      }
-    }
-
-    const pollingMs = Math.max((data.pollingIntervalMillis || 5000), 3000);
-    clearTimeout(state.youtube.pollTimer);
-    state.youtube.pollTimer = setTimeout(youtubePollChat, pollingMs);
-  } catch(e) {
-    clearTimeout(state.youtube.pollTimer);
-    state.youtube.pollTimer = setTimeout(youtubePollChat, 10000);
-  }
-}
-
-async function connectYouTube() {
-  if (!CONFIG.youtubeHandle || !CONFIG.youtubeKey) return;
-  if (!state.youtube.channelId) {
-    const channelId = await youtubeResolveChannelId(CONFIG.youtubeHandle);
-    if (!channelId) { setTimeout(connectYouTube, 2 * 60 * 1000); return; }
-    state.youtube.channelId = channelId;
-  }
-  const chatId = await youtubeGetLiveChatId(state.youtube.channelId);
-  if (!chatId) { setTimeout(connectYouTube, 2 * 60 * 1000); return; }
-  state.youtube.liveChatId = chatId;
-  state.youtube.nextPageToken = null;
-  state.youtube.connected = true;
-  broadcastStatus();
-  youtubePollChat();
-}
-
-// ── HTTP ENDPOINTS ───────────────────────────────────────────
-app.get('/health', (req, res) => res.json({ ok: true, uptime: Math.floor(process.uptime()), messages: state.msgCount, clients: state.clients.size, twitch: state.twitch.connected, kick: state.kick.connected, tiktok: state.tiktok.connected, youtube: state.youtube.connected }));
-
-app.get('/tiktok-preview', (req, res) => {
-  const user = CONFIG.tiktok || req.query.user || '';
-  res.send(`<!DOCTYPE html><html><body style="background:#0f0f0f;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;flex-direction:column;gap:20px"><div style="font-size:60px">🎵</div><h2>TikTok no permite embeds</h2>${user?`<a href="https://www.tiktok.com/@${user}/live" style="background:#FF0050;color:#fff;padding:12px 28px;border-radius:999px;text-decoration:none;font-weight:700">🔴 Ver @${user} en vivo</a>`:''}</body></html>`);
-});
-
-app.post('/api/tiktok/restart', (req, res) => {
-  state.tiktok.connected = false; state.tiktok.restartCount++;
-  broadcastStatus(); connectTikTokConnector();
-  res.json({ ok: true, restarts: state.tiktok.restartCount });
-});
-
-app.post('/api/youtube/restart', (req, res) => {
-  clearTimeout(state.youtube.pollTimer);
-  state.youtube.connected = false; state.youtube.liveChatId = null;
-  state.youtube.nextPageToken = null; state.youtube.channelId = null;
-  broadcastStatus(); connectYouTube();
-  res.json({ ok: true });
-});
-
-app.get('/api/status', (req, res) => res.json({
-  twitch: { connected: state.twitch.connected, channel: CONFIG.twitch },
-  kick: { connected: state.kick.connected, channel: CONFIG.kick },
-  tiktok: { connected: state.tiktok.connected, user: CONFIG.tiktok },
-  youtube: { connected: state.youtube.connected, channelId: state.youtube.channelId || CONFIG.youtubeHandle },
-  clients: state.clients.size, messages: state.msgCount, uptime: Math.floor(process.uptime()),
-}));
-
-// ── ARRANCAR ─────────────────────────────────────────────────
-server.listen(CONFIG.port, () => {
-  console.log(`\n🎮 MEEVE MULTICHAT SERVER v2 — FIXED`);
-  console.log(`   Puerto  : ${CONFIG.port}`);
-  console.log(`   Twitch  : ${CONFIG.twitch || '(no config)'}`);
-  console.log(`   Kick    : ${CONFIG.kick || '(no config)'}`);
-  console.log(`   TikTok  : ${CONFIG.tiktok || '(no config)'}`);
-  console.log(`   YouTube : ${CONFIG.youtubeHandle || '(no config)'}\n`);
-  connectTwitch();
-  connectKick();
-  connectTikTokConnector();
-  connectYouTube();
-});
+function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(function(){el.classList.remove('show');},2800);}
+</script>
+</body>
+</html>
