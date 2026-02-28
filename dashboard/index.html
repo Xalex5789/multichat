@@ -3,35 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meeve — Dashboard v3</title>
+  <title>Meeve — Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Special+Elite&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Rajdhani:wght@400;700&family=Orbitron:wght@400;700&family=Share+Tech+Mono&family=VT323&family=Exo+2:wght@400;700&family=Russo+One&family=Michroma&family=Nova+Square&display=swap" rel="stylesheet">
   <style>
     :root {
       --traje:        #1e1c1a;
       --traje-light:  #2a2826;
       --guante:       #363432;
+
       --camisa:       #dedad4;
       --camisa-dim:   rgba(222,218,212,0.55);
       --camisa-muted: rgba(222,218,212,0.35);
+
       --corbata:      #c8251c;
       --corbata-soft: rgba(200,37,28,0.15);
       --corbata-dim:  rgba(200,37,28,0.08);
+
       --checker-dark:  #5a5856;
       --checker-mid:   #686664;
       --checker-light: #747270;
       --checker-pale:  #807e7c;
+
       --stroke-dark:  rgba(10,8,6,0.5);
+
       --shadow: 2px 3px 0 rgba(10,8,6,0.3);
+
       --font-title: 'Zen Antique', serif;
       --font-body:  'Crimson Pro', serif;
       --font-mono:  'Special Elite', monospace;
       --ov-emote-size: 24px;
-
-      /* Platform colors */
-      --twitch-color: #9146FF;
-      --kick-color:   #53FC18;
-      --tiktok-color: #FF0050;
-      --yt-color:     #FF0000;
     }
 
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
@@ -51,10 +51,10 @@
     .particles { position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden; }
     .particle  { position:absolute;background:var(--traje);opacity:0;border-radius:1px;animation:floatUp linear infinite; }
     @keyframes floatUp {
-      0%  {opacity:0;transform:translateY(105vh) rotate(var(--r,10deg));}
+      0%  {opacity:0;   transform:translateY(105vh) rotate(var(--r,10deg));}
       12% {opacity:0.04;}
       88% {opacity:0.015;}
-      100%{opacity:0;transform:translateY(-8vh) rotate(calc(var(--r)+20deg));}
+      100%{opacity:0;   transform:translateY(-8vh) rotate(calc(var(--r)+20deg));}
     }
 
     header {
@@ -66,10 +66,20 @@
       box-shadow:0 2px 0 rgba(200,37,28,0.2), 0 6px 24px rgba(10,8,6,0.5);
     }
     .header-left{display:flex;align-items:center;gap:11px;}
-    .logo-img{width:40px;height:40px;border-radius:50%;object-fit:cover;filter:grayscale(100%) contrast(1.35) brightness(0.8);border:1.5px solid var(--corbata);box-shadow:2px 2px 0 rgba(10,8,6,0.4),0 0 0 1px rgba(200,37,28,0.25);animation:logoWobble 6s ease-in-out infinite;flex-shrink:0;}
-    @keyframes logoWobble{0%,100%{transform:rotate(-1.5deg) translateY(0);}35%{transform:rotate(1.2deg) translateY(-2px);}65%{transform:rotate(-0.4deg) translateY(-1px);}}
+    .logo-img {
+      width:40px;height:40px;border-radius:50%;object-fit:cover;
+      filter:grayscale(100%) contrast(1.35) brightness(0.8);
+      border:1.5px solid var(--corbata);
+      box-shadow:2px 2px 0 rgba(10,8,6,0.4),0 0 0 1px rgba(200,37,28,0.25);
+      animation:logoWobble 6s ease-in-out infinite;flex-shrink:0;
+    }
+    @keyframes logoWobble {
+      0%,100%{transform:rotate(-1.5deg) translateY(0);}
+      35%    {transform:rotate(1.2deg)  translateY(-2px);}
+      65%    {transform:rotate(-0.4deg) translateY(-1px);}
+    }
     .header-text{display:flex;flex-direction:column;gap:1px;}
-    .header-title{font-family:var(--font-title);font-size:16px;letter-spacing:5px;color:var(--camisa);text-transform:uppercase;line-height:1;}
+    .header-title   {font-family:var(--font-title);font-size:16px;letter-spacing:5px;color:var(--camisa);text-transform:uppercase;line-height:1;}
     .header-subtitle{font-family:var(--font-body);font-size:9px;font-style:italic;color:var(--camisa-dim);letter-spacing:1.5px;}
     .header-right{display:flex;align-items:center;gap:8px;}
     #ws-dot{width:7px;height:7px;border-radius:50%;background:var(--guante);border:1.5px solid var(--stroke-dark);transition:all 0.4s;flex-shrink:0;}
@@ -80,7 +90,7 @@
     .layout{position:fixed;top:54px;left:0;right:0;bottom:0;display:flex;z-index:10;overflow:hidden;align-items:stretch;}
 
     .sidebar{
-      width:300px;min-width:300px;
+      width:294px;min-width:294px;
       height: calc(100vh - 54px);
       background:var(--checker-dark);
       border-right:1px solid rgba(10,8,6,0.4);
@@ -93,13 +103,14 @@
     }
     .sidebar .card { margin-bottom:7px; }
     .sidebar .card:last-child { margin-bottom:0; }
-    .sidebar.collapsed{transform:translateX(-300px);min-width:0;width:0;border-color:transparent;padding:0;}
+    .sidebar.collapsed{transform:translateX(-294px);min-width:0;width:0;border-color:transparent;padding:0;}
     .sidebar::-webkit-scrollbar{width:4px;}
     .sidebar::-webkit-scrollbar-track{background:rgba(10,8,6,0.2);}
-    .sidebar::-webkit-scrollbar-thumb{background:var(--corbata);border-radius:2px;}
+    .sidebar::-webkit-scrollbar-thumb{background:var(--corbata);border-radius:2px;opacity:0.6;}
+    .sidebar::-webkit-scrollbar-thumb:hover{background:var(--corbata);opacity:1;}
 
     #sidebar-toggle{
-      position:fixed;top:50%;left:300px;
+      position:fixed;top:50%;left:294px;
       transform:translateY(-50%) translateX(-50%);
       width:16px;height:44px;
       background:var(--checker-dark);
@@ -115,18 +126,26 @@
 
     .card{
       background:var(--guante);
-      border-top:1.5px solid rgba(10,8,6,0.5);
-      border-left:1.5px solid rgba(10,8,6,0.5);
-      border-right:1px solid rgba(10,8,6,0.2);
-      border-bottom:1px solid rgba(10,8,6,0.2);
+      border-top:   1.5px solid rgba(10,8,6,0.5);
+      border-left:  1.5px solid rgba(10,8,6,0.5);
+      border-right: 1px   solid rgba(10,8,6,0.2);
+      border-bottom:1px   solid rgba(10,8,6,0.2);
       border-radius:2px 5px 3px 4px;
       padding:10px 12px;
       box-shadow:var(--shadow);
       position:relative;
       flex-shrink:0;
+      overflow:visible;
     }
-    .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--corbata),rgba(200,37,28,0.2) 55%,transparent);}
-    .card-title{font-family:var(--font-title);font-size:8.5px;letter-spacing:3px;text-transform:uppercase;color:var(--camisa-dim);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+    .card::before{
+      content:'';position:absolute;top:0;left:0;right:0;height:2px;
+      background:linear-gradient(90deg,var(--corbata),rgba(200,37,28,0.2) 55%,transparent);
+    }
+    .card-title{
+      font-family:var(--font-title);font-size:8.5px;letter-spacing:3px;
+      text-transform:uppercase;color:var(--camisa-dim);margin-bottom:8px;
+      display:flex;align-items:center;gap:6px;
+    }
     .card-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(200,37,28,0.3),transparent);}
 
     label{display:block;font-family:var(--font-mono);font-size:8.5px;color:var(--camisa-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;}
@@ -134,8 +153,8 @@
 
     input[type=text],input[type=number],select{
       background:var(--traje-light);
-      border-top:1px solid rgba(10,8,6,0.5);
-      border-left:1px solid rgba(10,8,6,0.5);
+      border-top:  1px solid rgba(10,8,6,0.5);
+      border-left: 1px solid rgba(10,8,6,0.5);
       border-right:1px solid rgba(10,8,6,0.15);
       border-bottom:1px solid rgba(10,8,6,0.15);
       border-radius:2px 4px 3px 3px;
@@ -143,43 +162,112 @@
       font-family:var(--font-body);font-size:12px;outline:none;flex:1;
       transition:border-color 0.2s,box-shadow 0.2s;
     }
-    input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--corbata);box-shadow:0 0 0 2px var(--corbata-dim);}
+    input[type=text]:focus,input[type=number]:focus,select:focus{
+      border-color:var(--corbata);box-shadow:0 0 0 2px var(--corbata-dim);
+    }
     input::placeholder{color:var(--camisa-muted);}
-    select{cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23dedad4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:26px;background-color:var(--traje-light);}
+    select{
+      cursor:pointer;-webkit-appearance:none;appearance:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23dedad4'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;background-position:right 9px center;
+      padding-right:26px;background-color:var(--traje-light);
+    }
 
-    .btn{padding:6px 13px;border-radius:2px 4px 3px 3px;border:none;font-family:var(--font-mono);font-size:9.5px;font-weight:700;cursor:pointer;transition:all 0.13s;white-space:nowrap;letter-spacing:0.7px;text-transform:uppercase;}
-    .btn-primary{background:var(--corbata);color:var(--camisa);border-top:1.5px solid rgba(200,37,28,0.9);border-left:1.5px solid rgba(200,37,28,0.9);border-right:1.5px solid rgba(200,37,28,0.4);border-bottom:1.5px solid rgba(200,37,28,0.4);box-shadow:var(--shadow);}
-    .btn-primary:hover{background:#a01e16;transform:translate(-1px,-1px);box-shadow:3px 4px 0 rgba(10,8,6,0.3);}
+    .btn{
+      padding:6px 13px;border-radius:2px 4px 3px 3px;border:none;
+      font-family:var(--font-mono);font-size:9.5px;font-weight:700;
+      cursor:pointer;transition:all 0.13s;white-space:nowrap;letter-spacing:0.7px;text-transform:uppercase;
+    }
+    .btn-primary{
+      background:var(--corbata);color:var(--camisa);
+      border-top: 1.5px solid rgba(200,37,28,0.9);
+      border-left:1.5px solid rgba(200,37,28,0.9);
+      border-right:1.5px solid rgba(200,37,28,0.4);
+      border-bottom:1.5px solid rgba(200,37,28,0.4);
+      box-shadow:var(--shadow);
+    }
+    .btn-primary:hover {background:#a01e16;transform:translate(-1px,-1px);box-shadow:3px 4px 0 rgba(10,8,6,0.3);}
     .btn-primary:active{transform:translate(1px,1px);box-shadow:none;}
-    .btn-secondary{background:var(--traje-light);color:var(--camisa);border-top:1px solid rgba(10,8,6,0.5);border-left:1px solid rgba(10,8,6,0.5);border-right:1px solid rgba(10,8,6,0.15);border-bottom:1px solid rgba(10,8,6,0.15);box-shadow:var(--shadow);}
-    .btn-secondary:hover{background:var(--guante);border-color:rgba(10,8,6,0.7);transform:translate(-1px,-1px);box-shadow:3px 4px 0 rgba(10,8,6,0.2);}
+    .btn-secondary{
+      background:var(--traje-light);color:var(--camisa);
+      border-top: 1px solid rgba(10,8,6,0.5);
+      border-left:1px solid rgba(10,8,6,0.5);
+      border-right:1px solid rgba(10,8,6,0.15);
+      border-bottom:1px solid rgba(10,8,6,0.15);
+      box-shadow:var(--shadow);
+    }
+    .btn-secondary:hover {background:var(--guante);border-color:rgba(10,8,6,0.7);transform:translate(-1px,-1px);box-shadow:3px 4px 0 rgba(10,8,6,0.2);}
     .btn-secondary:active{transform:translate(1px,1px);box-shadow:none;}
     .btn-full{width:100%;}
-    .btn-danger{background:var(--corbata-dim);color:var(--corbata);border:1.5px solid rgba(200,37,28,0.35);box-shadow:var(--shadow);}
+    .btn-danger{
+      background:var(--corbata-dim);color:var(--corbata);
+      border:1.5px solid rgba(200,37,28,0.35);box-shadow:var(--shadow);
+    }
     .btn-danger:hover{background:var(--corbata-soft);border-color:var(--corbata);}
     .btn-row{display:flex;gap:5px;}
 
-    /* ── OAUTH AUTH CARDS ── */
-    .auth-card {
-      display:flex;align-items:center;gap:9px;
-      padding:8px 10px;
-      background:var(--traje-light);
-      border:1px solid rgba(10,8,6,0.4);
-      border-radius:2px 4px 3px 3px;
-      margin-bottom:6px;
-      box-shadow:1px 2px 0 rgba(10,8,6,0.15);
-      transition:border-color 0.2s;
+    /* ══ CHAT POPOUT BUTTONS — plataforma específica ══ */
+    .chat-popout-btn {
+      display:flex;align-items:center;gap:7px;
+      padding:8px 11px;
+      border-radius:2px 4px 3px 3px;border:none;
+      font-family:var(--font-mono);font-size:9px;font-weight:700;
+      cursor:pointer;transition:all 0.15s;letter-spacing:0.6px;text-transform:uppercase;
+      width:100%;margin-bottom:5px;position:relative;overflow:hidden;
+      box-shadow:var(--shadow);
     }
-    .auth-card:last-child{margin-bottom:0;}
-    .auth-platform-icon{font-size:16px;flex-shrink:0;}
-    .auth-info{flex:1;min-width:0;}
-    .auth-name{font-family:var(--font-title);font-size:11.5px;color:var(--camisa);}
-    .auth-status{font-family:var(--font-mono);font-size:8px;color:var(--camisa-muted);margin-top:1px;}
-    .auth-status.logged{color:#6ec96e;}
-    .auth-avatar{width:22px;height:22px;border-radius:50%;object-fit:cover;border:1px solid rgba(10,8,6,0.3);flex-shrink:0;}
-    .auth-btn{font-size:8px!important;padding:4px 8px!important;flex-shrink:0;}
-    .auth-btn.logout{background:var(--corbata-dim)!important;color:var(--corbata)!important;border:1px solid rgba(200,37,28,0.3)!important;}
-    .auth-btn.logout:hover{background:var(--corbata-soft)!important;}
+    .chat-popout-btn:last-child { margin-bottom:0; }
+    .chat-popout-btn::after {
+      content:'';position:absolute;inset:0;
+      background:linear-gradient(135deg,rgba(255,255,255,0.04) 0%,transparent 60%);
+      pointer-events:none;
+    }
+    .chat-popout-btn:active{transform:translate(1px,1px);box-shadow:none;}
+
+    .chat-popout-btn .popout-icon { font-size:15px;flex-shrink:0;filter:grayscale(20%); }
+    .chat-popout-btn .popout-info { display:flex;flex-direction:column;align-items:flex-start;gap:1px;flex:1;min-width:0; }
+    .chat-popout-btn .popout-name { font-size:10px;line-height:1; }
+    .chat-popout-btn .popout-channel { font-size:7.5px;opacity:0.65;font-family:var(--font-body);font-style:italic;font-weight:400;text-transform:none;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%; }
+    .chat-popout-btn .popout-arrow { font-size:9px;opacity:0.5;flex-shrink:0; }
+
+    .chat-popout-btn.twitch-btn {
+      background:linear-gradient(135deg,#3a1f5e 0%,#2c1a47 100%);
+      color:#c9aff5;
+      border-top:1px solid rgba(145,70,255,0.35);
+      border-left:1px solid rgba(145,70,255,0.35);
+      border-right:1px solid rgba(145,70,255,0.12);
+      border-bottom:1px solid rgba(145,70,255,0.12);
+    }
+    .chat-popout-btn.twitch-btn:hover { background:linear-gradient(135deg,#4a2878 0%,#3c2260 100%);transform:translate(-1px,-1px);box-shadow:3px 4px 0 rgba(10,8,6,0.3); }
+    .chat-popout-btn.twitch-btn.disabled { opacity:0.38;cursor:not-allowed; }
+    .chat-popout-btn.twitch-btn.disabled:hover { transform:none;box-shadow:var(--shadow); }
+
+    .chat-popout-btn.kick-btn {
+      background:linear-gradient(135deg,#1a3520 0%,#152a19 100%);
+      color:#7ecf6e;
+      border-top:1px solid rgba(83,252,24,0.25);
+      border-left:1px solid rgba(83,252,24,0.25);
+      border-right:1px solid rgba(83,252,24,0.08);
+      border-bottom:1px solid rgba(83,252,24,0.08);
+    }
+    .chat-popout-btn.kick-btn:hover { background:linear-gradient(135deg,#22452a 0%,#1a3520 100%);transform:translate(-1px,-1px);box-shadow:3px 4px 0 rgba(10,8,6,0.3); }
+    .chat-popout-btn.kick-btn.disabled { opacity:0.38;cursor:not-allowed; }
+    .chat-popout-btn.kick-btn.disabled:hover { transform:none;box-shadow:var(--shadow); }
+
+    .chat-popout-btn .status-dot {
+      width:5px;height:5px;border-radius:50%;flex-shrink:0;
+      background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.15);
+      transition:all 0.3s;
+    }
+    .chat-popout-btn.twitch-btn .status-dot.live { background:#9146FF;box-shadow:0 0 0 3px rgba(145,70,255,0.2);border-color:#9146FF; }
+    .chat-popout-btn.kick-btn .status-dot.live   { background:#53FC18;box-shadow:0 0 0 3px rgba(83,252,24,0.18);border-color:#53FC18; }
+
+    .popout-hint {
+      font-family:var(--font-mono);font-size:8px;color:var(--camisa-muted);
+      line-height:1.6;margin-top:5px;padding:5px 8px;
+      background:rgba(10,8,6,0.2);border-radius:2px;
+      border-left:2px solid rgba(200,37,28,0.3);
+    }
 
     .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:3px 0;}
     .toggle-label{font-family:var(--font-mono);font-size:9.5px;color:var(--camisa);flex:1;}
@@ -190,7 +278,16 @@
     .toggle-switch input:checked+.toggle-slider{background:var(--corbata);border-color:var(--corbata);}
     .toggle-switch input:checked+.toggle-slider::before{left:19px;background:var(--camisa);}
 
-    .platform-row{display:flex;align-items:center;gap:8px;padding:6px 9px;background:var(--traje-light);border-top:1px solid rgba(10,8,6,0.45);border-left:1px solid rgba(10,8,6,0.45);border-right:1px solid rgba(10,8,6,0.12);border-bottom:1px solid rgba(10,8,6,0.12);border-radius:2px 4px 3px 3px;margin-bottom:4px;box-shadow:1px 2px 0 rgba(10,8,6,0.15);transition:border-color 0.2s;}
+    .platform-row{
+      display:flex;align-items:center;gap:8px;padding:6px 9px;
+      background:var(--traje-light);
+      border-top:  1px solid rgba(10,8,6,0.45);
+      border-left: 1px solid rgba(10,8,6,0.45);
+      border-right:1px solid rgba(10,8,6,0.12);
+      border-bottom:1px solid rgba(10,8,6,0.12);
+      border-radius:2px 4px 3px 3px;margin-bottom:4px;
+      box-shadow:1px 2px 0 rgba(10,8,6,0.15);transition:border-color 0.2s;
+    }
     .platform-row:last-child{margin-bottom:0;}
     .platform-row:hover{border-color:rgba(200,37,28,0.35);}
     .platform-dot{width:6px;height:6px;border-radius:50%;background:var(--guante);flex-shrink:0;border:1px solid rgba(10,8,6,0.4);transition:all 0.3s;}
@@ -205,9 +302,9 @@
 
     .info-box{border-radius:2px 4px 3px 3px;padding:7px 9px;font-family:var(--font-mono);font-size:9px;line-height:1.7;}
     .info-box a{color:inherit;}
-    .info-red{background:var(--corbata-soft);border:1px solid rgba(200,37,28,0.4);color:var(--corbata);}
+    .info-red   {background:var(--corbata-soft);border:1px solid rgba(200,37,28,0.4);color:var(--corbata);}
     .info-yellow{background:rgba(180,130,30,0.12);border:1px solid rgba(180,130,30,0.3);color:#c8a040;}
-    .info-green{background:rgba(222,218,212,0.08);border:1px solid rgba(222,218,212,0.2);color:var(--camisa-dim);}
+    .info-green {background:rgba(222,218,212,0.08);border:1px solid rgba(222,218,212,0.2);color:var(--camisa-dim);}
 
     .url-box{background:var(--traje);border:1px solid rgba(10,8,6,0.4);border-radius:2px 4px 3px 3px;padding:6px 9px;font-family:monospace;font-size:9.5px;color:var(--camisa-dim);word-break:break-all;cursor:pointer;transition:all 0.15s;line-height:1.5;opacity:0.8;}
     .url-box:hover{border-color:var(--corbata);opacity:1;}
@@ -215,33 +312,69 @@
     .font-preview{padding:6px 9px;background:var(--traje-light);border:1px solid rgba(10,8,6,0.4);border-radius:2px;font-size:13px;color:var(--camisa);text-align:center;min-height:30px;display:flex;align-items:center;justify-content:center;}
     .config-row{display:flex;align-items:center;gap:8px;}
     .value-display{font-family:var(--font-mono);color:var(--camisa);font-size:9.5px;min-width:32px;}
-    input[type=range]{width:100%;cursor:pointer;-webkit-appearance:none;height:2px;background:rgba(222,218,212,0.15);border-radius:1px;outline:none;border:none;}
+    input[type=range]{width:100%;cursor:pointer;-webkit-appearance:none;appearance:none;height:2px;background:rgba(222,218,212,0.15);border-radius:1px;outline:none;border:none;}
     input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--corbata);cursor:pointer;border:2px solid var(--guante);box-shadow:1px 1px 0 rgba(10,8,6,0.3);}
     input[type=color]{width:32px;height:24px;border:1px solid rgba(200,37,28,0.4);border-radius:2px;cursor:pointer;background:transparent;padding:1px;}
     .separator{border-top:1px solid rgba(200,37,28,0.15);margin:5px 0;}
 
     /* ══ MAIN ══ */
     .main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;background:var(--checker-mid);position:relative;}
-    .main::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;background-image:repeating-linear-gradient(to bottom,transparent,transparent 29px,rgba(10,8,6,0.1) 29px,rgba(10,8,6,0.1) 30px);}
+    .main::before{
+      content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+      background-image:repeating-linear-gradient(
+        to bottom,transparent,transparent 29px,
+        rgba(10,8,6,0.1) 29px,rgba(10,8,6,0.1) 30px
+      );
+    }
 
-    .chat-panel{flex:1;overflow-y:auto;overflow-x:hidden;padding:13px 15px;display:flex;flex-direction:column;gap:5px;position:relative;z-index:1;}
+    .chat-panel{
+      flex:1;overflow-y:auto;overflow-x:hidden;
+      padding:13px 15px;display:flex;flex-direction:column;gap:5px;
+      position:relative;z-index:1;
+    }
     .chat-panel::-webkit-scrollbar{width:3px;}
     .chat-panel::-webkit-scrollbar-track{background:transparent;}
     .chat-panel::-webkit-scrollbar-thumb{background:rgba(10,8,6,0.25);border-radius:2px;}
     .chat-panel::-webkit-scrollbar-thumb:hover{background:rgba(200,37,28,0.4);}
     .chat-spacer{flex:1;min-height:0;}
-    #chat-placeholder{text-align:center;color:rgba(10,8,6,0.4);font-family:var(--font-title);font-size:14px;font-style:italic;padding:70px 20px;letter-spacing:2px;line-height:2.8;}
 
-    .msg-item{position:relative;display:flex;align-items:flex-start;gap:9px;padding:8px 11px;background:var(--traje-light);border-top:1.5px solid rgba(10,8,6,0.35);border-left:3px solid rgba(10,8,6,0.35);border-right:1px solid rgba(10,8,6,0.12);border-bottom:1px solid rgba(10,8,6,0.12);border-radius:1px 4px 3px 2px;cursor:pointer;animation:msgIn 0.25s cubic-bezier(0.2,0.9,0.3,1);transition:background 0.14s,border-left-color 0.14s,transform 0.12s,box-shadow 0.12s;flex-shrink:0;box-shadow:var(--shadow);}
+    #chat-placeholder{
+      text-align:center;color:rgba(10,8,6,0.4);
+      font-family:var(--font-title);font-size:14px;font-style:italic;
+      padding:70px 20px;letter-spacing:2px;line-height:2.8;
+    }
+
+    .msg-item{
+      position:relative;display:flex;align-items:flex-start;gap:9px;
+      padding:8px 11px;
+      background:var(--traje-light);
+      border-top:  1.5px solid rgba(10,8,6,0.35);
+      border-left: 3px   solid rgba(10,8,6,0.35);
+      border-right:1px   solid rgba(10,8,6,0.12);
+      border-bottom:1px  solid rgba(10,8,6,0.12);
+      border-radius:1px 4px 3px 2px;
+      cursor:pointer;
+      animation:msgIn 0.25s cubic-bezier(0.2,0.9,0.3,1);
+      transition:background 0.14s,border-left-color 0.14s,transform 0.12s,box-shadow 0.12s;
+      flex-shrink:0;box-shadow:var(--shadow);
+    }
     @keyframes msgIn{from{opacity:0;transform:translateX(-9px);}to{opacity:1;transform:translateX(0);}}
     .msg-item:hover{background:var(--guante);border-left-color:var(--corbata);transform:translateX(2px);box-shadow:3px 4px 0 rgba(10,8,6,0.2);}
-    .msg-item.twitch{border-left-color:#7b5ea7;}
-    .msg-item.kick{border-left-color:#3a8a2a;}
-    .msg-item.tiktok{border-left-color:#b0003a;}
+
+    .msg-item.twitch {border-left-color:#7b5ea7;}
+    .msg-item.kick   {border-left-color:#3a8a2a;}
+    .msg-item.tiktok {border-left-color:#b0003a;}
     .msg-item.youtube{border-left-color:#a01010;}
-    .msg-item.custom{border-left-color:rgba(200,37,28,0.6);}
-    .msg-item.system{border-left-color:var(--corbata);}
-    .msg-item.highlighted{background:rgba(200,37,28,0.18);border-left:3px solid var(--corbata)!important;border-color:rgba(200,37,28,0.3);box-shadow:0 0 0 2px rgba(200,37,28,0.12),var(--shadow);animation:msgIn 0.25s cubic-bezier(0.2,0.9,0.3,1),hlPulse 3s ease-in-out infinite;}
+    .msg-item.custom {border-left-color:rgba(200,37,28,0.6);}
+    .msg-item.system {border-left-color:var(--corbata);}
+
+    .msg-item.highlighted{
+      background:rgba(200,37,28,0.18);
+      border-left:3px solid var(--corbata)!important;
+      border-color:rgba(200,37,28,0.3);
+      box-shadow:0 0 0 2px rgba(200,37,28,0.12),var(--shadow);
+      animation:msgIn 0.25s cubic-bezier(0.2,0.9,0.3,1),hlPulse 3s ease-in-out infinite;
+    }
     @keyframes hlPulse{0%,100%{box-shadow:0 0 0 2px rgba(200,37,28,0.12);}50%{box-shadow:0 0 0 5px rgba(200,37,28,0.06);}}
 
     .chat-panel.single-line .msg-item{align-items:center;padding:5px 11px;gap:7px;}
@@ -251,134 +384,88 @@
     .chat-panel.single-line .msg-time{display:none;}
     .chat-panel.single-line .msg-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
-    .msg-avatar{width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(10,8,6,0.4);flex-shrink:0;overflow:hidden;background:var(--checker-dark);filter:grayscale(45%);box-shadow:1px 1px 0 rgba(10,8,6,0.25);}
+    .msg-avatar{
+      width:32px;height:32px;border-radius:50%;
+      border:1.5px solid rgba(10,8,6,0.4);flex-shrink:0;
+      overflow:hidden;background:var(--checker-dark);
+      filter:grayscale(45%);box-shadow:1px 1px 0 rgba(10,8,6,0.25);
+    }
     .msg-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
     .msg-avatar-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;opacity:0.45;color:var(--camisa);}
+
     .msg-body{flex:1;min-width:0;}
     .msg-header{display:flex;align-items:center;gap:5px;margin-bottom:3px;flex-wrap:wrap;}
-    .msg-user{font-family:var(--font-title);font-size:13px;color:var(--camisa);letter-spacing:0.3px;white-space:nowrap;}
-    .msg-platform{display:inline-flex;align-items:center;gap:2px;font-family:var(--font-mono);font-size:7.5px;padding:1px 5px;border-radius:2px;font-weight:700;letter-spacing:0.5px;background:rgba(222,218,212,0.07);border:1px solid rgba(222,218,212,0.15);color:var(--camisa-dim);}
+
+    .msg-user{
+      font-family:var(--font-title);font-size:13px;
+      color:var(--camisa);
+      letter-spacing:0.3px;white-space:nowrap;
+    }
+
+    .msg-platform{
+      display:inline-flex;align-items:center;gap:2px;
+      font-family:var(--font-mono);font-size:7.5px;padding:1px 5px;border-radius:2px;
+      font-weight:700;letter-spacing:0.5px;
+      background:rgba(222,218,212,0.07);border:1px solid rgba(222,218,212,0.15);
+      color:var(--camisa-dim);
+    }
     .msg-platform svg{width:8px;height:8px;flex-shrink:0;}
+    .msg-badge{height:13px;width:auto;vertical-align:middle;filter:grayscale(100%);}
     .msg-time{font-family:var(--font-mono);font-size:8.5px;color:var(--camisa-muted);margin-left:auto;white-space:nowrap;}
-    .msg-text{font-size:13px;color:var(--camisa);line-height:1.55;word-break:break-word;font-family:var(--font-body);}
+
+    .msg-text{
+      font-size:13px;
+      color:var(--camisa);
+      line-height:1.55;word-break:break-word;font-family:var(--font-body);
+    }
     .msg-text img.emote{height:var(--ov-emote-size,24px);width:auto;vertical-align:middle;margin:0 2px;filter:grayscale(40%);}
+
     .msg-role{font-family:var(--font-mono);font-size:7.5px;padding:1px 4px;background:rgba(222,218,212,0.08);border:1px solid rgba(222,218,212,0.15);border-radius:2px;color:var(--camisa-dim);letter-spacing:0.5px;}
-    .msg-highlight-btn{margin-left:auto;padding:2px 7px;font-size:7.5px;border-radius:2px;border:1px solid rgba(200,37,28,0.3);background:var(--corbata-dim);color:var(--corbata);cursor:pointer;display:none;font-family:var(--font-mono);font-weight:700;letter-spacing:0.5px;text-transform:uppercase;transition:all 0.12s;}
+    .msg-highlight-btn{
+      margin-left:auto;padding:2px 7px;font-size:7.5px;border-radius:2px;
+      border:1px solid rgba(200,37,28,0.3);background:var(--corbata-dim);
+      color:var(--corbata);cursor:pointer;display:none;
+      font-family:var(--font-mono);font-weight:700;letter-spacing:0.5px;text-transform:uppercase;transition:all 0.12s;
+    }
     .msg-highlight-btn:hover{background:var(--corbata);color:var(--camisa);border-color:var(--corbata);}
     .msg-item:hover .msg-highlight-btn,.msg-item.highlighted .msg-highlight-btn{display:inline-block;}
-    .msg-donation-tag{margin-top:4px;padding:3px 9px;background:var(--corbata-soft);border:1px solid rgba(200,37,28,0.3);border-radius:2px;font-family:var(--font-mono);font-size:8.5px;font-weight:700;color:var(--corbata);text-align:center;text-transform:uppercase;letter-spacing:1.5px;}
 
-    #hl-bar{padding:7px 14px;background:rgba(200,37,28,0.1);border-top:1px solid rgba(200,37,28,0.25);display:none;align-items:center;gap:9px;font-family:var(--font-mono);font-size:8.5px;color:var(--corbata);letter-spacing:0.5px;text-transform:uppercase;z-index:1;position:relative;}
+    .msg-donation-tag{
+      margin-top:4px;padding:3px 9px;
+      background:var(--corbata-soft);border:1px solid rgba(200,37,28,0.3);
+      border-radius:2px;font-family:var(--font-mono);font-size:8.5px;font-weight:700;
+      color:var(--corbata);text-align:center;text-transform:uppercase;letter-spacing:1.5px;
+    }
+
+    #hl-bar{
+      padding:7px 14px;background:rgba(200,37,28,0.1);
+      border-top:1px solid rgba(200,37,28,0.25);
+      display:none;align-items:center;gap:9px;
+      font-family:var(--font-mono);font-size:8.5px;color:var(--corbata);
+      letter-spacing:0.5px;text-transform:uppercase;z-index:1;position:relative;
+    }
     #hl-bar.active{display:flex;}
     #hl-bar strong{color:var(--camisa);max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-body);font-size:12px;text-transform:none;font-weight:400;}
 
-    /* ══ SEND BAR MULTIPLATFORM ══ */
-    .send-bar {
-      background:var(--traje);
+    .input-bar{
+      padding:9px 13px;
       border-top:2px solid var(--corbata);
-      position:relative;z-index:100;
-    }
-
-    /* Selector de plataformas */
-    .send-targets {
-      display:flex;gap:0;padding:7px 13px 0;
-      border-bottom:1px solid rgba(10,8,6,0.3);
-    }
-    .send-target {
-      display:flex;align-items:center;gap:5px;
-      padding:4px 10px;
-      font-family:var(--font-mono);font-size:8.5px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;
-      cursor:pointer;
-      border:1px solid rgba(10,8,6,0.3);
-      border-right:none;
-      background:var(--traje-light);
-      color:var(--camisa-muted);
-      transition:all 0.15s;
-      user-select:none;
-    }
-    .send-target:first-child{border-radius:3px 0 0 3px;}
-    .send-target:last-child{border-right:1px solid rgba(10,8,6,0.3);border-radius:0 3px 3px 0;}
-    .send-target .send-dot{width:5px;height:5px;border-radius:50%;background:var(--guante);border:1px solid rgba(10,8,6,0.4);transition:all 0.15s;flex-shrink:0;}
-    .send-target.active{background:var(--guante);color:var(--camisa);}
-    .send-target.active.tw .send-dot{background:var(--twitch-color);box-shadow:0 0 0 2px rgba(145,70,255,0.2);border-color:var(--twitch-color);}
-    .send-target.active.ki .send-dot{background:var(--kick-color);box-shadow:0 0 0 2px rgba(83,252,24,0.15);border-color:var(--kick-color);}
-    .send-target:not(.active):hover{background:rgba(255,255,255,0.04);}
-    .send-target.disabled{opacity:0.35;cursor:not-allowed;}
-    .send-auth-hint{font-family:var(--font-mono);font-size:7.5px;color:var(--camisa-muted);padding:0 13px;margin-top:3px;display:none;}
-    .send-auth-hint.visible{display:block;}
-
-    /* Input row */
-    .send-input-row {
-      display:flex;gap:7px;padding:8px 13px 9px;align-items:center;
-    }
-    .send-input-wrap {
-      flex:1;position:relative;
-    }
-    .send-input-wrap input[type=text]{
-      width:100%;background:var(--traje-light);color:var(--camisa);
-      padding-right:36px;
-    }
-    .emote-picker-btn {
-      position:absolute;right:5px;top:50%;transform:translateY(-50%);
-      background:none;border:none;cursor:pointer;
-      font-size:15px;opacity:0.45;transition:opacity 0.15s;padding:2px;
-    }
-    .emote-picker-btn:hover{opacity:0.9;}
-
-    /* ══ EMOTE PICKER PANEL ══ */
-    .emote-picker {
-      position:absolute;
-      bottom:calc(100% + 4px);right:0;
-      width:340px;max-height:380px;
       background:var(--traje);
-      border:1.5px solid rgba(10,8,6,0.5);
-      border-radius:4px 4px 0 0;
-      box-shadow:0 -6px 24px rgba(10,8,6,0.5);
-      display:none;
-      flex-direction:column;
-      z-index:500;
-      overflow:hidden;
+      display:flex;gap:7px;position:relative;z-index:1;
     }
-    .emote-picker.open{display:flex;}
-    .emote-picker-header{
-      display:flex;align-items:center;padding:8px 10px;gap:8px;
-      border-bottom:1px solid rgba(10,8,6,0.4);background:var(--traje-light);
-      flex-shrink:0;
-    }
-    .emote-picker-tabs{display:flex;gap:0;flex:1;}
-    .ep-tab{
-      padding:3px 10px;font-family:var(--font-mono);font-size:8.5px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;
-      background:transparent;border:1px solid rgba(10,8,6,0.35);border-right:none;color:var(--camisa-muted);transition:all 0.13s;
-    }
-    .ep-tab:first-child{border-radius:2px 0 0 2px;}
-    .ep-tab:last-child{border-right:1px solid rgba(10,8,6,0.35);border-radius:0 2px 2px 0;}
-    .ep-tab.active{background:var(--corbata);color:var(--camisa);border-color:var(--corbata);}
-    .ep-search{flex:1;background:var(--traje);border:1px solid rgba(10,8,6,0.4);color:var(--camisa);font-family:var(--font-mono);font-size:10px;padding:4px 8px;border-radius:2px;outline:none;}
-    .ep-search:focus{border-color:var(--corbata);}
-    .ep-close{background:none;border:none;color:var(--camisa-muted);font-size:14px;cursor:pointer;padding:2px 4px;flex-shrink:0;}
-    .ep-close:hover{color:var(--corbata);}
-    .emote-picker-body{overflow-y:auto;flex:1;padding:8px;}
-    .emote-picker-body::-webkit-scrollbar{width:3px;}
-    .emote-picker-body::-webkit-scrollbar-thumb{background:var(--corbata);border-radius:1px;}
-    .ep-section-title{font-family:var(--font-mono);font-size:7.5px;color:var(--camisa-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;margin-top:8px;}
-    .ep-section-title:first-child{margin-top:0;}
-    .ep-grid{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;}
-    .ep-emote{
-      width:36px;height:36px;display:flex;align-items:center;justify-content:center;
-      background:var(--traje-light);border:1px solid rgba(10,8,6,0.3);border-radius:2px;
-      cursor:pointer;transition:all 0.12s;position:relative;
-    }
-    .ep-emote:hover{background:var(--guante);border-color:var(--corbata);transform:scale(1.1);}
-    .ep-emote img{width:28px;height:28px;object-fit:contain;}
-    .ep-emote-name{position:absolute;bottom:calc(100%+3px);left:50%;transform:translateX(-50%);background:var(--traje);border:1px solid rgba(10,8,6,0.5);padding:2px 6px;font-family:var(--font-mono);font-size:8px;color:var(--camisa);border-radius:2px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity 0.15s;z-index:10;}
-    .ep-emote:hover .ep-emote-name{opacity:1;}
-    .ep-loading{text-align:center;padding:20px;font-family:var(--font-mono);font-size:9px;color:var(--camisa-muted);}
-    .ep-empty{text-align:center;padding:20px;font-family:var(--font-mono);font-size:9px;color:var(--camisa-muted);font-style:italic;}
+    .input-bar input[type=text]{background:var(--traje-light);color:var(--camisa);}
 
-    /* ══ MODAL ══ */
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,8,6,0.7);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
     .modal-overlay.open{display:flex;}
-    .modal-box{background:var(--traje-light);border-top:2px solid var(--corbata);border-left:2px solid rgba(10,8,6,0.5);border-right:1.5px solid rgba(10,8,6,0.2);border-bottom:1.5px solid rgba(10,8,6,0.2);border-radius:2px 6px 4px 5px;padding:26px;max-width:480px;width:90%;position:relative;box-shadow:5px 6px 0 rgba(10,8,6,0.3),0 20px 50px rgba(10,8,6,0.5);}
+    .modal-box{
+      background:var(--traje-light);
+      border-top:2px solid var(--corbata);
+      border-left:2px solid rgba(10,8,6,0.5);
+      border-right:1.5px solid rgba(10,8,6,0.2);
+      border-bottom:1.5px solid rgba(10,8,6,0.2);
+      border-radius:2px 6px 4px 5px;padding:26px;max-width:480px;width:90%;position:relative;
+      box-shadow:5px 6px 0 rgba(10,8,6,0.3),0 20px 50px rgba(10,8,6,0.5);
+    }
     .modal-title{font-family:var(--font-title);font-size:16px;color:var(--camisa);margin-bottom:14px;letter-spacing:1px;}
     .modal-close{position:absolute;top:11px;right:13px;background:none;border:none;color:var(--camisa-muted);font-size:17px;cursor:pointer;}
     .modal-close:hover{color:var(--corbata);}
@@ -386,10 +473,18 @@
     .modal-box ol strong{color:var(--camisa);}
     .modal-box code{background:var(--traje);border:1px solid rgba(10,8,6,0.4);padding:2px 6px;border-radius:2px;font-size:10.5px;color:var(--camisa);}
 
-    #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(50px);background:var(--corbata);color:var(--camisa);padding:8px 16px;border-radius:2px 4px 3px 3px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.8px;text-transform:uppercase;z-index:999;opacity:0;transition:all 0.28s cubic-bezier(0.34,1.56,0.64,1);pointer-events:none;white-space:nowrap;box-shadow:3px 4px 0 rgba(10,8,6,0.35);}
+    #toast{
+      position:fixed;bottom:18px;left:50%;
+      transform:translateX(-50%) translateY(50px);
+      background:var(--corbata);color:var(--camisa);
+      padding:8px 16px;border-radius:2px 4px 3px 3px;
+      font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.8px;text-transform:uppercase;
+      z-index:999;opacity:0;
+      transition:all 0.28s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events:none;white-space:nowrap;
+      box-shadow:3px 4px 0 rgba(10,8,6,0.35);
+    }
     #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-    #toast.error{background:#7a1010;}
-    #toast.success{background:#2a6a2a;}
   </style>
 </head>
 <body>
@@ -398,10 +493,12 @@
 
 <header>
   <div class="header-left">
-    <img class="logo-img" src="https://i.ibb.co/7xhK7QHb/279-sin-t-tulo-20250219223210.png" alt="Meeve" onerror="this.style.display='none'" />
+    <img class="logo-img"
+      src="https://i.ibb.co/7xhK7QHb/279-sin-t-tulo-20250219223210.png"
+      alt="Meeve" onerror="this.style.display='none'" />
     <div class="header-text">
       <div class="header-title">Meeve</div>
-      <div class="header-subtitle">multichat dashboard v3</div>
+      <div class="header-subtitle">multichat dashboard</div>
     </div>
   </div>
   <div class="header-right">
@@ -416,8 +513,6 @@
   </button>
 
   <div class="sidebar">
-
-    <!-- Servidor -->
     <div class="card">
       <div class="card-title">○ Servidor</div>
       <label>URL del servidor</label>
@@ -428,7 +523,6 @@
       <div class="hint">Se guarda en el navegador automáticamente</div>
     </div>
 
-    <!-- Estado -->
     <div class="card">
       <div class="card-title">◎ Estado Conexiones</div>
       <div class="platform-row">
@@ -454,39 +548,36 @@
       </div>
     </div>
 
-    <!-- ══ OAUTH / CUENTAS ══ -->
+    <!-- ══ CHAT EMERGENTE ══ -->
     <div class="card">
-      <div class="card-title">◉ Cuentas — Envío de mensajes</div>
+      <div class="card-title">💬 Chat Emergente</div>
 
-      <!-- Twitch Auth -->
-      <div class="auth-card" id="auth-twitch-card">
-        <span class="auth-platform-icon">🟣</span>
-        <div class="auth-info">
-          <div class="auth-name">Twitch</div>
-          <div class="auth-status" id="auth-twitch-status">Sin sesión</div>
-        </div>
-        <img id="auth-twitch-avatar" class="auth-avatar" src="" alt="" style="display:none">
-        <button class="btn auth-btn" id="auth-twitch-btn" onclick="twitchLogin()">Login</button>
-      </div>
+      <button id="popout-twitch-btn" class="chat-popout-btn twitch-btn disabled" onclick="openTwitchChatPopout()">
+        <span class="status-dot" id="popout-dot-twitch"></span>
+        <span class="popout-icon">🟣</span>
+        <span class="popout-info">
+          <span class="popout-name">Twitch Chat</span>
+          <span class="popout-channel" id="popout-ch-twitch">Sin canal configurado</span>
+        </span>
+        <span class="popout-arrow">↗</span>
+      </button>
 
-      <!-- Kick Auth -->
-      <div class="auth-card" id="auth-kick-card">
-        <span class="auth-platform-icon">🟢</span>
-        <div class="auth-info">
-          <div class="auth-name">Kick</div>
-          <div class="auth-status" id="auth-kick-status">Sin sesión</div>
-        </div>
-        <img id="auth-kick-avatar" class="auth-avatar" src="" alt="" style="display:none">
-        <button class="btn auth-btn" id="auth-kick-btn" onclick="kickLogin()">Login</button>
-      </div>
+      <button id="popout-kick-btn" class="chat-popout-btn kick-btn disabled" onclick="openKickChatPopout()">
+        <span class="status-dot" id="popout-dot-kick"></span>
+        <span class="popout-icon">🟢</span>
+        <span class="popout-info">
+          <span class="popout-name">Kick Chat</span>
+          <span class="popout-channel" id="popout-ch-kick">Sin canal configurado</span>
+        </span>
+        <span class="popout-arrow">↗</span>
+      </button>
 
-      <div class="hint" style="margin-top:6px;">
-        ⚙️ Requiere TWITCH_CLIENT_ID y KICK_CLIENT_ID en el servidor.<br>
-        <a href="#" onclick="openModal('oauth-modal');return false;" style="color:var(--corbata);">Ver guía de configuración</a>
+      <div class="popout-hint">
+        Abre el chat emergente de cada plataforma para responder mensajes directamente.
+        Los botones se activan cuando el canal está conectado.
       </div>
     </div>
 
-    <!-- Kick Chatroom -->
     <div class="card">
       <div class="card-title">◉ Kick — Chatroom</div>
       <div id="kick-status-box" class="info-box info-green" style="margin-bottom:8px;">Kick bloquea servidores. El navegador actúa como puente.</div>
@@ -504,7 +595,6 @@
       </div>
     </div>
 
-    <!-- TikTok -->
     <div class="card">
       <div class="card-title">◎ TikTok</div>
       <div class="btn-row" style="margin-bottom:8px;">
@@ -514,7 +604,6 @@
       <div class="info-box info-red">Error 403: <a href="#" onclick="openModal('tiktok-modal');return false;">usar SESSION_ID</a></div>
     </div>
 
-    <!-- YouTube -->
     <div class="card">
       <div class="card-title">○ YouTube</div>
       <div id="youtube-status-box" class="info-box info-yellow" style="margin-bottom:8px;">⏳ Esperando conexión...</div>
@@ -522,9 +611,9 @@
         <button class="btn btn-secondary btn-full" onclick="restartYouTube()">↺ Reconectar</button>
         <button class="btn btn-secondary btn-full" onclick="openYouTubeLive()">▶ Live</button>
       </div>
+      <div class="hint" style="margin-top:5px;">Reconectar al encender el directo.</div>
     </div>
 
-    <!-- URLs OBS -->
     <div class="card">
       <div class="card-title">◎ URLs para OBS</div>
       <label>💬 Chat multichat</label>
@@ -532,6 +621,12 @@
       <div class="btn-row" style="margin:4px 0 8px;">
         <button class="btn btn-secondary btn-full" style="font-size:8.5px;padding:4px;" onclick="copyUrl('url-chat')">Copiar</button>
         <button class="btn btn-secondary btn-full" style="font-size:8.5px;padding:4px;" onclick="openUrl('url-chat')">Abrir</button>
+      </div>
+      <label>🗨 Chat un mensaje</label>
+      <div class="url-box" id="url-chatuno" onclick="copyUrl('url-chatuno')" title="Click para copiar">Configura el servidor...</div>
+      <div class="btn-row" style="margin:4px 0 8px;">
+        <button class="btn btn-secondary btn-full" style="font-size:8.5px;padding:4px;" onclick="copyUrl('url-chatuno')">Copiar</button>
+        <button class="btn btn-secondary btn-full" style="font-size:8.5px;padding:4px;" onclick="openUrl('url-chatuno')">Abrir</button>
       </div>
       <label>📌 Destacador</label>
       <div class="url-box" id="url-destacador" onclick="copyUrl('url-destacador')" title="Click para copiar">Configura el servidor...</div>
@@ -542,7 +637,6 @@
       <div class="hint">Tiempo visible: <input id="showtime-input" type="number" style="width:42px;padding:2px 4px;font-size:8.5px;" value="12" min="1" max="120" onchange="updateOverlayUrls()"> seg</div>
     </div>
 
-    <!-- Visual -->
     <div class="card">
       <div class="card-title">◑ Configuración Visual</div>
       <label>Fuente del dashboard</label>
@@ -586,7 +680,7 @@
       <button class="btn btn-danger btn-full" style="margin-bottom:5px;" onclick="clearChat()">Limpiar chat</button>
       <button class="btn btn-secondary btn-full" onclick="exportMessages()">Exportar mensajes</button>
     </div>
-  </div><!-- /sidebar -->
+  </div>
 
   <div class="main">
     <div class="chat-panel" id="chat-panel">
@@ -597,85 +691,14 @@
       📌 Destacando:&nbsp;<strong id="hl-bar-text">—</strong>
       <button class="btn btn-secondary" style="font-size:8.5px;padding:3px 8px;margin-left:auto;" onclick="clearHighlight()">✕ Quitar</button>
     </div>
-
-    <!-- ══ SEND BAR ══ -->
-    <div class="send-bar">
-      <!-- Selector de plataformas destino -->
-      <div class="send-targets">
-        <div class="send-target tw" id="target-twitch" onclick="toggleTarget('twitch')" title="Enviar a Twitch">
-          <span class="send-dot"></span>Twitch
-        </div>
-        <div class="send-target ki" id="target-kick" onclick="toggleTarget('kick')" title="Enviar a Kick">
-          <span class="send-dot"></span>Kick
-        </div>
-        <div class="send-target disabled" id="target-tiktok" title="TikTok no permite envío desde terceros" style="cursor:not-allowed;">
-          <span class="send-dot"></span>TikTok
-        </div>
-        <div class="send-target disabled" id="target-youtube" title="YouTube no permite envío desde terceros" style="cursor:not-allowed;">
-          <span class="send-dot"></span>YouTube
-        </div>
-      </div>
-      <div class="send-auth-hint" id="send-auth-hint"></div>
-
-      <!-- Input con emote picker -->
-      <div class="send-input-row">
-        <div class="send-input-wrap" style="position:relative;">
-          <input id="msg-input" type="text" placeholder="Escribe un mensaje y pulsa Enter…" onkeydown="if(event.key==='Enter')sendMessage()" />
-          <button class="emote-picker-btn" onclick="toggleEmotePicker(event)" title="Emotes">😀</button>
-
-          <!-- Emote Picker Panel -->
-          <div class="emote-picker" id="emote-picker">
-            <div class="emote-picker-header">
-              <div class="emote-picker-tabs">
-                <div class="ep-tab active" id="ep-tab-twitch" onclick="switchEmoteTab('twitch')">🟣 Twitch</div>
-                <div class="ep-tab" id="ep-tab-kick" onclick="switchEmoteTab('kick')">🟢 Kick</div>
-              </div>
-              <input class="ep-search" type="text" placeholder="Buscar emote…" id="ep-search" oninput="filterEmotes(this.value)">
-              <button class="ep-close" onclick="closeEmotePicker()">✕</button>
-            </div>
-            <div class="emote-picker-body" id="ep-body">
-              <div class="ep-loading">Cargando emotes…</div>
-            </div>
-          </div>
-        </div>
-
-        <button class="btn btn-primary" onclick="sendMessage()" id="send-btn">Enviar</button>
-        <button class="btn btn-secondary" onclick="injectTestMessage()" title="Mensaje de prueba" style="padding:6px 9px;">🧪</button>
-      </div>
+    <div class="input-bar">
+      <input id="custom-msg-input" type="text" placeholder="Escribe un mensaje personalizado y pulsa Enter…" onkeydown="if(event.key==='Enter')sendCustomMessage()" />
+      <button class="btn btn-primary" onclick="sendCustomMessage()">Enviar</button>
+      <button class="btn btn-secondary" onclick="injectTestMessage()" title="Mensaje de prueba">🧪</button>
     </div>
   </div>
 </div>
 
-<!-- Modal OAuth setup -->
-<div id="oauth-modal" class="modal-overlay">
-  <div class="modal-box" style="max-width:560px;">
-    <button class="modal-close" onclick="closeModal('oauth-modal')">✕</button>
-    <div class="modal-title">Configurar OAuth para enviar mensajes</div>
-    <div style="font-family:var(--font-mono);font-size:10px;color:var(--camisa-dim);line-height:2.0;">
-      <div style="margin-bottom:12px;padding:8px;background:var(--corbata-dim);border:1px solid rgba(200,37,28,0.3);border-radius:3px;color:var(--corbata);">
-        ⚠️ Sin estas variables, la lectura del chat sigue funcionando. Solo el <strong style="color:var(--camisa);">envío</strong> de mensajes requiere OAuth.
-      </div>
-      <strong style="color:var(--camisa);font-size:11px;">Twitch</strong><br>
-      1. Ve a <a href="https://dev.twitch.tv/console/apps" target="_blank" style="color:var(--corbata);">dev.twitch.tv/console/apps</a> → <strong>Registrar aplicación</strong><br>
-      2. Nombre: <code>meeve-multichat</code> | OAuth Redirect: <code>https://tu-servidor.onrender.com/auth/twitch/callback</code><br>
-      3. Categoría: <strong>Chat Bot</strong> → Crear<br>
-      4. Copia el <strong>Client ID</strong> y genera un <strong>Client Secret</strong><br>
-      5. En Render/Railway agrega:<br>
-      &nbsp;&nbsp;<code>TWITCH_CLIENT_ID = xxxxxxxx</code><br>
-      &nbsp;&nbsp;<code>TWITCH_CLIENT_SECRET = xxxxxxxx</code><br><br>
-      <strong style="color:var(--camisa);font-size:11px;">Kick</strong><br>
-      1. Ve a <a href="https://kick.com/developer" target="_blank" style="color:var(--corbata);">kick.com/developer</a> → solicitar acceso<br>
-      2. Una vez aprobado, crea una app con redirect: <code>https://tu-servidor.onrender.com/auth/kick/callback</code><br>
-      3. Agrega en el servidor:<br>
-      &nbsp;&nbsp;<code>KICK_CLIENT_ID = xxxxxxxx</code><br>
-      &nbsp;&nbsp;<code>KICK_CLIENT_SECRET = xxxxxxxx</code><br><br>
-      <strong style="color:var(--camisa);font-size:11px;">¿Por qué desde el servidor?</strong><br>
-      El <code>client_secret</code> nunca debe exponerse en el browser. El servidor actúa como proxy para el intercambio de tokens.
-    </div>
-  </div>
-</div>
-
-<!-- Modal TikTok -->
 <div id="tiktok-modal" class="modal-overlay">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal('tiktok-modal')">✕</button>
@@ -692,23 +715,10 @@
   </div>
 </div>
 
-<!-- Modal OAuth callback (popup de login) -->
-<div id="auth-callback-modal" class="modal-overlay">
-  <div class="modal-box" style="text-align:center;max-width:360px;">
-    <div class="modal-title">Iniciando sesión…</div>
-    <div style="font-family:var(--font-mono);font-size:10px;color:var(--camisa-dim);line-height:2.0;" id="auth-callback-msg">
-      Esperando autorización en la ventana emergente…
-    </div>
-    <button class="btn btn-secondary" style="margin-top:14px;width:100%;" onclick="closeModal('auth-callback-modal')">Cancelar</button>
-  </div>
-</div>
-
 <div id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-//  PARTÍCULAS
-// ═══════════════════════════════════════════════════════════════
+// ═══ PARTÍCULAS ═══
 (function(){
   var c=document.getElementById('particles');
   for(var i=0;i<16;i++){
@@ -719,50 +729,17 @@
   }
 })();
 
-// ═══════════════════════════════════════════════════════════════
-//  STORAGE
-// ═══════════════════════════════════════════════════════════════
+// ═══ STORAGE ═══
 var store={
   get:function(k,d){try{return localStorage.getItem(k)||d||'';}catch(e){return d||'';}},
-  set:function(k,v){try{localStorage.setItem(k,v);}catch(e){}},
-  remove:function(k){try{localStorage.removeItem(k);}catch(e){}}
+  set:function(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 };
 
-// ═══════════════════════════════════════════════════════════════
-//  ESTADO GLOBAL
-// ═══════════════════════════════════════════════════════════════
-var ws=null, retryDelay=1000, isConnected=false, autoKickDone=false;
+// ═══ ESTADO ═══
+var ws=null,retryDelay=1000,isConnected=false,autoKickDone=false;
 var currentChannels={twitch:'',kick:'',tiktok:'',youtube:''};
-var MAX_MESSAGES=200, messages=[], currentHighlightMid=null, autoScroll=true;
-var serverHttp='';
+var MAX_MESSAGES=200,messages=[],currentHighlightMid=null,autoScroll=true;
 
-// Auth state
-var auth={
-  twitch: { token:null, userId:null, username:null, avatar:null },
-  kick:   { token:null, userId:null, username:null, avatar:null },
-};
-
-// Send targets (activo = true)
-var sendTargets={ twitch:false, kick:false };
-
-// Server config (viene del status)
-var serverConfig={ twitchClientId:null, kickClientId:null };
-
-// Emotes cache
-var emotes={ twitch:{global:[],channel:[]}, kick:[] };
-var emotePickerTab='twitch';
-var emotePickerOpen=false;
-var emoteSearchQuery='';
-
-// Kick bridge
-var kickWs=null, kickRetryDelay=3000, kickRetryTimeout=null;
-
-// De-dup
-var _recentMids={};
-
-// ═══════════════════════════════════════════════════════════════
-//  LOGOS SVG
-// ═══════════════════════════════════════════════════════════════
 var LOGOS={
   twitch:'<svg viewBox="0 0 24 28" fill="currentColor"><path d="M2.149 0L.537 4.119v19.63h6.72V28l4.123-4.25h3.29L22.463 14V0H2.149zm18.24 13.18l-3.29 3.387h-3.948l-2.886 2.973v-2.973H6.584V2.387h13.805v10.793zM17.07 5.367h-2.148v6.42h2.148V5.367zm-5.907 0h-2.15v6.42h2.15V5.367z"/></svg>',
   kick:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 3h4v7l4.5-7H17L12 12l5.5 9H13L8.5 14v7H4V3z"/></svg>',
@@ -774,9 +751,6 @@ var LOGOS={
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-// ═══════════════════════════════════════════════════════════════
-//  EMOTES — RENDER
-// ═══════════════════════════════════════════════════════════════
 function processTwitchEmotes(t,e){
   if(!e||!e.length)return esc(t);
   var s=e.slice().sort(function(a,b){return a.start-b.start;}),r='',c=0;
@@ -796,9 +770,7 @@ function processMessageHTML(d){
   return esc(t);
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  SIDEBAR
-// ═══════════════════════════════════════════════════════════════
+// ═══ SIDEBAR ═══
 function toggleSidebar(){
   var s=document.querySelector('.sidebar'),b=document.getElementById('sidebar-toggle');
   var c=s.classList.toggle('collapsed');
@@ -806,9 +778,68 @@ function toggleSidebar(){
   store.set('sidebarCollapsed',c?'1':'0');
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════════════════
+// ═══ CHAT POPOUT ═══
+function openTwitchChatPopout(){
+  var ch=currentChannels.twitch||store.get('twitchChannel')||'';
+  if(!ch)return toast('Twitch no configurado');
+  // URL oficial del popout de Twitch — no necesita UUID ni autenticación para ver
+  // Para escribir el usuario deberá estar logueado en Twitch en esa ventana
+  var url='https://www.twitch.tv/popout/'+encodeURIComponent(ch)+'/chat?popout=';
+  window.open(url,'twitch-chat-popout','width=340,height=600,resizable=yes,scrollbars=yes');
+  toast('💬 Chat de Twitch abierto');
+}
+
+function openKickChatPopout(){
+  var ch=currentChannels.kick||store.get('kickChannel')||'';
+  if(!ch)return toast('Kick no configurado');
+  // URL del chat de Kick — el usuario debe estar logueado en Kick en esa ventana
+  var url='https://kick.com/'+encodeURIComponent(ch)+'/chatroom';
+  window.open(url,'kick-chat-popout','width=340,height=600,resizable=yes,scrollbars=yes');
+  toast('💬 Chat de Kick abierto');
+}
+
+// Actualizar botones de popout con el estado actual
+function updatePopoutButtons(){
+  var tCh=currentChannels.twitch||'';
+  var kCh=currentChannels.kick||'';
+
+  var tBtn=document.getElementById('popout-twitch-btn');
+  var kBtn=document.getElementById('popout-kick-btn');
+  var tChEl=document.getElementById('popout-ch-twitch');
+  var kChEl=document.getElementById('popout-ch-kick');
+  var tDot=document.getElementById('popout-dot-twitch');
+  var kDot=document.getElementById('popout-dot-kick');
+
+  if(tCh){
+    tBtn.classList.remove('disabled');
+    tChEl.textContent='@'+tCh;
+    if(document.getElementById('dot-twitch').classList.contains('ok')){
+      tDot.classList.add('live');
+    } else {
+      tDot.classList.remove('live');
+    }
+  } else {
+    tBtn.classList.add('disabled');
+    tChEl.textContent='Sin canal configurado';
+    tDot.classList.remove('live');
+  }
+
+  if(kCh){
+    kBtn.classList.remove('disabled');
+    kChEl.textContent='@'+kCh;
+    if(document.getElementById('dot-kick').classList.contains('ok')){
+      kDot.classList.add('live');
+    } else {
+      kDot.classList.remove('live');
+    }
+  } else {
+    kBtn.classList.add('disabled');
+    kChEl.textContent='Sin canal configurado';
+    kDot.classList.remove('live');
+  }
+}
+
+// ═══ INIT ═══
 document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('serverUrl').value=store.get('serverUrl');
   updateOverlayUrls();
@@ -822,24 +853,10 @@ document.addEventListener('DOMContentLoaded',function(){
   var se=store.get('emoteSize');if(se){document.getElementById('emoteSize').value=se;setCfgVar('--ov-emote-size',se+'px','val-emote');}
   var sm=store.get('maxMsg');if(sm){var n=parseInt(sm);MAX_MESSAGES=n;document.getElementById('maxMsgRange').value=n;document.getElementById('val-maxMsg').textContent=n;}
   document.getElementById('chat-panel').addEventListener('scroll',function(){autoScroll=(this.scrollHeight-this.scrollTop-this.clientHeight)<80;});
-
-  // Restaurar auth guardada
-  loadStoredAuth();
-
-  // Handle OAuth callback desde URL (cuando la ventana principal procesa el return)
-  handleOAuthCallbackInUrl();
-
-  // Cerrar emote picker al clickar fuera
-  document.addEventListener('click', function(e){
-    if(emotePickerOpen && !document.getElementById('emote-picker').contains(e.target) && !e.target.classList.contains('emote-picker-btn')){
-      closeEmotePicker();
-    }
-  });
+  updatePopoutButtons();
 });
 
-// ═══════════════════════════════════════════════════════════════
-//  FONT / GLOW / SINGLELINE
-// ═══════════════════════════════════════════════════════════════
+// ═══ FONT / GLOW / SINGLELINE ═══
 function applyFont(v,s){document.documentElement.style.setProperty('--font-body',v);document.getElementById('font-preview').style.fontFamily=v;store.set('chatFont',v);if(!s)toast('Fuente cambiada');}
 function toggleGlow(e,s){store.set('glowOff',e?'0':'1');if(e){document.body.classList.remove('no-glow');if(!s)toast('Brillo activado');}else{document.body.classList.add('no-glow');if(!s)toast('Brillo desactivado');}}
 function toggleSingleLine(e,s){store.set('singleLine',e?'1':'0');var p=document.getElementById('chat-panel');if(e){p.classList.add('single-line');if(!s)toast('Línea única activado');}else{p.classList.remove('single-line');if(!s)toast('Modo normal');}}
@@ -847,12 +864,9 @@ function setCfgVar(cv,v,did){document.documentElement.style.setProperty(cv,v);if
 function setMsgNameSize(v){document.getElementById('val-fontName').textContent=v+'px';var el=document.getElementById('dyn-name');if(!el){el=document.createElement('style');el.id='dyn-name';document.head.appendChild(el);}el.textContent='.msg-user{font-size:'+v+'px!important;}';}
 function applyColorPrimary(v,s){document.documentElement.style.setProperty('--corbata',v);if(!s){store.set('accentColor',v);toast('Color aplicado');}}
 
-// ═══════════════════════════════════════════════════════════════
-//  WEBSOCKET
-// ═══════════════════════════════════════════════════════════════
+// ═══ WEBSOCKET ═══
 function connectWS(url){
   if(!url)return;
-  serverHttp=url.replace(/^wss?/,'https').replace(/\/$/,'');
   if(ws){try{ws.close();}catch(e){}}
   var wu=url.replace(/^https?/,'ws').replace(/\/$/,'');
   try{ws=new WebSocket(wu);}catch(e){setStatus(false);scheduleRetry(url);return;}
@@ -877,8 +891,6 @@ function handleStatus(data){
   setPlatformStatus('tiktok',data.tiktok,(data.channels&&data.channels.tiktok)||'—');
   setPlatformStatus('youtube',data.youtube,(data.channels&&data.channels.youtube)||'—');
   if(data.channels)currentChannels=data.channels;
-  if(data.twitchClientId)serverConfig.twitchClientId=data.twitchClientId;
-  if(data.kickClientId)serverConfig.kickClientId=data.kickClientId;
   var mt=document.getElementById('tiktok-mode-tag');
   if(mt){mt.textContent=data.tiktokMode||'connector';mt.className='tag '+(data.tiktokMode==='puppeteer'?'tag-puppeteer':'tag-connector');}
   var ytBox=document.getElementById('youtube-status-box');
@@ -892,13 +904,13 @@ function handleStatus(data){
     if(sid&&(!kickWs||kickWs.readyState>1))connectKickBrowser(sid);
     else if(!sid&&!autoKickDone&&data.channels&&data.channels.kick){autoKickDone=true;setTimeout(resolveKickId,1500);}
   }
-  updateSendTargetUI();
+  // Actualizar botones de popout al recibir estado
+  updatePopoutButtons();
 }
 function setPlatformStatus(p,c,ch){var dot=document.getElementById('dot-'+p),el=document.getElementById('ch-'+p);if(dot)dot.className='platform-dot'+(c?' ok':'');if(el)el.textContent=ch||'—';}
 
-// ═══════════════════════════════════════════════════════════════
-//  APPEND MESSAGE
-// ═══════════════════════════════════════════════════════════════
+// ═══ APPEND MESSAGE ═══
+var _recentMids={};
 function _isDuplicate(mid){
   if(!mid)return false;
   var now=Date.now();
@@ -924,7 +936,9 @@ function appendMessage(data){
   el.dataset.mid=data.mid||'';
 
   var avatarInner='';
-  if(data.chatimg){avatarInner='<img src="'+esc(data.chatimg)+'" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display=\'none\'">';}
+  if(data.chatimg){
+    avatarInner='<img src="'+esc(data.chatimg)+'" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display=\'none\'">';
+  }
   var aHTML='<div class="msg-avatar">'+avatarInner+'<div class="msg-avatar-fallback" style="'+(data.chatimg?'display:none':'')+'">'+logo+'</div></div>';
 
   var pLabel=platform.charAt(0).toUpperCase()+platform.slice(1);
@@ -934,6 +948,7 @@ function appendMessage(data){
   if(data.roles&&data.roles.length)data.roles.forEach(function(r){bHTML+='<span class="msg-role">'+esc(r.label||r.type)+'</span>';});
 
   var nStyle=data.nameColor?'color:'+esc(data.nameColor)+';':'';
+
   var mHTML=processMessageHTML(data);
   var dHTML='';
   if(data.type==='donation'&&(data.amount||data.donationType)){
@@ -941,7 +956,18 @@ function appendMessage(data){
     if(dl)dHTML='<div class="msg-donation-tag">'+dl+'</div>';
   }
 
-  el.innerHTML=aHTML+'<div class="msg-body"><div class="msg-header"><span class="msg-user" style="'+nStyle+'">'+esc(data.chatname||'?')+'</span>'+pBadge+bHTML+'<span class="msg-time">'+time+'</span><button class="msg-highlight-btn" onclick="event.stopPropagation();sendHighlight(this.closest(\'.msg-item\'))">📌 Destacar</button></div><div class="msg-text">'+mHTML+'</div>'+dHTML+'</div>';
+  el.innerHTML=
+    aHTML+
+    '<div class="msg-body">'+
+      '<div class="msg-header">'+
+        '<span class="msg-user" style="'+nStyle+'">'+esc(data.chatname||'?')+'</span>'+
+        pBadge+bHTML+
+        '<span class="msg-time">'+time+'</span>'+
+        '<button class="msg-highlight-btn" onclick="event.stopPropagation();sendHighlight(this.closest(\'.msg-item\'))">📌 Destacar</button>'+
+      '</div>'+
+      '<div class="msg-text">'+mHTML+'</div>'+
+      dHTML+
+    '</div>';
 
   el._msgData=data;
   el.addEventListener('click',function(){sendHighlight(el);});
@@ -952,9 +978,7 @@ function appendMessage(data){
   if(autoScroll)requestAnimationFrame(function(){panel.scrollTop=panel.scrollHeight;});
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  HIGHLIGHT
-// ═══════════════════════════════════════════════════════════════
+// ═══ HIGHLIGHT ═══
 function sendHighlight(el){
   if(!isConnected||!ws)return toast('Sin conexión');
   var data=el._msgData;if(!data)return;
@@ -973,517 +997,19 @@ function clearHighlight(){
   toast('Destacado quitado');
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  ★ AUTH — TWITCH OAUTH
-// ═══════════════════════════════════════════════════════════════
-function twitchLogin(){
-  if(auth.twitch.token){twitchLogout();return;}
-  if(!serverConfig.twitchClientId){toast('Configura TWITCH_CLIENT_ID en el servidor','error');openModal('oauth-modal');return;}
+// ═══ KICK BRIDGE ═══
+var kickWs=null,kickRetryDelay=3000,kickRetryTimeout=null;
 
-  // Construir URL OAuth de Twitch (Implicit Grant Flow — no expone client_secret)
-  var redirectUri=encodeURIComponent(window.location.href.split('?')[0].replace(/\/$/, '')+'/auth-callback.html');
-  // Alternativa: usar la propia página como callback parseando el hash
-  var redirectUri2=encodeURIComponent(window.location.href.split('?')[0].split('#')[0]);
-
-  var scopes='user:read:email+user:write:chat+chat:read+chat:edit';
-  var state='tw-'+Math.random().toString(36).slice(2);
-  store.set('twitch_oauth_state', state);
-
-  // Usamos Implicit Flow → el token viene en el hash de la URL
-  var authUrl='https://id.twitch.tv/oauth2/authorize'
-    +'?client_id='+serverConfig.twitchClientId
-    +'&redirect_uri='+redirectUri2
-    +'&response_type=token'
-    +'&scope='+scopes
-    +'&state='+state;
-
-  store.set('oauth_pending','twitch');
-  openAuthPopup(authUrl, 'Twitch Login', function(result){
-    if(result.error){toast('Error Twitch: '+result.error,'error');return;}
-    if(result.access_token){
-      auth.twitch.token=result.access_token;
-      fetchTwitchMe(result.access_token);
-    }
-  });
-}
-
-function twitchLogout(){
-  auth.twitch={token:null,userId:null,username:null,avatar:null};
-  store.remove('twitch_token');store.remove('twitch_user');
-  updateAuthUI('twitch');
-  sendTargets.twitch=false;updateSendTargetUI();
-  toast('Sesión de Twitch cerrada');
-}
-
-async function fetchTwitchMe(token){
-  try{
-    var r=await fetch(serverHttp+'/api/twitch/me',{headers:{'Authorization':'Bearer '+token}});
-    var d=await r.json();
-    if(d&&d.id){
-      auth.twitch.userId=d.id;
-      auth.twitch.username=d.display_name||d.login;
-      auth.twitch.avatar=d.profile_image_url||null;
-      store.set('twitch_token',token);
-      store.set('twitch_user',JSON.stringify({id:d.id,username:d.display_name||d.login,avatar:d.profile_image_url||null}));
-      updateAuthUI('twitch');
-      toast('✓ Twitch: '+auth.twitch.username,'success');
-      // Auto-activar target
-      sendTargets.twitch=true;
-      updateSendTargetUI();
-      // Cargar emotes
-      loadTwitchEmotes();
-    }
-  }catch(e){toast('Error verificando token Twitch','error');}
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  ★ AUTH — KICK OAUTH
-// ═══════════════════════════════════════════════════════════════
-function kickLogin(){
-  if(auth.kick.token){kickLogout();return;}
-  if(!serverConfig.kickClientId){toast('Configura KICK_CLIENT_ID en el servidor','error');openModal('oauth-modal');return;}
-
-  var redirectUri=window.location.href.split('?')[0].split('#')[0];
-  var scopes='chat:write+user:read';
-  var state='ki-'+Math.random().toString(36).slice(2);
-  store.set('kick_oauth_state',state);
-
-  // PKCE para Kick (OAuth 2.1)
-  var verifier=generateCodeVerifier();
-  var challengePromise=generateCodeChallenge(verifier);
-  challengePromise.then(function(challenge){
-    store.set('kick_code_verifier',verifier);
-    var authUrl='https://id.kick.com/oauth2/authorize'
-      +'?client_id='+serverConfig.kickClientId
-      +'&redirect_uri='+encodeURIComponent(redirectUri)
-      +'&response_type=code'
-      +'&scope='+scopes
-      +'&state='+state
-      +'&code_challenge='+challenge
-      +'&code_challenge_method=S256';
-    store.set('oauth_pending','kick');
-    openAuthPopup(authUrl,'Kick Login',function(result){
-      if(result.error){toast('Error Kick: '+result.error,'error');return;}
-      if(result.code){
-        exchangeKickCode(result.code, redirectUri, verifier);
-      }
-    });
-  });
-}
-
-function kickLogout(){
-  auth.kick={token:null,userId:null,username:null,avatar:null};
-  store.remove('kick_token');store.remove('kick_user');
-  updateAuthUI('kick');
-  sendTargets.kick=false;updateSendTargetUI();
-  toast('Sesión de Kick cerrada');
-}
-
-async function exchangeKickCode(code, redirectUri, verifier){
-  try{
-    var r=await fetch(serverHttp+'/api/kick/token',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({code:code,redirect_uri:redirectUri,code_verifier:verifier})
-    });
-    var d=await r.json();
-    if(d.access_token){
-      auth.kick.token=d.access_token;
-      store.set('kick_token',d.access_token);
-      // Kick no siempre devuelve user info directo — usar el token para identificarse
-      // Por ahora mostramos como "Kick conectado"
-      auth.kick.username='Kick conectado';
-      store.set('kick_user',JSON.stringify({username:'Kick conectado'}));
-      updateAuthUI('kick');
-      sendTargets.kick=true;
-      updateSendTargetUI();
-      toast('✓ Kick conectado','success');
-      loadKickEmotes();
-    }else{
-      toast('Error intercambiando código Kick: '+(d.error||JSON.stringify(d)),'error');
-    }
-  }catch(e){toast('Error intercambiando código Kick: '+e.message,'error');}
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  PKCE helpers (para Kick OAuth 2.1)
-// ═══════════════════════════════════════════════════════════════
-function generateCodeVerifier(){
-  var arr=new Uint8Array(32);
-  crypto.getRandomValues(arr);
-  return btoa(String.fromCharCode.apply(null,arr)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
-}
-async function generateCodeChallenge(verifier){
-  var data=new TextEncoder().encode(verifier);
-  var hash=await crypto.subtle.digest('SHA-256',data);
-  return btoa(String.fromCharCode.apply(null,new Uint8Array(hash))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  OAUTH POPUP
-// ═══════════════════════════════════════════════════════════════
-var _authPopupCallback=null;
-var _authPopupTimer=null;
-
-function openAuthPopup(url, title, callback){
-  _authPopupCallback=callback;
-  var w=600,h=700;
-  var left=(screen.width/2)-(w/2),top=(screen.height/2)-(h/2);
-  var popup=window.open(url,title,'width='+w+',height='+h+',left='+left+',top='+top+',scrollbars=yes');
-  if(!popup){toast('Permite los popups para esta página','error');return;}
-
-  document.getElementById('auth-callback-msg').textContent='Esperando autorización en la ventana emergente…';
-  openModal('auth-callback-modal');
-
-  // Poll popup para detectar cuando cierra o tiene la URL de callback
-  _authPopupTimer=setInterval(function(){
-    if(!popup||popup.closed){
-      clearInterval(_authPopupTimer);
-      closeModal('auth-callback-modal');
-      return;
-    }
-    try{
-      var pu=popup.location.href;
-      var origin=window.location.origin;
-      if(pu.indexOf(origin)===0){
-        // Es nuestro dominio — leer params
-        clearInterval(_authPopupTimer);
-        popup.close();
-        closeModal('auth-callback-modal');
-        var parsed=parseCallbackUrl(pu);
-        if(_authPopupCallback)_authPopupCallback(parsed);
-        _authPopupCallback=null;
-      }
-    }catch(e){
-      // Cross-origin — popup todavía en proveedor, normal
-    }
-  },300);
-}
-
-function parseCallbackUrl(url){
-  var result={};
-  // Hash params (Twitch Implicit)
-  var hashIdx=url.indexOf('#');
-  if(hashIdx>-1){
-    var hash=url.slice(hashIdx+1);
-    hash.split('&').forEach(function(p){var kv=p.split('=');if(kv.length===2)result[decodeURIComponent(kv[0])]=decodeURIComponent(kv[1]);});
-  }
-  // Query params (Kick Authorization Code)
-  var qIdx=url.indexOf('?');
-  if(qIdx>-1){
-    var q=url.slice(qIdx+1).split('#')[0];
-    q.split('&').forEach(function(p){var kv=p.split('=');if(kv.length===2)result[decodeURIComponent(kv[0])]=decodeURIComponent(kv[1]);});
-  }
-  return result;
-}
-
-// Manejar callback en la URL actual (por si el provider redirige a esta misma página)
-function handleOAuthCallbackInUrl(){
-  var url=window.location.href;
-  var pending=store.get('oauth_pending');
-  if(!pending)return;
-
-  var params=parseCallbackUrl(url);
-  if(!params.access_token&&!params.code)return;
-
-  store.remove('oauth_pending');
-  // Limpiar URL sin recargar
-  if(window.history&&window.history.replaceState){
-    window.history.replaceState({},'',window.location.pathname);
-  }
-
-  if(pending==='twitch'&&params.access_token){
-    auth.twitch.token=params.access_token;
-    fetchTwitchMe(params.access_token);
-  }
-  if(pending==='kick'&&params.code){
-    var verifier=store.get('kick_code_verifier');
-    var redirectUri=window.location.href.split('?')[0].split('#')[0];
-    exchangeKickCode(params.code,redirectUri,verifier);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  RESTAURAR AUTH GUARDADA
-// ═══════════════════════════════════════════════════════════════
-function loadStoredAuth(){
-  var tt=store.get('twitch_token');
-  var tu=store.get('twitch_user');
-  if(tt&&tu){
-    try{
-      var u=JSON.parse(tu);
-      auth.twitch={token:tt,userId:u.id||null,username:u.username||null,avatar:u.avatar||null};
-      updateAuthUI('twitch');
-      if(isConnected){sendTargets.twitch=true;updateSendTargetUI();loadTwitchEmotes();}
-      else{document.addEventListener('wsconnected',function(){sendTargets.twitch=true;updateSendTargetUI();loadTwitchEmotes();},{once:true});}
-    }catch(e){}
-  }
-  var kt=store.get('kick_token');
-  var ku=store.get('kick_user');
-  if(kt&&ku){
-    try{
-      var u2=JSON.parse(ku);
-      auth.kick={token:kt,userId:u2.id||null,username:u2.username||null,avatar:u2.avatar||null};
-      updateAuthUI('kick');
-      sendTargets.kick=true;
-      loadKickEmotes();
-    }catch(e){}
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  UPDATE AUTH UI
-// ═══════════════════════════════════════════════════════════════
-function updateAuthUI(platform){
-  var a=auth[platform];
-  var statusEl=document.getElementById('auth-'+platform+'-status');
-  var btnEl=document.getElementById('auth-'+platform+'-btn');
-  var avatarEl=document.getElementById('auth-'+platform+'-avatar');
-  var cardEl=document.getElementById('auth-'+platform+'-card');
-
-  if(a.token&&a.username){
-    statusEl.textContent=a.username;
-    statusEl.className='auth-status logged';
-    btnEl.textContent='Logout';
-    btnEl.className='btn auth-btn logout';
-    if(a.avatar){avatarEl.src=a.avatar;avatarEl.style.display='block';}
-    else{avatarEl.style.display='none';}
-    cardEl.style.borderColor='rgba(46,160,46,0.3)';
-  }else{
-    statusEl.textContent='Sin sesión';
-    statusEl.className='auth-status';
-    btnEl.textContent='Login';
-    btnEl.className='btn auth-btn';
-    avatarEl.style.display='none';
-    cardEl.style.borderColor='';
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  SEND TARGETS
-// ═══════════════════════════════════════════════════════════════
-function toggleTarget(platform){
-  var el=document.getElementById('target-'+platform);
-  if(el.classList.contains('disabled'))return;
-
-  var needsAuth=(platform==='twitch'&&!auth.twitch.token)||(platform==='kick'&&!auth.kick.token);
-  if(needsAuth&&!sendTargets[platform]){
-    toast('Inicia sesión en '+platform+' primero','error');
-    return;
-  }
-
-  sendTargets[platform]=!sendTargets[platform];
-  updateSendTargetUI();
-}
-
-function updateSendTargetUI(){
-  // Twitch
-  var twEl=document.getElementById('target-twitch');
-  if(auth.twitch.token){
-    twEl.classList.remove('disabled');
-    twEl.classList.toggle('active',sendTargets.twitch);
-  }else{
-    twEl.classList.add('disabled');
-    twEl.classList.remove('active');
-    sendTargets.twitch=false;
-  }
-  // Kick
-  var kiEl=document.getElementById('target-kick');
-  if(auth.kick.token){
-    kiEl.classList.remove('disabled');
-    kiEl.classList.toggle('active',sendTargets.kick);
-  }else{
-    kiEl.classList.add('disabled');
-    kiEl.classList.remove('active');
-    sendTargets.kick=false;
-  }
-
-  // Hint
-  var hint=document.getElementById('send-auth-hint');
-  var needHint=(!auth.twitch.token&&!auth.kick.token);
-  if(needHint){hint.textContent='💡 Inicia sesión en la sección "Cuentas" para enviar mensajes';hint.classList.add('visible');}
-  else{hint.classList.remove('visible');}
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  ★ ENVIAR MENSAJE A PLATAFORMAS
-// ═══════════════════════════════════════════════════════════════
-async function sendMessage(){
-  var input=document.getElementById('msg-input');
-  var text=input.value.trim();
-  if(!text)return;
-
-  var targets=Object.keys(sendTargets).filter(function(k){return sendTargets[k];});
-  if(targets.length===0){
-    toast('Selecciona al menos una plataforma destino','error');
-    return;
-  }
-
-  if(!serverHttp){toast('Conecta al servidor primero','error');return;}
-
-  var btn=document.getElementById('send-btn');
-  btn.disabled=true;btn.textContent='…';
-
-  var results=[];
-  var promises=targets.map(async function(platform){
-    try{
-      if(platform==='twitch'){
-        var r=await fetch(serverHttp+'/api/twitch/send',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({token:auth.twitch.token,senderId:auth.twitch.userId,message:text,channel:currentChannels.twitch})
-        });
-        var d=await r.json();
-        if(d.ok){results.push('✓ Twitch');}
-        else{results.push('✗ Twitch: '+(d.error||'error'));}
-      }
-      if(platform==='kick'){
-        var kickId=store.get('kickChannelId');
-        var r2=await fetch(serverHttp+'/api/kick/send',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({token:auth.kick.token,message:text,chatroomId:kickId||null})
-        });
-        var d2=await r2.json();
-        if(d2.ok){results.push('✓ Kick');}
-        else{results.push('✗ Kick: '+(d2.error||'error'));}
-      }
-    }catch(e){results.push('✗ '+platform+': '+e.message);}
-  });
-
-  await Promise.all(promises);
-
-  var allOk=results.every(function(r){return r.startsWith('✓');});
-  toast(results.join(' | '), allOk?'success':'error');
-
-  if(allOk)input.value='';
-  btn.disabled=false;btn.textContent='Enviar';
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  ★ EMOTE PICKER
-// ═══════════════════════════════════════════════════════════════
-function toggleEmotePicker(e){
-  e.stopPropagation();
-  if(emotePickerOpen){closeEmotePicker();return;}
-  emotePickerOpen=true;
-  document.getElementById('emote-picker').classList.add('open');
-  renderEmotePicker();
-}
-function closeEmotePicker(){
-  emotePickerOpen=false;
-  document.getElementById('emote-picker').classList.remove('open');
-}
-
-function switchEmoteTab(tab){
-  emotePickerTab=tab;
-  emoteSearchQuery='';
-  document.getElementById('ep-search').value='';
-  document.getElementById('ep-tab-twitch').classList.toggle('active',tab==='twitch');
-  document.getElementById('ep-tab-kick').classList.toggle('active',tab==='kick');
-  renderEmotePicker();
-}
-
-function filterEmotes(q){
-  emoteSearchQuery=q.toLowerCase();
-  renderEmotePicker();
-}
-
-function renderEmotePicker(){
-  var body=document.getElementById('ep-body');
-  var q=emoteSearchQuery;
-
-  if(emotePickerTab==='twitch'){
-    var all=[];
-    // Canal
-    var ch=emotes.twitch.channel.filter(function(e){return !q||e.name.toLowerCase().indexOf(q)>=0;});
-    // Global
-    var gl=emotes.twitch.global.filter(function(e){return !q||e.name.toLowerCase().indexOf(q)>=0;});
-
-    var html='';
-    if(ch.length){
-      html+='<div class="ep-section-title">Canal</div><div class="ep-grid">';
-      ch.forEach(function(e){html+=emoteItem(e);});
-      html+='</div>';
-    }
-    if(gl.length){
-      html+='<div class="ep-section-title">Globales</div><div class="ep-grid">';
-      gl.forEach(function(e){html+=emoteItem(e);});
-      html+='</div>';
-    }
-    if(!ch.length&&!gl.length){
-      if(!auth.twitch.token){html='<div class="ep-empty">Inicia sesión en Twitch para ver emotes</div>';}
-      else{html='<div class="ep-empty">No se encontraron emotes</div>';}
-    }
-    body.innerHTML=html;
-  }else{
-    var kickEmotes=emotes.kick.filter(function(e){return !q||e.name.toLowerCase().indexOf(q)>=0;});
-    var html2='';
-    var channelKick=kickEmotes.filter(function(e){return e.type==='channel';});
-    var globalKick=kickEmotes.filter(function(e){return e.type!=='channel';});
-    if(channelKick.length){html2+='<div class="ep-section-title">Canal</div><div class="ep-grid">';channelKick.forEach(function(e){html2+=emoteItem(e,'kick');});html2+='</div>';}
-    if(globalKick.length){html2+='<div class="ep-section-title">Globales</div><div class="ep-grid">';globalKick.forEach(function(e){html2+=emoteItem(e,'kick');});html2+='</div>';}
-    if(!kickEmotes.length){html2='<div class="ep-empty">No se encontraron emotes de Kick</div>';}
-    body.innerHTML=html2;
-  }
-}
-
-function emoteItem(e, platform){
-  var name=esc(e.name);
-  var url=esc(e.url||(e.url2x||''));
-  return '<div class="ep-emote" onclick="insertEmote(\''+name+'\',\''+platform+'\',\''+e.id+'\')" title="'+name+'">'
-    +'<img src="'+url+'" alt="'+name+'" onerror="this.style.display=\'none\'">'
-    +'<span class="ep-emote-name">'+name+'</span>'
-    +'</div>';
-}
-
-function insertEmote(name, platform, id){
-  var input=document.getElementById('msg-input');
-  var pos=input.selectionStart||input.value.length;
-  var before=input.value.slice(0,pos);
-  var after=input.value.slice(pos);
-  // Para Kick insertar como formato de emote
-  var insert=name+' ';
-  input.value=before+insert+after;
-  input.selectionStart=input.selectionEnd=pos+insert.length;
-  input.focus();
-  // No cerrar el picker para poder insertar múltiples
-}
-
-async function loadTwitchEmotes(){
-  if(!auth.twitch.token||!serverHttp)return;
-  document.getElementById('ep-body').innerHTML='<div class="ep-loading">Cargando emotes de Twitch…</div>';
-  try{
-    var r=await fetch(serverHttp+'/api/twitch/emotes?channel='+(currentChannels.twitch||''),{headers:{'Authorization':'Bearer '+auth.twitch.token}});
-    var d=await r.json();
-    emotes.twitch.global=d.global||[];
-    emotes.twitch.channel=d.channel||[];
-    if(emotePickerOpen&&emotePickerTab==='twitch')renderEmotePicker();
-  }catch(e){console.warn('Error cargando emotes Twitch:',e);}
-}
-
-async function loadKickEmotes(){
-  if(!serverHttp)return;
-  try{
-    var channel=currentChannels.kick||store.get('kickChannel')||'';
-    if(!channel)return;
-    var r=await fetch(serverHttp+'/api/kick/emotes?channel='+encodeURIComponent(channel));
-    var d=await r.json();
-    emotes.kick=d.emotes||[];
-    if(emotePickerOpen&&emotePickerTab==='kick')renderEmotePicker();
-  }catch(e){console.warn('Error cargando emotes Kick:',e);}
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  KICK BRIDGE
-// ═══════════════════════════════════════════════════════════════
 function connectKickBrowser(channelId){
   if(!channelId)return;
   if(kickWs){try{kickWs.onmessage=null;kickWs.onclose=null;kickWs.onerror=null;kickWs.close();}catch(e){}kickWs=null;}
   if(kickRetryTimeout){clearTimeout(kickRetryTimeout);kickRetryTimeout=null;}
   var box=document.getElementById('kick-status-box');
   if(box){box.className='info-box info-yellow';box.innerHTML='⏳ Conectando a Kick...';}
-  var urls=['wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false','wss://ws-us2.pusher.com/app/eb1d5f283081a78b932c?protocol=7&client=js&version=7.6.0&flash=false'];
+  var urls=[
+    'wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false',
+    'wss://ws-us2.pusher.com/app/eb1d5f283081a78b932c?protocol=7&client=js&version=7.6.0&flash=false'
+  ];
   var idx=parseInt(localStorage.getItem('kickWsUrlIndex')||'0');
   tryKickUrl(channelId,urls,idx);
 }
@@ -1491,7 +1017,13 @@ function connectKickBrowser(channelId){
 function tryKickUrl(c,u,i){
   if(i>=u.length)i=0;
   try{kickWs=new WebSocket(u[i]);}catch(e){kickRetryTimeout=setTimeout(function(){tryKickUrl(c,u,(i+1)%u.length);},5000);return;}
-  kickWs.onopen=function(){kickRetryDelay=3000;localStorage.setItem('kickWsUrlIndex',i);kickWs.send(JSON.stringify({event:'pusher:subscribe',data:{auth:'',channel:'chatrooms.'+c+'.v2'}}));};
+
+  kickWs.onopen=function(){
+    kickRetryDelay=3000;
+    localStorage.setItem('kickWsUrlIndex',i);
+    kickWs.send(JSON.stringify({event:'pusher:subscribe',data:{auth:'',channel:'chatrooms.'+c+'.v2'}}));
+  };
+
   kickWs.onmessage=function(e){
     try{
       var msg=JSON.parse(e.data),ev=msg.event||'';
@@ -1500,10 +1032,12 @@ function tryKickUrl(c,u,i){
         var box=document.getElementById('kick-status-box');
         if(box){box.className='info-box info-green';box.innerHTML='✓ Kick conectado (chatroom '+c+')';}
         if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'kick_connected'}));
+        updatePopoutButtons();
         return;
       }
       if(ev==='pusher:error'){kickWs.close();return;}
       if(ev.indexOf('ChatMessageEvent')===-1)return;
+
       var d=typeof msg.data==='string'?JSON.parse(msg.data):msg.data;
       var kr=[],badges=(d.sender&&d.sender.identity&&d.sender.identity.badges)||[];
       badges.forEach(function(b){
@@ -1516,14 +1050,26 @@ function tryKickUrl(c,u,i){
       });
       var un=(d.sender&&d.sender.username)||'Unknown';
       var nc=(d.sender&&d.sender.identity&&d.sender.identity.color)||'#888';
+
       getKickAvatarBrowser(un,function(av){
-        var cm={type:'kick_message',platform:'kick',chatname:un,chatmessage:d.content,nameColor:nc,chatimg:av||null,roles:kr,mid:d.id||('kick-'+Date.now())};
-        if(cm.mid)_recentMids[cm.mid]=Date.now();
-        if(ws&&ws.readyState===1)ws.send(JSON.stringify(cm));
-        appendMessage(cm);
+        var cm={
+          type:'kick_message',platform:'kick',
+          chatname:un,chatmessage:d.content,
+          nameColor:nc,chatimg:av||null,
+          roles:kr,
+          mid:d.id||('kick-'+Date.now())
+        };
+        if(ws&&ws.readyState===1){
+          if(cm.mid)_recentMids[cm.mid]=Date.now();
+          ws.send(JSON.stringify(cm));
+          appendMessage(cm);
+        } else {
+          appendMessage(cm);
+        }
       });
     }catch(err){}
   };
+
   kickWs.onclose=function(e){
     var box=document.getElementById('kick-status-box');
     if(box){box.className='info-box info-yellow';box.innerHTML='↺ Kick desconectado...';}
@@ -1533,7 +1079,11 @@ function tryKickUrl(c,u,i){
     kickRetryTimeout=setTimeout(function(){tryKickUrl(c,u,ni);},kickRetryDelay);
   };
   kickWs.onerror=function(){};
-  var pi=setInterval(function(){if(kickWs&&kickWs.readyState===1)kickWs.send(JSON.stringify({event:'pusher:ping',data:{}}));else clearInterval(pi);},25000);
+
+  var pi=setInterval(function(){
+    if(kickWs&&kickWs.readyState===1)kickWs.send(JSON.stringify({event:'pusher:ping',data:{}}));
+    else clearInterval(pi);
+  },25000);
 }
 
 var kickAvatarCache={},kickAvatarPending={};
@@ -1556,9 +1106,7 @@ function getKickAvatarBrowser(username,cb){
     });
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  ACCIONES VARIAS
-// ═══════════════════════════════════════════════════════════════
+// ═══ ACCIONES ═══
 function saveAndConnect(){var url=document.getElementById('serverUrl').value.trim();if(!url)return toast('Introduce la URL');store.set('serverUrl',url);retryDelay=1000;autoKickDone=false;connectWS(url);updateOverlayUrls();toast('Conectando...');}
 function toggleKickManual(){var el=document.getElementById('kick-manual-wrap');el.style.display=el.style.display==='none'?'block':'none';}
 
@@ -1596,16 +1144,15 @@ async function restartTikTok(){var su=store.get('serverUrl');if(!su)return toast
 async function restartYouTube(){var su=store.get('serverUrl');if(!su)return toast('Configura la URL');var hu=su.replace(/^wss?/,'https').replace(/\/$/,'');var ytBox=document.getElementById('youtube-status-box');if(ytBox){ytBox.className='info-box info-yellow';ytBox.innerHTML='⏳ Buscando live...';}try{var r=await fetch(hu+'/api/youtube/restart',{method:'POST'});var d=await r.json();toast(d.ok?'↺ YouTube reconectando...':'Error');}catch(e){toast('No se pudo conectar');}}
 function openTikTokLive(){var u=currentChannels.tiktok||'';if(!u)return toast('TikTok no configurado');window.open('https://www.tiktok.com/@'+u+'/live','_blank','noopener');}
 function openYouTubeLive(){var c=currentChannels.youtube||'';if(!c)return toast('YouTube no configurado');var h=c.startsWith('@')?c:'@'+c;window.open('https://www.youtube.com/'+h+'/live','_blank','noopener');}
+function sendCustomMessage(){var input=document.getElementById('custom-msg-input'),text=input.value.trim();if(!text)return;if(!isConnected||!ws)return toast('Sin conexión');ws.send(JSON.stringify({type:'custom_message',user:'Tú (dashboard)',text:text}));input.value='';}
 
-// ═══════════════════════════════════════════════════════════════
-//  OVERLAY URLS
-// ═══════════════════════════════════════════════════════════════
+// ═══ OVERLAY URLS ═══
 function getBaseOverlayDir(){var href=window.location.href.split('?')[0].replace(/\/+$/,'');var base=href.replace(/\/dashboard(\/[^?]*)?$/,'/overlay');if(base===href)base=href.replace(/\/[^/]+$/,'/overlay');return base;}
 function updateOverlayUrls(){
   var su=store.get('serverUrl');
   var st=(parseInt(document.getElementById('showtime-input').value)||12)*1000;
   var base=(window.location.protocol!=='file:')?getBaseOverlayDir():'';
-  var ids={'url-chat':{file:'index.html',params:''},'url-destacador':{file:'destacador.html',params:'&showtime='+st}};
+  var ids={'url-chat':{file:'index.html',params:''},'url-chatuno':{file:'chat_uno.html',params:''},'url-destacador':{file:'destacador.html',params:'&showtime='+st}};
   Object.keys(ids).forEach(function(id){
     var box=document.getElementById(id);if(!box)return;
     if(!su){box.textContent='Configura el servidor primero...';box.dataset.url='';return;}
@@ -1629,13 +1176,7 @@ function injectTestMessage(){
   toast('Mensajes de prueba listos');
 }
 
-function toast(msg, type){
-  var el=document.getElementById('toast');
-  el.textContent=msg;
-  el.className='show'+(type?' '+type:'');
-  clearTimeout(el._t);
-  el._t=setTimeout(function(){el.className='';},3000);
-}
+function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(function(){el.classList.remove('show');},2800);}
 </script>
 </body>
 </html>
