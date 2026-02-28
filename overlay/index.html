@@ -107,18 +107,27 @@
     .badge-bits        { background:#F0A500; color:#000; }
     .badge-default     { background:#555;    color:#fff; }
 
-    /* Plataforma pequeña + nombre */
+    /* ── BADGE DE PLATAFORMA con logo ── */
     .name-row { display:flex; align-items:center; gap:6px; }
-    .platform-dot {
-      width:18px; height:18px; border-radius:50%;
-      border:2.5px solid #000; font-size:9px;
-      display:flex; align-items:center; justify-content:center;
-      box-shadow:2px 2px 0 rgba(0,0,0,0.3); flex-shrink:0;
+
+    .platform-badge {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:3px 8px 3px 5px;
+      border-radius:999px;
+      border:2.5px solid #000;
+      font-size:10px; font-weight:900;
+      box-shadow:2px 2px 0 rgba(0,0,0,0.35);
+      flex-shrink:0;
+      white-space:nowrap;
     }
-    .platform-dot.twitch { background:#9146FF; }
-    .platform-dot.kick   { background:#53FC18; }
-    .platform-dot.tiktok { background:#FF0050; }
-    .platform-dot.custom { background:#FF6B9D; }
+    .platform-badge svg {
+      width:13px; height:13px; flex-shrink:0;
+    }
+    .platform-badge.twitch  { background:#9146FF; color:#fff; }
+    .platform-badge.kick    { background:#53FC18; color:#000; }
+    .platform-badge.tiktok  { background:#000000; color:#fff; }
+    .platform-badge.youtube { background:#FF0000; color:#fff; }
+    .platform-badge.custom  { background:#FF6B9D; color:#fff; }
 
     .username {
       font-weight:900; font-size:20px; color:#000;
@@ -186,6 +195,19 @@
     var MAX_MESSAGES = urlParams.has('limit') ? parseInt(urlParams.get('limit')) : 50;
     var MAX_SPACER   = 5000;
 
+    // ── LOGOS SVG DE PLATAFORMAS ─────────────────────────────
+    var PLATFORM_LOGOS = {
+      twitch:  '<svg viewBox="0 0 24 28" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M2.149 0L.537 4.119v19.63h6.72V28l4.123-4.25h3.29L22.463 14V0H2.149zm18.24 13.18l-3.29 3.387h-3.948l-2.886 2.973v-2.973H6.584V2.387h13.805v10.793zM17.07 5.367h-2.148v6.42h2.148V5.367zm-5.907 0h-2.15v6.42h2.15V5.367z"/></svg>',
+      kick:    '<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M4 3h4v7l4.5-7H17L12 12l5.5 9H13L8.5 14v7H4V3z"/></svg>',
+      tiktok:  '<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V9.05a8.16 8.16 0 0 0 4.77 1.52V7.12a4.85 4.85 0 0 1-1-.43z"/></svg>',
+      youtube: '<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>',
+      custom:  '<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>'
+    };
+
+    var PLATFORM_LABELS = {
+      twitch: 'Twitch', kick: 'Kick', tiktok: 'TikTok', youtube: 'YouTube', custom: 'Chat'
+    };
+
     // ── PARTÍCULAS ──────────────────────────────────────────
     var pColors = ['#FF6B9D','#FFD700','#89D4FF','#D4BBFF','#7FFF7F'];
     var pc = document.getElementById('particles');
@@ -209,7 +231,6 @@
     var pastelColors    = ['pastel-yellow','pastel-pink','pastel-blue','pastel-lavender','pastel-peach','pastel-mint'];
     var bubblePositions = ['bubble-left','bubble-right','bubble-center'];
     var decorations     = ['💫','⭐','✨','🌟','💖','💕','🌸','🎀','🌈','⚡'];
-    var platformEmojis  = { twitch:'🟣', kick:'🟢', tiktok:'🎵', custom:'⭐' };
 
     var colorIdx = 0, posIdx = 0;
     function nextColor() { var c=pastelColors[colorIdx]; colorIdx=(colorIdx+1)%pastelColors.length; return c; }
@@ -218,22 +239,12 @@
 
     // ── BADGES ──────────────────────────────────────────────
     var BADGE_ICONS = {
-      broadcaster: '👑',
-      moderator:   '⚔️',
-      vip:         '💎',
-      subscriber:  '⭐',
-      founder:     '🏆',
-      og:          '🔥',
-      bits:        '💎',
+      broadcaster: '👑', moderator: '⚔️', vip: '💎',
+      subscriber: '⭐', founder: '🏆', og: '🔥', bits: '💎',
     };
     var BADGE_LABELS = {
-      broadcaster: 'Owner',
-      moderator:   'Mod',
-      vip:         'VIP',
-      subscriber:  'Sub',
-      founder:     'Founder',
-      og:          'OG',
-      bits:        'Bits',
+      broadcaster: 'Owner', moderator: 'Mod', vip: 'VIP',
+      subscriber: 'Sub', founder: 'Founder', og: 'OG', bits: 'Bits',
     };
 
     function buildBadgesHTML(roles) {
@@ -249,6 +260,13 @@
       }
       html += '</div>';
       return html;
+    }
+
+    // ── BADGE DE PLATAFORMA ──────────────────────────────────
+    function buildPlatformBadge(platform) {
+      var logo  = PLATFORM_LOGOS[platform] || PLATFORM_LOGOS.custom;
+      var label = PLATFORM_LABELS[platform] || platform;
+      return '<span class="platform-badge ' + platform + '">' + logo + label + '</span>';
     }
 
     // ── AGREGAR MENSAJE ─────────────────────────────────────
@@ -271,19 +289,21 @@
           '<img class="avatar-img" src="' + data.chatimg + '" onerror="this.style.display=\'none\'">' +
           '</div>';
       } else {
-        var emoji = platformEmojis[platform] || '💬';
-        avatarHTML = '<div class="avatar-box"><div class="avatar-fallback">' + emoji + '</div></div>';
+        var logo = PLATFORM_LOGOS[platform] || PLATFORM_LOGOS.custom;
+        avatarHTML = '<div class="avatar-box" style="background:#eee;display:flex;align-items:center;justify-content:center;padding:10px;">' +
+          '<div style="width:100%;height:100%;color:#999;">' + logo + '</div>' +
+          '</div>';
       }
 
-      // Badges
+      // Badges de rol
       var badgesHTML = buildBadgesHTML(data.roles);
+
+      // Badge de plataforma
+      var platformBadgeHTML = buildPlatformBadge(platform);
 
       // Nombre con color
       var nameStyle = data.nameColor ? 'color:' + data.nameColor + ';' : '';
       var nameHTML  = '<span class="username" style="' + nameStyle + '">' + escHtml(data.chatname || '') + '</span>';
-
-      // Plataforma dot
-      var dotHTML = '<span class="platform-dot ' + platform + '" title="' + platform + '"></span>';
 
       msgDiv.innerHTML =
         '<div class="bubble-container ' + color + '">' +
@@ -294,8 +314,11 @@
           '<div class="message-header">' +
             avatarHTML +
             '<div class="user-info">' +
-              badgesHTML +
-              '<div class="name-row">' + dotHTML + nameHTML + '</div>' +
+              (badgesHTML ? '<div class="badges-row-wrap">' + badgesHTML + '</div>' : '') +
+              '<div class="name-row">' +
+                platformBadgeHTML +
+                nameHTML +
+              '</div>' +
             '</div>' +
           '</div>' +
           '<div class="message-content">' + escHtml(data.chatmessage || '') + '</div>' +
