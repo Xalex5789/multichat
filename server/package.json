@@ -1,7 +1,7 @@
 {
   "name": "meeve-multichat-server",
-  "version": "2.0.0",
-  "description": "Servidor de multichat para Twitch, Kick, TikTok y YouTube",
+  "version": "3.0.0",
+  "description": "Servidor de multichat para Twitch, Kick, TikTok y YouTube — con envío de mensajes y OAuth",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
