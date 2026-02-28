@@ -1,7 +1,7 @@
-# 🎮 Meeve Multichat
+# 🎮 Meeve Multichat v2
 
-Multichat para streams: **Twitch + Kick + TikTok** con overlay personalizado de Meeve.  
-100% online — sin instalar programas. GitHub Pages + Railway + UptimeRobot.
+Chat unificado para **Twitch + Kick + TikTok + YouTube** con overlay para OBS.  
+100% autónomo — sin Social Stream Ninja, sin dependencias externas.
 
 ---
 
@@ -10,85 +10,145 @@ Multichat para streams: **Twitch + Kick + TikTok** con overlay personalizado de 
 ```
 multichat/
 ├── server/
-│   ├── index.js        ← Servidor Node.js (Railway)
+│   ├── index.js        ← Servidor Node.js (Railway / Render)
 │   ├── package.json
-│   └── railway.toml    ← Config de deploy Railway
-├── overlay/
-│   └── index.html      ← Overlay para OBS (GitHub Pages)
+│   └── railway.toml
 ├── dashboard/
-│   └── index.html      ← Panel de control (GitHub Pages)
-└── README.md
+│   └── index.html      ← Panel de control (abrís en tu navegador)
+└── overlay/
+    ├── index.html      ← Chat multichat para OBS (burbujas múltiples)
+    ├── chat_uno.html   ← Chat de UN solo mensaje para OBS
+    └── destacador.html ← Mensaje destacado al clickear en el dashboard
 ```
 
 ---
 
-## 🚀 Setup
+## 🚀 Cómo funciona el sistema completo
 
-### 1. GitHub Pages (overlay + dashboard)
+```
+Twitch ──────────────────────────────────────────┐
+TikTok ──────────────────────────────────────────┤
+YouTube (polling API) ───────────────────────────┤──► Servidor Node.js (Railway)
+Kick ──► Dashboard (tu navegador) ───────────────┘         │ WebSocket
+                                                            │
+                               ┌────────────────────────────┤
+                               │                            │
+                        overlay/index.html        overlay/destacador.html
+                        overlay/chat_uno.html
+                               │                            │
+                            OBS (fuentes de navegador)
+```
 
-1. Ve a **Settings → Pages**
-2. Source: **Deploy from branch `main`**, carpeta **`/ (root)`**
-3. URLs resultantes:
-   - Dashboard: `https://TU_USUARIO.github.io/multichat/dashboard/`
-   - Overlay OBS: `https://TU_USUARIO.github.io/multichat/overlay/?server=wss://TU-APP.up.railway.app`
+### Overlays disponibles
 
----
-
-### 2. Railway (servidor)
-
-1. Entra a [railway.app](https://railway.app) → **New Project → Deploy from GitHub repo**
-2. Selecciona este repositorio
-3. En **Settings** configura:
-   - **Root Directory:** `server`
-   - **Start Command:** `node index.js`
-4. En la pestaña **Variables** añade:
-
-| Variable          | Valor                       |
-|-------------------|-----------------------------|
-| `TWITCH_CHANNEL`  | tu canal (ej: `meeve_`)     |
-| `KICK_CHANNEL`    | tu canal (ej: `meeve`)      |
-| `KICK_CHANNEL_ID` | ID numérico (opcional)      |
-| `TIKTOK_USERNAME` | tu usuario sin @            |
-| `TIKTOK_MODE`     | `connector`                 |
-
-5. Ve a **Settings → Networking → Generate Domain**
-6. Copia la URL tipo: `wss://tu-app.up.railway.app`
+| Archivo | Uso |
+|---|---|
+| `overlay/index.html` | Chat estilo burbuja con múltiples mensajes. Conéctalo normalmente como fuente en OBS. |
+| `overlay/chat_uno.html` | Muestra UN solo mensaje a la vez (el más reciente). Reemplaza al anterior automáticamente. |
+| `overlay/destacador.html` | **Solo muestra mensajes destacados desde el dashboard**. Aparece al clickear y desaparece solo. |
 
 ---
 
-### 3. UptimeRobot
+## 🖱️ Destacar mensajes (nueva función)
 
-1. [uptimerobot.com](https://uptimerobot.com) → **Add New Monitor → HTTP(s)**
-2. URL: `https://tu-app.up.railway.app/health`
-3. Interval: **5 minutes**
+1. Abre el **dashboard** en tu navegador mientras streameas
+2. Cada mensaje tiene un botón **📌 Destacar** que aparece al pasar el mouse
+3. Al clickearlo (o clickear el mensaje directamente), el mensaje se envía a todos los overlays con tipo `highlight`
+4. El **`destacador.html`** lo muestra durante **12 segundos** y luego desaparece solo
+5. Desde la barra inferior del dashboard podés ver qué mensaje está destacado y quitarlo con **✕ Quitar destacado**
 
----
-
-### 4. OBS
-
-1. Abre el dashboard en tu navegador
-2. Introduce la URL de Railway y pulsa **Conectar**
-3. Copia la **URL del Overlay** generada
-4. OBS → **Fuentes → Añadir → Navegador** → pega la URL
+El tiempo de visibilidad se puede cambiar con el parámetro `?showtime=8000` (en ms) en la URL del overlay.
 
 ---
 
-## 🎵 TikTok
+## ⚙️ Setup en Railway / Render
 
-| Modo | Descripción |
-|------|-------------|
-| `connector` | Sin ventana visible. Reintenta solo si falla. |
-| `puppeteer` | Chrome headless en Railway. Más RAM pero más robusto. |
+### Variables de entorno
 
-Desde el dashboard: botón **🔄 Reconectar** y **📺 Preview** para abrir el live en panel lateral.
+| Variable | Descripción |
+|---|---|
+| `TWITCH_CHANNEL` | Tu nombre en Twitch (sin #) |
+| `KICK_CHANNEL` | Tu nombre en Kick |
+| `TIKTOK_USERNAME` | Tu usuario de TikTok (sin @) |
+| `YOUTUBE_HANDLE` | Tu handle de YouTube (ej: `@Meevepics`) |
+| `YOUTUBE_API_KEY` | API Key de Google Cloud → YouTube Data API v3 |
+| `TIKTOK_SESSION_ID` | (Opcional) Si TikTok da error 403 |
+
+### Configuración Railway
+
+- **Root Directory:** `server`
+- **Start Command:** `node index.js`
+- **Health check:** `/health`
+
+---
+
+## 🎬 Agregar overlays a OBS
+
+Para cada overlay, crea una **Fuente de Navegador** en OBS:
+
+```
+overlay/index.html:
+https://tuusuario.github.io/multichat/overlay/index.html?server=wss://tu-app.up.railway.app
+
+overlay/chat_uno.html:
+https://tuusuario.github.io/multichat/overlay/chat_uno.html?server=wss://tu-app.up.railway.app
+
+overlay/destacador.html:
+https://tuusuario.github.io/multichat/overlay/destacador.html?server=wss://tu-app.up.railway.app
+
+# Parámetros opcionales para el destacador:
+?showtime=12000   → tiempo en ms (default: 12000 = 12 segundos)
+```
 
 ---
 
 ## 🔗 Endpoints del servidor
 
-| Endpoint | Uso |
-|---|---|
-| `GET /health` | UptimeRobot ping |
-| `GET /api/status` | Estado JSON |
-| `POST /api/tiktok/restart` | Reconectar TikTok |
-| `WS /` | WebSocket de mensajes |
+| Endpoint | Método | Descripción |
+|---|---|---|
+| `/health` | GET | Estado del servidor (UptimeRobot) |
+| `/api/status` | GET | Estado detallado en JSON |
+| `/api/tiktok/restart` | POST | Fuerza reconexión de TikTok |
+| `/api/youtube/restart` | POST | Fuerza reconexión de YouTube |
+| `/api/kick/channel-id` | GET/POST | Gestión del chatroom ID de Kick |
+
+---
+
+## 📨 Mensajes WebSocket — Formato
+
+### Chat normal
+```json
+{
+  "type": "twitch",
+  "platform": "twitch",
+  "chatname": "usuario",
+  "chatmessage": "Hola!",
+  "nameColor": "#9146FF",
+  "chatimg": "https://...",
+  "roles": [{ "type": "moderator", "label": "Mod" }],
+  "mid": "tw-abc123"
+}
+```
+
+### Mensaje destacado (generado desde el dashboard)
+```json
+{
+  "type": "highlight",
+  "platform": "twitch",
+  "chatname": "usuario",
+  "chatmessage": "Hola!",
+  "chatimg": "https://...",
+  "nameColor": "#9146FF",
+  "roles": [],
+  "mid": "hl-1234567890"
+}
+```
+
+### Limpiar destacado
+```json
+{ "type": "highlight_clear" }
+```
+
+---
+
+*Última actualización: febrero 2026*
