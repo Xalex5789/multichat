@@ -59,6 +59,61 @@ const state = {
 const kickAvatarCache   = {};
 const kickAvatarPending = {};
 
+// ── TWITCH AVATAR CACHE ──────────────────────────────────────
+const twitchAvatarCache   = {};
+const twitchAvatarPending = {};
+
+function getTwitchAvatar(username, callback) {
+  if (!username) return callback(null);
+  const slug = username.toLowerCase();
+
+  if (twitchAvatarCache[slug])   return callback(twitchAvatarCache[slug]);
+  if (twitchAvatarPending[slug]) { twitchAvatarPending[slug].push(callback); return; }
+
+  twitchAvatarPending[slug] = [callback];
+
+  // decapi.me devuelve directamente la URL del avatar sin auth
+  const url = `https://decapi.me/twitch/avatar/${slug}`;
+  console.log(`[Twitch Avatar] Resolviendo avatar para: ${slug}`);
+
+  const req = https.get(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0' }
+  }, (res) => {
+    let body = '';
+    res.on('data', chunk => body += chunk);
+    res.on('end', () => {
+      // decapi devuelve la URL directamente como texto plano
+      const avatar = body.trim().startsWith('http') ? body.trim() : null;
+
+      if (avatar) {
+        twitchAvatarCache[slug] = avatar;
+        console.log(`[Twitch Avatar] ✅ ${slug} → ${avatar.substring(0, 60)}...`);
+      } else {
+        console.log(`[Twitch Avatar] ⚠️  No se encontró avatar para: ${slug}`);
+      }
+
+      const cbs = twitchAvatarPending[slug] || [];
+      delete twitchAvatarPending[slug];
+      cbs.forEach(cb => cb(avatar));
+    });
+  });
+
+  req.on('error', (e) => {
+    console.error(`[Twitch Avatar] Error para ${slug}:`, e.message);
+    const cbs = twitchAvatarPending[slug] || [];
+    delete twitchAvatarPending[slug];
+    cbs.forEach(cb => cb(null));
+  });
+
+  req.setTimeout(5000, () => {
+    req.destroy();
+    console.warn(`[Twitch Avatar] Timeout para: ${slug}`);
+    const cbs = twitchAvatarPending[slug] || [];
+    delete twitchAvatarPending[slug];
+    cbs.forEach(cb => cb(null));
+  });
+}
+
 function getKickAvatar(username, callback) {
   if (!username) return callback(null);
   const slug = username.toLowerCase();
@@ -242,33 +297,35 @@ function connectTwitch() {
     const bitsMatch = message.match(/cheer(\d+)/i);
     const bitsAmount = tags.bits ? parseInt(tags.bits) : (bitsMatch ? parseInt(bitsMatch[1]) : 0);
 
-    if (bitsAmount > 0) {
-      // Emitir como donación de Bits
-      broadcast({
-        type:        'donation',
-        platform:    'twitch',
-        donationType: 'bits',
-        chatname:    tags['display-name'] || tags.username,
-        chatmessage: message.replace(/cheer\d+\s*/gi, '').trim() || `¡${bitsAmount} Bits!`,
-        amount:      bitsAmount,
-        currency:    'BITS',
-        nameColor:   tags.color || '#9146FF',
-        chatimg:     tags['profile-image-url'] || null,
-        roles,
-        mid:         'tw-bits-' + Date.now(),
-      });
-    } else {
-      broadcast({
-        type:        'twitch',
-        platform:    'twitch',
-        chatname:    tags['display-name'] || tags.username,
-        chatmessage: message,
-        nameColor:   tags.color || '#9146FF',
-        chatimg:     tags['profile-image-url'] || null,
-        roles,
-        mid:         tags.id || ('tw-' + Date.now()),
-      });
-    }
+    const twitchUser = tags['display-name'] || tags.username || '';
+    getTwitchAvatar(twitchUser, (avatar) => {
+      if (bitsAmount > 0) {
+        broadcast({
+          type:        'donation',
+          platform:    'twitch',
+          donationType: 'bits',
+          chatname:    twitchUser,
+          chatmessage: message.replace(/cheer\d+\s*/gi, '').trim() || `¡${bitsAmount} Bits!`,
+          amount:      bitsAmount,
+          currency:    'BITS',
+          nameColor:   tags.color || '#9146FF',
+          chatimg:     avatar || null,
+          roles,
+          mid:         'tw-bits-' + Date.now(),
+        });
+      } else {
+        broadcast({
+          type:        'twitch',
+          platform:    'twitch',
+          chatname:    twitchUser,
+          chatmessage: message,
+          nameColor:   tags.color || '#9146FF',
+          chatimg:     avatar || null,
+          roles,
+          mid:         tags.id || ('tw-' + Date.now()),
+        });
+      }
+    });
   });
 
   // ── Subscripción nueva ────────────────────────────────────────
