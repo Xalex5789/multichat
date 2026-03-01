@@ -1114,7 +1114,7 @@ function connectWS(url){
     try{
       var d=JSON.parse(e.data);
       if(d.type==='status')handleStatus(d);
-      else if(d.type==='highlight'||d.type==='highlight_clear')return;
+      else if(d.type==='highlight'||d.type==='highlight_clear'||d.type==='custom_message')return;
       else appendMessage(d);
     }catch(err){}
   };
@@ -1230,6 +1230,8 @@ function sendHighlight(el){
   el.classList.add('highlighted');currentHighlightMid=el.dataset.mid;
   document.getElementById('hl-bar').classList.add('active');
   document.getElementById('hl-bar-text').textContent=(data.chatname||'?')+': '+(data.chatmessage||'');
+  // Registrar el mid como ya visto para que el rebroadcast del servidor no lo vuelva a mostrar
+  if(data.mid) _recentMids[data.mid]=Date.now()+60000;
   ws.send(JSON.stringify({type:'highlight',platform:data.platform||data.type||'custom',chatname:data.chatname||'',chatmessage:data.chatmessage||'',chatimg:data.chatimg||null,nameColor:data.nameColor||null,roles:data.roles||[],chatemotes:data.chatemotes||[],mid:data.mid||''}));
   toast('📌 Mensaje destacado');
 }
