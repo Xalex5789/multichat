@@ -206,69 +206,6 @@
     .btn-danger:hover{background:var(--corbata-soft);border-color:var(--corbata);}
     .btn-row{display:flex;gap:5px;}
 
-    /* ══ CHAT POPOUT BUTTONS — plataforma específica ══ */
-    .chat-popout-btn {
-      display:flex;align-items:center;gap:7px;
-      padding:8px 11px;
-      border-radius:2px 4px 3px 3px;border:none;
-      font-family:var(--font-mono);font-size:9px;font-weight:700;
-      cursor:pointer;transition:all 0.15s;letter-spacing:0.6px;text-transform:uppercase;
-      width:100%;margin-bottom:5px;position:relative;overflow:hidden;
-      box-shadow:var(--shadow);
-    }
-    .chat-popout-btn:last-child { margin-bottom:0; }
-    .chat-popout-btn::after {
-      content:'';position:absolute;inset:0;
-      background:linear-gradient(135deg,rgba(255,255,255,0.04) 0%,transparent 60%);
-      pointer-events:none;
-    }
-    .chat-popout-btn:active{transform:translate(1px,1px);box-shadow:none;}
-
-    .chat-popout-btn .popout-icon { font-size:15px;flex-shrink:0;filter:grayscale(20%); }
-    .chat-popout-btn .popout-info { display:flex;flex-direction:column;align-items:flex-start;gap:1px;flex:1;min-width:0; }
-    .chat-popout-btn .popout-name { font-size:10px;line-height:1; }
-    .chat-popout-btn .popout-channel { font-size:7.5px;opacity:0.65;font-family:var(--font-body);font-style:italic;font-weight:400;text-transform:none;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%; }
-    .chat-popout-btn .popout-arrow { font-size:9px;opacity:0.5;flex-shrink:0; }
-
-    .chat-popout-btn.twitch-btn {
-      background:linear-gradient(135deg,#3a1f5e 0%,#2c1a47 100%);
-      color:#c9aff5;
-      border-top:1px solid rgba(145,70,255,0.35);
-      border-left:1px solid rgba(145,70,255,0.35);
-      border-right:1px solid rgba(145,70,255,0.12);
-      border-bottom:1px solid rgba(145,70,255,0.12);
-    }
-    .chat-popout-btn.twitch-btn:hover { background:linear-gradient(135deg,#4a2878 0%,#3c2260 100%);transform:translate(-1px,-1px);box-shadow:3px 4px 0 rgba(10,8,6,0.3); }
-    .chat-popout-btn.twitch-btn.disabled { opacity:0.38;cursor:not-allowed; }
-    .chat-popout-btn.twitch-btn.disabled:hover { transform:none;box-shadow:var(--shadow); }
-
-    .chat-popout-btn.kick-btn {
-      background:linear-gradient(135deg,#1a3520 0%,#152a19 100%);
-      color:#7ecf6e;
-      border-top:1px solid rgba(83,252,24,0.25);
-      border-left:1px solid rgba(83,252,24,0.25);
-      border-right:1px solid rgba(83,252,24,0.08);
-      border-bottom:1px solid rgba(83,252,24,0.08);
-    }
-    .chat-popout-btn.kick-btn:hover { background:linear-gradient(135deg,#22452a 0%,#1a3520 100%);transform:translate(-1px,-1px);box-shadow:3px 4px 0 rgba(10,8,6,0.3); }
-    .chat-popout-btn.kick-btn.disabled { opacity:0.38;cursor:not-allowed; }
-    .chat-popout-btn.kick-btn.disabled:hover { transform:none;box-shadow:var(--shadow); }
-
-    .chat-popout-btn .status-dot {
-      width:5px;height:5px;border-radius:50%;flex-shrink:0;
-      background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.15);
-      transition:all 0.3s;
-    }
-    .chat-popout-btn.twitch-btn .status-dot.live { background:#9146FF;box-shadow:0 0 0 3px rgba(145,70,255,0.2);border-color:#9146FF; }
-    .chat-popout-btn.kick-btn .status-dot.live   { background:#53FC18;box-shadow:0 0 0 3px rgba(83,252,24,0.18);border-color:#53FC18; }
-
-    .popout-hint {
-      font-family:var(--font-mono);font-size:8px;color:var(--camisa-muted);
-      line-height:1.6;margin-top:5px;padding:5px 8px;
-      background:rgba(10,8,6,0.2);border-radius:2px;
-      border-left:2px solid rgba(200,37,28,0.3);
-    }
-
     .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:3px 0;}
     .toggle-label{font-family:var(--font-mono);font-size:9.5px;color:var(--camisa);flex:1;}
     .toggle-switch{position:relative;width:34px;height:17px;flex-shrink:0;}
@@ -447,13 +384,265 @@
     #hl-bar.active{display:flex;}
     #hl-bar strong{color:var(--camisa);max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-body);font-size:12px;text-transform:none;font-weight:400;}
 
+    /* ══ INPUT BAR + TARGET SELECTOR ══ */
     .input-bar{
-      padding:9px 13px;
       border-top:2px solid var(--corbata);
       background:var(--traje);
-      display:flex;gap:7px;position:relative;z-index:1;
+      position:relative;z-index:1;
+      display:flex;flex-direction:column;gap:0;
     }
     .input-bar input[type=text]{background:var(--traje-light);color:var(--camisa);}
+
+    /* ══ CHAT VISOR — panel de iframe embebido ══ */
+    .chat-visor {
+      position: absolute;
+      /* Se posiciona encima del área de chat, debajo del header, encima del input-bar */
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      background: var(--traje);
+      border: none;
+      transform: translateY(100%);
+      opacity: 0;
+      transition: transform 0.32s cubic-bezier(0.4,0,0.2,1), opacity 0.25s;
+      pointer-events: none;
+    }
+    .chat-visor.open {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: all;
+    }
+    .chat-visor-footer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: var(--traje);
+      border-top: 1px solid rgba(200,37,28,0.2);
+      flex-shrink: 0;
+      z-index: 2;
+    }
+    .chat-visor-title {
+      font-family: var(--font-title);
+      font-size: 12px;
+      letter-spacing: 3px;
+      color: var(--camisa);
+      text-transform: uppercase;
+      flex: 1;
+    }
+    .chat-visor-badge {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      padding: 2px 7px;
+      border-radius: 2px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .chat-visor-badge.twitch { background: rgba(145,70,255,0.18); border: 1px solid rgba(145,70,255,0.4); color: #c9aff5; }
+    .chat-visor-badge.kick   { background: rgba(83,252,24,0.1);   border: 1px solid rgba(83,252,24,0.3);  color: #7ecf6e; }
+    .chat-visor-badge.youtube{ background: rgba(255,68,68,0.12);  border: 1px solid rgba(255,68,68,0.35); color: #ff8888; }
+    .chat-visor-badge.tiktok { background: rgba(255,45,120,0.12); border: 1px solid rgba(255,45,120,0.35);color: #ff80b0; }
+    .chat-visor-close {
+      padding: 3px 9px;
+      background: none;
+      border: 1px solid rgba(200,37,28,0.35);
+      border-radius: 2px 4px 3px 3px;
+      color: var(--corbata);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      cursor: pointer;
+      transition: all 0.12s;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .chat-visor-close:hover { background: var(--corbata); color: var(--camisa); }
+    .chat-visor-iframe-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: var(--traje-light);
+    }
+    .chat-visor-iframe-wrap iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+    .chat-visor-unavailable {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-family: var(--font-title);
+      font-size: 13px;
+      color: var(--camisa-muted);
+      letter-spacing: 2px;
+      text-align: center;
+      padding: 30px;
+    }
+    .chat-visor-unavailable .uv-icon { font-size: 28px; opacity: 0.4; }
+    .chat-visor-unavailable .uv-sub {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--camisa-muted);
+      letter-spacing: 1px;
+      max-width: 260px;
+      line-height: 1.8;
+      opacity: 0.7;
+    }
+
+    /* Fila de targets — ahora incluye los viewers */
+    .target-row{
+      display:flex;align-items:center;gap:4px;
+      padding:6px 13px 5px;
+      border-bottom:1px solid rgba(200,37,28,0.12);
+      background:rgba(10,8,6,0.18);
+      overflow-x:auto;
+      scrollbar-width:none;
+    }
+    .target-row::-webkit-scrollbar{display:none;}
+    .target-label{
+      font-family:var(--font-mono);font-size:7.5px;color:var(--camisa-muted);
+      text-transform:uppercase;letter-spacing:1px;white-space:nowrap;
+      margin-right:3px;flex-shrink:0;
+    }
+
+    .target-btn{
+      display:inline-flex;align-items:center;gap:4px;
+      padding:3px 8px 3px 6px;
+      border-radius:2px 4px 2px 3px;
+      border:1px solid rgba(10,8,6,0.45);
+      background:var(--traje-light);
+      font-family:var(--font-mono);font-size:8px;font-weight:700;
+      letter-spacing:0.4px;text-transform:uppercase;
+      cursor:pointer;transition:all 0.13s;
+      white-space:nowrap;flex-shrink:0;
+      color:var(--camisa-muted);
+      box-shadow:1px 2px 0 rgba(10,8,6,0.2);
+      position:relative;overflow:hidden;
+    }
+    .target-btn::before{
+      content:'';position:absolute;inset:0;
+      background:linear-gradient(135deg,rgba(255,255,255,0.03) 0%,transparent 60%);
+      pointer-events:none;
+    }
+    .target-btn .tb-dot{
+      width:5px;height:5px;border-radius:50%;
+      background:var(--guante);border:1px solid rgba(255,255,255,0.1);
+      transition:all 0.15s;flex-shrink:0;
+    }
+    .target-btn:hover{ border-color:rgba(222,218,212,0.25);color:var(--camisa); }
+    .target-btn:active{ transform:translate(1px,1px);box-shadow:none; }
+
+    .target-btn.active{
+      border-color:var(--tb-color,var(--corbata));
+      color:var(--tb-color,var(--corbata));
+      background:var(--tb-bg,rgba(200,37,28,0.1));
+      box-shadow:0 0 0 1px var(--tb-color,var(--corbata)),1px 2px 0 rgba(10,8,6,0.2);
+    }
+    .target-btn.active .tb-dot{
+      background:var(--tb-color,var(--corbata));
+      box-shadow:0 0 0 2px var(--tb-glow,rgba(200,37,28,0.2));
+      border-color:var(--tb-color,var(--corbata));
+    }
+
+    /* Colores por plataforma */
+    .target-btn[data-target="console"]{
+      --tb-color:#c8251c; --tb-bg:rgba(200,37,28,0.1); --tb-glow:rgba(200,37,28,0.2);
+    }
+    .target-btn[data-target="twitch"]{
+      --tb-color:#9146ff; --tb-bg:rgba(145,70,255,0.1); --tb-glow:rgba(145,70,255,0.2);
+    }
+    .target-btn[data-target="kick"]{
+      --tb-color:#53fc18; --tb-bg:rgba(83,252,24,0.08); --tb-glow:rgba(83,252,24,0.18);
+    }
+    .target-btn[data-target="youtube"]{
+      --tb-color:#ff4444; --tb-bg:rgba(255,68,68,0.1); --tb-glow:rgba(255,68,68,0.2);
+    }
+    .target-btn[data-target="tiktok"]{
+      --tb-color:#ff2d78; --tb-bg:rgba(255,45,120,0.1); --tb-glow:rgba(255,45,120,0.2);
+    }
+
+    /* Botones de visor de chat en la barra inferior */
+    .target-btn.viewer-btn {
+      --tb-color:#aaa;
+      border-left: 1px solid rgba(255,255,255,0.08);
+      margin-left: 3px;
+    }
+    .target-btn.viewer-btn:first-of-type { margin-left: 6px; }
+
+    .target-btn.viewer-btn[data-view="twitch"]{ --tb-color:#9146ff; --tb-bg:rgba(145,70,255,0.1); --tb-glow:rgba(145,70,255,0.2); }
+    .target-btn.viewer-btn[data-view="kick"]  { --tb-color:#53fc18; --tb-bg:rgba(83,252,24,0.08); --tb-glow:rgba(83,252,24,0.18); }
+    .target-btn.viewer-btn[data-view="youtube"]{ --tb-color:#ff4444;--tb-bg:rgba(255,68,68,0.1);  --tb-glow:rgba(255,68,68,0.2); }
+    .target-btn.viewer-btn[data-view="tiktok"] { --tb-color:#ff2d78;--tb-bg:rgba(255,45,120,0.1); --tb-glow:rgba(255,45,120,0.2); }
+
+    .target-btn.viewer-btn.viewing {
+      border-color:var(--tb-color);
+      color:var(--tb-color);
+      background:var(--tb-bg);
+      box-shadow:0 0 0 1px var(--tb-color),1px 2px 0 rgba(10,8,6,0.2);
+    }
+    .target-btn.viewer-btn.viewing .tb-dot {
+      background:var(--tb-color);
+      box-shadow:0 0 0 2px var(--tb-glow);
+      border-color:var(--tb-color);
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+
+    /* separador visual en la barra */
+    .target-sep {
+      width: 1px;
+      height: 18px;
+      background: rgba(200,37,28,0.2);
+      flex-shrink: 0;
+      margin: 0 4px;
+    }
+
+    .target-btn.unavailable{
+      opacity:0.3;cursor:not-allowed;
+    }
+    .target-btn.unavailable:hover{
+      border-color:rgba(10,8,6,0.45);color:var(--camisa-muted);
+      box-shadow:1px 2px 0 rgba(10,8,6,0.2);
+    }
+
+    /* Fila del input real */
+    .input-row-msg{
+      display:flex;gap:7px;padding:8px 13px;
+    }
+
+    .input-targets-indicator{
+      display:flex;align-items:center;gap:3px;
+      padding:0 7px;background:rgba(10,8,6,0.2);
+      border-top:1px solid rgba(10,8,6,0.4);
+      border-left:1px solid rgba(10,8,6,0.4);
+      border-right:1px solid rgba(10,8,6,0.12);
+      border-bottom:1px solid rgba(10,8,6,0.12);
+      border-radius:2px 4px 3px 3px;
+      flex-shrink:0;
+    }
+    .input-targets-indicator .iti-dot{
+      width:5px;height:5px;border-radius:50%;
+      background:var(--dot-color);
+      box-shadow:0 0 0 2px var(--dot-glow);
+      transition:all 0.2s;
+      flex-shrink:0;
+    }
+
+    .ext-note{
+      font-family:var(--font-mono);font-size:7.5px;
+      color:var(--camisa-muted);letter-spacing:0.3px;
+      padding:3px 13px 5px;
+      border-top:1px solid rgba(10,8,6,0.15);
+      display:none;
+    }
+    .ext-note.visible{display:block;}
+    .ext-note span{color:var(--corbata);}
+
 
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,8,6,0.7);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
     .modal-overlay.open{display:flex;}
@@ -545,36 +734,6 @@
         <span class="platform-dot" id="dot-youtube"></span>
         <span class="platform-icon">▶️</span>
         <div class="platform-info"><div class="platform-name">YouTube</div><div class="platform-channel" id="ch-youtube">—</div></div>
-      </div>
-    </div>
-
-    <!-- ══ CHAT EMERGENTE ══ -->
-    <div class="card">
-      <div class="card-title">💬 Chat Emergente</div>
-
-      <button id="popout-twitch-btn" class="chat-popout-btn twitch-btn disabled" onclick="openTwitchChatPopout()">
-        <span class="status-dot" id="popout-dot-twitch"></span>
-        <span class="popout-icon">🟣</span>
-        <span class="popout-info">
-          <span class="popout-name">Twitch Chat</span>
-          <span class="popout-channel" id="popout-ch-twitch">Sin canal configurado</span>
-        </span>
-        <span class="popout-arrow">↗</span>
-      </button>
-
-      <button id="popout-kick-btn" class="chat-popout-btn kick-btn disabled" onclick="openKickChatPopout()">
-        <span class="status-dot" id="popout-dot-kick"></span>
-        <span class="popout-icon">🟢</span>
-        <span class="popout-info">
-          <span class="popout-name">Kick Chat</span>
-          <span class="popout-channel" id="popout-ch-kick">Sin canal configurado</span>
-        </span>
-        <span class="popout-arrow">↗</span>
-      </button>
-
-      <div class="popout-hint">
-        Abre el chat emergente de cada plataforma para responder mensajes directamente.
-        Los botones se activan cuando el canal está conectado.
       </div>
     </div>
 
@@ -683,6 +842,23 @@
   </div>
 
   <div class="main">
+    <!-- ══ CHAT VISOR (iframe embebido) ══ -->
+    <div class="chat-visor" id="chat-visor">
+      <div class="chat-visor-iframe-wrap" id="visor-iframe-wrap">
+        <div class="chat-visor-unavailable" id="visor-unavailable" style="display:none;">
+          <span class="uv-icon">⚠</span>
+          <span id="visor-unavailable-msg">Canal no configurado</span>
+          <span class="uv-sub" id="visor-unavailable-sub">Configurá el canal en el panel lateral para poder ver el chat aquí.</span>
+        </div>
+        <iframe id="visor-iframe" src="about:blank" allow="autoplay" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"></iframe>
+      </div>
+      <div class="chat-visor-footer">
+        <span class="chat-visor-title" id="visor-title">Chat</span>
+        <span class="chat-visor-badge" id="visor-badge">—</span>
+        <button class="chat-visor-close" onclick="closeChatVisor()">✕ Cerrar</button>
+      </div>
+    </div>
+
     <div class="chat-panel" id="chat-panel">
       <div class="chat-spacer" id="chat-spacer"></div>
       <div id="chat-placeholder">Los mensajes aparecerán aquí<br><span style="font-size:11px;letter-spacing:3px;">— ひとつめ様 —</span></div>
@@ -692,9 +868,26 @@
       <button class="btn btn-secondary" style="font-size:8.5px;padding:3px 8px;margin-left:auto;" onclick="clearHighlight()">✕ Quitar</button>
     </div>
     <div class="input-bar">
-      <input id="custom-msg-input" type="text" placeholder="Escribe un mensaje personalizado y pulsa Enter…" onkeydown="if(event.key==='Enter')sendCustomMessage()" />
-      <button class="btn btn-primary" onclick="sendCustomMessage()">Enviar</button>
-      <button class="btn btn-secondary" onclick="injectTestMessage()" title="Mensaje de prueba">🧪</button>
+      <div class="target-row">
+        <span class="target-label">👁</span>
+        <button class="target-btn viewer-btn" data-view="twitch" onclick="openChatVisor('twitch')" id="view-twitch" title="Ver chat de Twitch">
+          <span class="tb-dot"></span>Twitch
+        </button>
+        <button class="target-btn viewer-btn" data-view="kick" onclick="openChatVisor('kick')" id="view-kick" title="Ver chat de Kick">
+          <span class="tb-dot"></span>Kick
+        </button>
+        <button class="target-btn viewer-btn" data-view="youtube" onclick="openChatVisor('youtube')" id="view-youtube" title="Ver chat de YouTube">
+          <span class="tb-dot"></span>YouTube
+        </button>
+        <button class="target-btn viewer-btn" data-view="tiktok" onclick="openChatVisor('tiktok')" id="view-tiktok" title="Ver chat de TikTok">
+          <span class="tb-dot"></span>TikTok
+        </button>
+      </div>
+      <div class="input-row-msg">
+        <input id="custom-msg-input" type="text" placeholder="Escribe y pulsa Enter…" onkeydown="if(event.key==='Enter')sendCustomMessage()" style="flex:1;" />
+        <button class="btn btn-primary" onclick="sendCustomMessage()">Enviar</button>
+        <button class="btn btn-secondary" onclick="injectTestMessage()" title="Mensaje de prueba">🧪</button>
+      </div>
     </div>
   </div>
 </div>
@@ -739,6 +932,7 @@ var store={
 var ws=null,retryDelay=1000,isConnected=false,autoKickDone=false;
 var currentChannels={twitch:'',kick:'',tiktok:'',youtube:''};
 var MAX_MESSAGES=200,messages=[],currentHighlightMid=null,autoScroll=true;
+var currentVisor=null; // plataforma activa en el visor
 
 var LOGOS={
   twitch:'<svg viewBox="0 0 24 28" fill="currentColor"><path d="M2.149 0L.537 4.119v19.63h6.72V28l4.123-4.25h3.29L22.463 14V0H2.149zm18.24 13.18l-3.29 3.387h-3.948l-2.886 2.973v-2.973H6.584V2.387h13.805v10.793zM17.07 5.367h-2.148v6.42h2.148V5.367zm-5.907 0h-2.15v6.42h2.15V5.367z"/></svg>',
@@ -778,65 +972,109 @@ function toggleSidebar(){
   store.set('sidebarCollapsed',c?'1':'0');
 }
 
-// ═══ CHAT POPOUT ═══
-function openTwitchChatPopout(){
-  var ch=currentChannels.twitch||store.get('twitchChannel')||'';
-  if(!ch)return toast('Twitch no configurado');
-  // URL oficial del popout de Twitch — no necesita UUID ni autenticación para ver
-  // Para escribir el usuario deberá estar logueado en Twitch en esa ventana
-  var url='https://www.twitch.tv/popout/'+encodeURIComponent(ch)+'/chat?popout=';
-  window.open(url,'twitch-chat-popout','width=340,height=600,resizable=yes,scrollbars=yes');
-  toast('💬 Chat de Twitch abierto');
-}
+// ═══ CHAT VISOR (iframe embebido) ═══
+var VISOR_CONFIG = {
+  twitch:  {
+    label: 'Twitch Chat',
+    badge: 'TWITCH',
+    getUrl: function(ch) {
+      if(!ch) return null;
+      // popout de Twitch — funciona sin login para leer, con login para escribir
+      return 'https://www.twitch.tv/popout/' + encodeURIComponent(ch) + '/chat?popout=';
+    },
+    noChMsg: 'Canal de Twitch no configurado',
+    noChSub: 'Conectá tu canal de Twitch en el servidor para poder ver el chat aquí.'
+  },
+  kick: {
+    label: 'Kick Chat',
+    badge: 'KICK',
+    getUrl: function(ch) {
+      if(!ch) return null;
+      return 'https://kick.com/' + encodeURIComponent(ch) + '/chatroom';
+    },
+    noChMsg: 'Canal de Kick no configurado',
+    noChSub: 'Conectá tu canal de Kick para poder ver el chat aquí.'
+  },
+  youtube: {
+    label: 'YouTube Live Chat',
+    badge: 'YOUTUBE',
+    getUrl: function(ch) {
+      if(!ch) return null;
+      // YouTube no tiene popout embebible fácilmente; abrimos el canal/live
+      // Muchos bloques de iframe de YouTube, mostramos aviso amigable
+      return null; // YouTube bloquea iframes — manejamos con aviso especial
+    },
+    noChMsg: 'YouTube no soporta chat embebido',
+    noChSub: 'YouTube bloquea los iframes de chat. Usá el botón "▶ Live" del panel lateral para abrir en nueva pestaña.'
+  },
+  tiktok: {
+    label: 'TikTok Live',
+    badge: 'TIKTOK',
+    getUrl: function(ch) {
+      if(!ch) return null;
+      return null; // TikTok también bloquea iframes — aviso especial
+    },
+    noChMsg: 'TikTok no soporta chat embebido',
+    noChSub: 'TikTok bloquea los iframes de chat. Usá el botón "▶ Live" del panel lateral para abrir en nueva pestaña.'
+  }
+};
 
-function openKickChatPopout(){
-  var ch=currentChannels.kick||store.get('kickChannel')||'';
-  if(!ch)return toast('Kick no configurado');
-  // URL del chat de Kick — el usuario debe estar logueado en Kick en esa ventana
-  var url='https://kick.com/'+encodeURIComponent(ch)+'/chatroom';
-  window.open(url,'kick-chat-popout','width=340,height=600,resizable=yes,scrollbars=yes');
-  toast('💬 Chat de Kick abierto');
-}
+function openChatVisor(platform) {
+  var cfg = VISOR_CONFIG[platform];
+  if (!cfg) return;
 
-// Actualizar botones de popout con el estado actual
-function updatePopoutButtons(){
-  var tCh=currentChannels.twitch||'';
-  var kCh=currentChannels.kick||'';
-
-  var tBtn=document.getElementById('popout-twitch-btn');
-  var kBtn=document.getElementById('popout-kick-btn');
-  var tChEl=document.getElementById('popout-ch-twitch');
-  var kChEl=document.getElementById('popout-ch-kick');
-  var tDot=document.getElementById('popout-dot-twitch');
-  var kDot=document.getElementById('popout-dot-kick');
-
-  if(tCh){
-    tBtn.classList.remove('disabled');
-    tChEl.textContent='@'+tCh;
-    if(document.getElementById('dot-twitch').classList.contains('ok')){
-      tDot.classList.add('live');
-    } else {
-      tDot.classList.remove('live');
-    }
-  } else {
-    tBtn.classList.add('disabled');
-    tChEl.textContent='Sin canal configurado';
-    tDot.classList.remove('live');
+  // Si ya está abierto el mismo, cerrar
+  if (currentVisor === platform) {
+    closeChatVisor();
+    return;
   }
 
-  if(kCh){
-    kBtn.classList.remove('disabled');
-    kChEl.textContent='@'+kCh;
-    if(document.getElementById('dot-kick').classList.contains('ok')){
-      kDot.classList.add('live');
-    } else {
-      kDot.classList.remove('live');
-    }
+  var ch = currentChannels[platform] || '';
+  var url = cfg.getUrl(ch);
+
+  var visor   = document.getElementById('chat-visor');
+  var iframe  = document.getElementById('visor-iframe');
+  var titleEl = document.getElementById('visor-title');
+  var badge   = document.getElementById('visor-badge');
+  var unavail = document.getElementById('visor-unavailable');
+  var unavailMsg = document.getElementById('visor-unavailable-msg');
+  var unavailSub = document.getElementById('visor-unavailable-sub');
+
+  // Limpiar clases de badge
+  badge.className = 'chat-visor-badge ' + platform;
+  badge.textContent = cfg.badge;
+  titleEl.textContent = cfg.label + (ch ? ' — @' + ch : '');
+
+  if (!url) {
+    // Canal no configurado o plataforma que bloquea iframes
+    iframe.src = 'about:blank';
+    iframe.style.display = 'none';
+    unavail.style.display = 'flex';
+    unavailMsg.textContent = cfg.noChMsg;
+    unavailSub.textContent = cfg.noChSub;
   } else {
-    kBtn.classList.add('disabled');
-    kChEl.textContent='Sin canal configurado';
-    kDot.classList.remove('live');
+    iframe.style.display = 'block';
+    unavail.style.display = 'none';
+    iframe.src = url;
   }
+
+  // Marcar botón activo
+  document.querySelectorAll('.viewer-btn').forEach(function(b){ b.classList.remove('viewing'); });
+  var btn = document.getElementById('view-' + platform);
+  if (btn) btn.classList.add('viewing');
+
+  currentVisor = platform;
+  visor.classList.add('open');
+}
+
+function closeChatVisor() {
+  var visor  = document.getElementById('chat-visor');
+  var iframe = document.getElementById('visor-iframe');
+  visor.classList.remove('open');
+  document.querySelectorAll('.viewer-btn').forEach(function(b){ b.classList.remove('viewing'); });
+  currentVisor = null;
+  // Pequeño delay para limpiar el src tras la animación
+  setTimeout(function(){ iframe.src = 'about:blank'; }, 350);
 }
 
 // ═══ INIT ═══
@@ -853,7 +1091,8 @@ document.addEventListener('DOMContentLoaded',function(){
   var se=store.get('emoteSize');if(se){document.getElementById('emoteSize').value=se;setCfgVar('--ov-emote-size',se+'px','val-emote');}
   var sm=store.get('maxMsg');if(sm){var n=parseInt(sm);MAX_MESSAGES=n;document.getElementById('maxMsgRange').value=n;document.getElementById('val-maxMsg').textContent=n;}
   document.getElementById('chat-panel').addEventListener('scroll',function(){autoScroll=(this.scrollHeight-this.scrollTop-this.clientHeight)<80;});
-  updatePopoutButtons();
+  updateInputIndicator();
+  updateExtNote();
 });
 
 // ═══ FONT / GLOW / SINGLELINE ═══
@@ -904,8 +1143,13 @@ function handleStatus(data){
     if(sid&&(!kickWs||kickWs.readyState>1))connectKickBrowser(sid);
     else if(!sid&&!autoKickDone&&data.channels&&data.channels.kick){autoKickDone=true;setTimeout(resolveKickId,1500);}
   }
-  // Actualizar botones de popout al recibir estado
-  updatePopoutButtons();
+  updateTargetAvailability();
+  // Si el visor está abierto, actualizar título con el canal
+  if(currentVisor){
+    var cfg=VISOR_CONFIG[currentVisor];
+    var ch=currentChannels[currentVisor]||'';
+    if(cfg)document.getElementById('visor-title').textContent=cfg.label+(ch?' — @'+ch:'');
+  }
 }
 function setPlatformStatus(p,c,ch){var dot=document.getElementById('dot-'+p),el=document.getElementById('ch-'+p);if(dot)dot.className='platform-dot'+(c?' ok':'');if(el)el.textContent=ch||'—';}
 
@@ -1032,7 +1276,6 @@ function tryKickUrl(c,u,i){
         var box=document.getElementById('kick-status-box');
         if(box){box.className='info-box info-green';box.innerHTML='✓ Kick conectado (chatroom '+c+')';}
         if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'kick_connected'}));
-        updatePopoutButtons();
         return;
       }
       if(ev==='pusher:error'){kickWs.close();return;}
@@ -1144,7 +1387,91 @@ async function restartTikTok(){var su=store.get('serverUrl');if(!su)return toast
 async function restartYouTube(){var su=store.get('serverUrl');if(!su)return toast('Configura la URL');var hu=su.replace(/^wss?/,'https').replace(/\/$/,'');var ytBox=document.getElementById('youtube-status-box');if(ytBox){ytBox.className='info-box info-yellow';ytBox.innerHTML='⏳ Buscando live...';}try{var r=await fetch(hu+'/api/youtube/restart',{method:'POST'});var d=await r.json();toast(d.ok?'↺ YouTube reconectando...':'Error');}catch(e){toast('No se pudo conectar');}}
 function openTikTokLive(){var u=currentChannels.tiktok||'';if(!u)return toast('TikTok no configurado');window.open('https://www.tiktok.com/@'+u+'/live','_blank','noopener');}
 function openYouTubeLive(){var c=currentChannels.youtube||'';if(!c)return toast('YouTube no configurado');var h=c.startsWith('@')?c:'@'+c;window.open('https://www.youtube.com/'+h+'/live','_blank','noopener');}
-function sendCustomMessage(){var input=document.getElementById('custom-msg-input'),text=input.value.trim();if(!text)return;if(!isConnected||!ws)return toast('Sin conexión');ws.send(JSON.stringify({type:'custom_message',user:'Tú (dashboard)',text:text}));input.value='';}
+
+// ═══ TARGET SELECTOR ═══
+var activeTargets = new Set(['console']);
+
+var TARGET_META = {
+  console:  { color:'#c8251c', glow:'rgba(200,37,28,0.25)' },
+  twitch:   { color:'#9146ff', glow:'rgba(145,70,255,0.25)' },
+  kick:     { color:'#53fc18', glow:'rgba(83,252,24,0.2)' },
+  youtube:  { color:'#ff4444', glow:'rgba(255,68,68,0.25)' },
+  tiktok:   { color:'#ff2d78', glow:'rgba(255,45,120,0.25)' },
+};
+
+function toggleTarget(t) {
+  var btn = document.querySelector('.target-btn[data-target="'+t+'"]');
+  if (!btn || btn.classList.contains('unavailable')) return;
+  if (activeTargets.has(t)) {
+    if (activeTargets.size <= 1) return toast('Seleccioná al menos un destino');
+    activeTargets.delete(t);
+    btn.classList.remove('active');
+  } else {
+    activeTargets.add(t);
+    btn.classList.add('active');
+  }
+  updateInputIndicator();
+  updateExtNote();
+}
+
+function updateInputIndicator() {
+  var ind = document.getElementById('input-indicator');
+  if (!ind) return;
+  ind.innerHTML = '';
+  activeTargets.forEach(function(t) {
+    var m = TARGET_META[t];
+    if (!m) return;
+    var d = document.createElement('span');
+    d.className = 'iti-dot';
+    d.style.setProperty('--dot-color', m.color);
+    d.style.setProperty('--dot-glow', m.glow);
+    d.title = t;
+    ind.appendChild(d);
+  });
+}
+
+function updateExtNote() {
+  var note = document.getElementById('ext-note');
+  if (!note) return;
+  var hasExt = ['twitch','kick','youtube','tiktok'].some(function(t){return activeTargets.has(t);});
+  note.classList.toggle('visible', hasExt);
+}
+
+function updateTargetAvailability() {
+  var map = {
+    twitch:  currentChannels.twitch && document.getElementById('dot-twitch') && document.getElementById('dot-twitch').classList.contains('ok'),
+    kick:    currentChannels.kick && document.getElementById('dot-kick') && document.getElementById('dot-kick').classList.contains('ok'),
+    youtube: currentChannels.youtube && document.getElementById('dot-youtube') && document.getElementById('dot-youtube').classList.contains('ok'),
+    tiktok:  currentChannels.tiktok && document.getElementById('dot-tiktok') && document.getElementById('dot-tiktok').classList.contains('ok'),
+  };
+  Object.keys(map).forEach(function(t) {
+    var btn = document.getElementById('tgt-'+t);
+    if (!btn) return;
+    var avail = !!map[t];
+    btn.classList.toggle('unavailable', !avail);
+    if (!avail && activeTargets.has(t)) {
+      activeTargets.delete(t);
+      btn.classList.remove('active');
+      if (activeTargets.size === 0) {
+        activeTargets.add('console');
+        var cb = document.querySelector('.target-btn[data-target="console"]');
+        if (cb) cb.classList.add('active');
+      }
+      updateInputIndicator();
+      updateExtNote();
+    }
+  });
+}
+
+function sendCustomMessage() {
+  var input = document.getElementById('custom-msg-input');
+  var text = input.value.trim();
+  if (!text) return;
+
+  if (!isConnected || !ws) { toast('Sin conexión al servidor'); return; }
+  ws.send(JSON.stringify({type:'custom_message', user:'Tú (dashboard)', text:text}));
+  input.value = '';
+}
 
 // ═══ OVERLAY URLS ═══
 function getBaseOverlayDir(){var href=window.location.href.split('?')[0].replace(/\/+$/,'');var base=href.replace(/\/dashboard(\/[^?]*)?$/,'/overlay');if(base===href)base=href.replace(/\/[^/]+$/,'/overlay');return base;}
