@@ -201,6 +201,7 @@
     var BADGE_ICONS  = { broadcaster:'👑', moderator:'⚔️', vip:'💎', subscriber:'⭐', founder:'🏆', og:'🔥', bits:'💎' };
     var BADGE_LABELS = { broadcaster:'Owner', moderator:'Mod', vip:'VIP', subscriber:'Sub', founder:'Founder', og:'OG', bits:'Bits' };
 
+    // ═══ PARTÍCULAS ═══
     var pColors = ['#FF6B9D','#FFD700','#89D4FF','#D4BBFF','#7FFF7F'];
     var pc = document.getElementById('particles');
     for (var i = 0; i < 15; i++) {
@@ -230,6 +231,23 @@
 
     function escHtml(str) {
       return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ═══ DEDUPLICACIÓN POR mid ═══
+    var _seenMids = {};
+
+    function hasSeen(mid) {
+      if (!mid) return false;
+      var now = Date.now();
+      if (_seenMids[mid] && (now - _seenMids[mid]) < 8000) return true;
+      _seenMids[mid] = now;
+      // Limpieza periódica del cache
+      var keys = Object.keys(_seenMids);
+      if (keys.length > 200) {
+        var cutoff = now - 15000;
+        keys.forEach(function(k) { if (_seenMids[k] < cutoff) delete _seenMids[k]; });
+      }
+      return false;
     }
 
     function processTwitchEmotes(text, emotes) {
@@ -294,6 +312,9 @@
     function addMessage(data) {
       if (!data.chatname && !data.chatmessage) return;
 
+      // ✅ DEDUPLICACIÓN — ignorar si ya vimos este mid en los últimos 8s
+      if (hasSeen(data.mid)) return;
+
       var msgDiv = document.createElement('div');
       msgDiv.id  = data.mid || ('msg-'+Date.now());
       var pos    = nextPos();
@@ -315,13 +336,13 @@
 
       var donHTML = '';
       if (data.type === 'donation' && data.amount) {
-        var dl = data.donationType==='bits' ? '💎 '+data.amount+' Bits'
-               : data.donationType==='sub'  ? '🌟 ¡Nuevo Sub!'
-               : data.donationType==='resub'? '🔄 '+data.months+' meses'
-               : data.donationType==='subgift'? '🎁 Sub regalada'
+        var dl = data.donationType==='bits'     ? '💎 '+data.amount+' Bits'
+               : data.donationType==='sub'      ? '🌟 ¡Nuevo Sub!'
+               : data.donationType==='resub'    ? '🔄 '+data.months+' meses'
+               : data.donationType==='subgift'  ? '🎁 Sub regalada'
                : data.donationType==='superchat'? '💰 '+(data.amountDisplay||data.amount)
-               : data.donationType==='member'? '⭐ ¡Nuevo Miembro!'
-               : data.donationType==='gift'? '🎁 Regalo TikTok'
+               : data.donationType==='member'   ? '⭐ ¡Nuevo Miembro!'
+               : data.donationType==='gift'     ? '🎁 Regalo TikTok'
                : '💰 '+data.amount;
         donHTML = '<div style="margin-top:8px;padding:8px 12px;background:rgba(0,200,100,0.15);border:3px solid #000;border-radius:12px;font-size:18px;font-weight:900;text-align:center;box-shadow:3px 3px 0 rgba(0,0,0,0.5);">'+dl+'</div>';
       }
@@ -368,6 +389,7 @@
       setTimeout(adjustScroll, 100);
     }
 
+    // ═══ WEBSOCKET ═══
     var ws, retryDelay = 1000;
 
     function connect() {
@@ -380,7 +402,7 @@
       ws.onmessage = function(e) {
         try {
           var data = JSON.parse(e.data);
-          // ✅ FIX: filtrar status, highlight y highlight_clear — no mostrar como mensajes
+          // Filtrar eventos de control — no son mensajes de chat
           if (data.type === 'status' || data.type === 'highlight' || data.type === 'highlight_clear') return;
           addMessage(data);
         } catch(err) {}
