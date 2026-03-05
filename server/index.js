@@ -10,7 +10,7 @@
 const express  = require('express');
 const http     = require('http');
 const https    = require('https');
-const { WebSocketServer } = require('ws');
+const { WebSocketServer, WebSocket: NodeWS } = require('ws');
 const tmi      = require('tmi.js');
 
 // ── TikTok: carga defensiva ──────────────────────────────────
@@ -236,7 +236,6 @@ function handleKickRedemptionFromBrowser(data) {
   getKickAvatar(data.chatname || 'Unknown', (avatar) => broadcast({ type: 'redemption', platform: 'kick', chatname: data.chatname || 'Unknown', chatmessage: data.chatmessage || '', rewardTitle: data.rewardTitle || '', rewardCost: data.rewardCost || 0, nameColor: data.nameColor || '#53FC18', chatimg: avatar || null, mid: data.mid || ('kick-redeem-' + Date.now()) }));
 }
 
-const { WebSocket: NodeWS } = require('ws');
 const PUSHER_URLS = [
   'wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false',
   'wss://ws-us2.pusher.com/app/eb1d5f283081a78b932c?protocol=7&client=js&version=7.6.0&flash=false',
@@ -621,99 +620,148 @@ function disconnectYouTubeApi() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// TTS — edge-tts (Python) como endpoint de audio
-//
-// Requiere en el servidor:  pip install edge-tts
-// Voces disponibles:
-//   Edge Alvaro  → es-ES-AlvaroNeural
-//   Edge Ximena  → es-ES-ElviraNeural
-//   Edge Jorge   → es-MX-JorgeNeural
+// TTS — Proxy Edge TTS (Microsoft Bing WebSocket)
+// Sin Python, sin dependencias extra — usa ws (ya instalado)
+// Voces: https://casterlabs.co/tts-voices
 // ══════════════════════════════════════════════════════════════
-const { spawn } = require('child_process');
-const os        = require('os');
-const path      = require('path');
-const fs        = require('fs');
+const crypto = require('crypto');
 
 const EDGE_TTS_VOICES = {
-  // Español
-  'Edge Alvaro':              'es-ES-AlvaroNeural',
-  'Edge Ximena':              'es-MX-DaliaNeural',
-  'Google Translate Español': 'es-ES-AlvaroNeural',
-  'Edge Jorge':               'es-MX-JorgeNeural',
-  // Inglés
-  'Edge Aria':                'en-US-AriaNeural',
-  'Edge Guy':                 'en-US-GuyNeural',
-  'Edge Jenny':               'en-US-JennyNeural',
-  'Edge Andrew':              'en-US-AndrewNeural',
-  'Edge Ava':                 'en-US-AvaNeural',
-  // Portugués
-  'Edge Raquel':              'pt-PT-RaquelNeural',
-  'Edge Francisca':           'pt-BR-FranciscaNeural',
-  'Edge Antonio':             'pt-BR-AntonioNeural',
-  'Google Translate Português': 'pt-BR-AntonioNeural',
+  'Edge Alvaro':               'es-ES-AlvaroNeural',
+  'Edge Ximena':               'es-MX-DaliaNeural',
+  'Google Translate Español':  'es-ES-AlvaroNeural',
+  'Edge Jorge':                'es-MX-JorgeNeural',
+  'Edge Aria':                 'en-US-AriaNeural',
+  'Edge Guy':                  'en-US-GuyNeural',
+  'Edge Jenny':                'en-US-JennyNeural',
+  'Edge Andrew':               'en-US-AndrewNeural',
+  'Edge Ava':                  'en-US-AvaNeural',
+  'Edge Raquel':               'pt-PT-RaquelNeural',
+  'Edge Francisca':            'pt-BR-FranciscaNeural',
+  'Edge Antonio':              'pt-BR-AntonioNeural',
+  'Google Translate Português':'pt-BR-AntonioNeural',
 };
 
-const ttsAudioCache = new Map();
+const EDGE_TTS_TOKEN     = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
+const EDGE_TTS_CHROMIUM  = '130.0.2849.68';
+const EDGE_TTS_WSS       = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${EDGE_TTS_TOKEN}&Sec-MS-GEC-Version=1-${EDGE_TTS_CHROMIUM}`;
+
+function edgeTtsGec() {
+  // Sec-MS-GEC: SHA256 de la fecha + token en formato específico
+  const now   = new Date();
+  const ticks = String(now - (now % (3e5 * 1e3)) + 1164447360000); // rounded to 5min
+  const data  = ticks + EDGE_TTS_TOKEN.toUpperCase();
+  return crypto.createHash('sha256').update(data).digest('hex').toUpperCase();
+}
+
+function edgeTtsSsml(text, voiceName, ratePct) {
+  const rate   = ratePct || '+0%';
+  const volume = '+0%';
+  return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>`
+    + `<voice name='${voiceName}'>`
+    + `<prosody pitch='+0Hz' rate='${rate}' volume='${volume}'>`
+    + text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    + `</prosody></voice></speak>`;
+}
+
+function edgeTtsRequest(text, voiceName, ratePct, onAudioChunk, onDone, onError) {
+  const connId = crypto.randomUUID().replace(/-/g,'');
+  const gec    = edgeTtsGec();
+  const url    = `${EDGE_TTS_WSS}&Sec-MS-GEC=${gec}&ConnectionId=${connId}`;
+
+  const ws = new NodeWS(url, {
+    headers: {
+      'Pragma':          'no-cache',
+      'Cache-Control':   'no-cache',
+      'Origin':          'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold',
+      'User-Agent':      `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${EDGE_TTS_CHROMIUM} Safari/537.36 Edg/${EDGE_TTS_CHROMIUM}`,
+      'Accept-Language': 'es-ES,es;q=0.9',
+      'Accept-Encoding': 'gzip, deflate, br',
+    }
+  });
+
+  const timeout = setTimeout(() => { ws.terminate(); onError(new Error('timeout')); }, 15000);
+
+  ws.on('open', () => {
+    // 1. Config message
+    const ts = new Date().toUTCString();
+    ws.send(
+      `X-Timestamp:${ts}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n`
+      + JSON.stringify({ context: { synthesis: { audio: { metadataoptions: { sentenceBoundaryEnabled: false, wordBoundaryEnabled: false }, outputFormat: 'audio-24khz-48kbitrate-mono-mp3' }}}})
+    );
+    // 2. SSML message
+    ws.send(
+      `X-RequestId:${connId}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${ts}\r\nPath:ssml\r\n\r\n`
+      + edgeTtsSsml(text, voiceName, ratePct)
+    );
+  });
+
+  ws.on('message', (data, isBinary) => {
+    if (isBinary) {
+      // Audio chunk: skip 2-byte header + text header up to \r\n\r\n
+      const buf   = Buffer.isBuffer(data) ? data : Buffer.from(data);
+      const sep   = buf.indexOf(Buffer.from('\r\n\r\n'));
+      if (sep !== -1) onAudioChunk(buf.slice(sep + 4));
+      return;
+    }
+    const msg = data.toString();
+    if (msg.includes('Path:turn.end')) {
+      clearTimeout(timeout);
+      ws.close();
+      onDone();
+    }
+  });
+
+  ws.on('error', (e) => { clearTimeout(timeout); onError(e); });
+  ws.on('close', ()  => { clearTimeout(timeout); });
+}
+
+// Caché en memoria (evita llamadas repetidas)
+const ttsMemCache = new Map();
+const TTS_CACHE_MAX = 60;
 
 app.post('/api/tts', (req, res) => {
   const { text, voice, rate } = req.body;
   if (!text || typeof text !== 'string') return res.status(400).json({ error: 'text requerido' });
 
-  const edgeVoice  = EDGE_TTS_VOICES[voice] || EDGE_TTS_VOICES['Edge Alvaro'];
-  const rateNum    = parseFloat(rate) || 1.0;
-  const rateSign   = rateNum >= 1 ? '+' : '-';
-  const ratePct    = rateSign + Math.abs(Math.round((rateNum - 1) * 100)) + '%';
-  const textLower  = text.toLowerCase().slice(0, 500);
-  const cacheKey   = `${edgeVoice}|${ratePct}|${textLower}`;
+  const voiceName = EDGE_TTS_VOICES[voice] || EDGE_TTS_VOICES['Edge Alvaro'];
+  const rateNum   = parseFloat(rate) || 1.0;
+  const rateSign  = rateNum >= 1 ? '+' : '-';
+  const ratePct   = rateSign + Math.abs(Math.round((rateNum - 1) * 100)) + '%';
+  const textClean = text.toLowerCase().slice(0, 500);
+  const cacheKey  = `${voiceName}|${ratePct}|${textClean}`;
 
-  // Caché en disco
-  if (ttsAudioCache.has(cacheKey)) {
-    const cached = ttsAudioCache.get(cacheKey);
-    if (fs.existsSync(cached)) {
-      res.setHeader('Content-Type', 'audio/mpeg');
-      return fs.createReadStream(cached).pipe(res);
-    }
-    ttsAudioCache.delete(cacheKey);
-  }
-
-  const tmpFile = path.join(os.tmpdir(), `meeve_tts_${Date.now()}_${Math.random().toString(36).slice(2)}.mp3`);
-  const args    = ['-m', 'edge_tts', '--voice', edgeVoice, '--rate', ratePct, '--text', textLower, '--write-media', tmpFile];
-  const proc    = spawn('python3', args, { timeout: 15000 });
-
-  let errBuf = '';
-  proc.stderr.on('data', d => errBuf += d.toString());
-
-  proc.on('close', (code) => {
-    if (code !== 0 || !fs.existsSync(tmpFile)) {
-      console.error('[TTS] edge-tts error (code', code, '):', errBuf.slice(0, 200));
-      return res.status(500).json({ error: 'edge-tts no disponible', hint: 'pip install edge-tts' });
-    }
-    // Gestionar caché (max 50 archivos)
-    if (ttsAudioCache.size >= 50) {
-      const firstKey  = ttsAudioCache.keys().next().value;
-      const oldFile   = ttsAudioCache.get(firstKey);
-      ttsAudioCache.delete(firstKey);
-      try { fs.unlinkSync(oldFile); } catch(e) {}
-    }
-    ttsAudioCache.set(cacheKey, tmpFile);
-
+  if (ttsMemCache.has(cacheKey)) {
+    const cached = ttsMemCache.get(cacheKey);
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Cache-Control', 'no-cache');
-    fs.createReadStream(tmpFile).pipe(res);
-  });
+    return res.end(cached);
+  }
 
-  proc.on('error', () => {
-    res.status(500).json({ error: 'python3 no encontrado', hint: 'pip install edge-tts' });
-  });
+  const chunks = [];
+  res.setHeader('Content-Type', 'audio/mpeg');
+  res.setHeader('Cache-Control', 'no-cache');
+
+  edgeTtsRequest(
+    textClean, voiceName, ratePct,
+    (chunk) => { chunks.push(chunk); res.write(chunk); },
+    () => {
+      res.end();
+      const full = Buffer.concat(chunks);
+      if (ttsMemCache.size >= TTS_CACHE_MAX) ttsMemCache.delete(ttsMemCache.keys().next().value);
+      ttsMemCache.set(cacheKey, full);
+      console.log(`[TTS] OK — ${voiceName} "${textClean.slice(0,40)}..."`);
+    },
+    (err) => {
+      console.error('[TTS] Error:', err.message);
+      if (!res.headersSent) res.status(500).json({ error: err.message });
+      else res.end();
+    }
+  );
 });
 
-app.get('/api/tts/status', (req, res) => {
-  const proc = spawn('python3', ['-c', 'import edge_tts; print(edge_tts.__version__)'], { timeout: 5000 });
-  let out = '';
-  proc.stdout.on('data', d => out += d.toString());
-  proc.on('close', code => res.json({ available: code === 0, version: out.trim() || null }));
-  proc.on('error', () => res.json({ available: false, version: null }));
-});
+app.get('/api/tts/status', (req, res) => res.json({ available: true, engine: 'edge-tts-native', voices: Object.keys(EDGE_TTS_VOICES) }));
+
 
 // ══════════════════════════════════════════════════════════════
 // ENDPOINTS
