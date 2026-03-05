@@ -161,22 +161,18 @@
     }
     .tt-go-btn:hover{background:rgba(255,45,120,0.22);color:#ff2d78;}
 
-    /* Contenido del iframe */
+    /* Contenido del panel TikTok — popup control */
     .tt-iframe-wrap{
       flex:1;position:relative;overflow:hidden;
-      background:var(--traje-light);
-    }
-    #tt-iframe{
-      width:100%;height:100%;border:none;display:block;
-      /* Sin filtros para que TikTok se vea normal */
+      background:linear-gradient(160deg,#120008 0%,#0a0005 50%,#130012 100%);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:0;
     }
 
     /* Estado vacío / placeholder */
     .tt-placeholder{
-      position:absolute;inset:0;
       display:flex;flex-direction:column;align-items:center;justify-content:center;
-      gap:14px;padding:24px;text-align:center;
-      background:linear-gradient(160deg,#120008 0%,#0a0005 50%,#130012 100%);
+      gap:14px;padding:24px;text-align:center;width:100%;
     }
     .tt-placeholder-icon{font-size:48px;animation:ttIconBounce 3s ease-in-out infinite;}
     @keyframes ttIconBounce{0%,100%{transform:scale(1) rotate(-4deg);}50%{transform:scale(1.1) rotate(4deg);}}
@@ -188,6 +184,47 @@
       border:1px solid rgba(255,45,120,0.1);
       padding:6px 10px;border-radius:2px;line-height:1.7;
     }
+
+    /* Estado: ventana abierta */
+    .tt-window-status{
+      display:none;flex-direction:column;align-items:center;justify-content:center;
+      gap:16px;padding:24px;text-align:center;width:100%;
+    }
+    .tt-window-status.active{display:flex;}
+    .tt-window-pulse{
+      width:64px;height:64px;border-radius:50%;
+      background:rgba(255,45,120,0.1);
+      border:2px solid rgba(255,45,120,0.4);
+      display:flex;align-items:center;justify-content:center;
+      font-size:28px;
+      animation:ttWinPulse 2s ease-in-out infinite;
+    }
+    @keyframes ttWinPulse{
+      0%,100%{box-shadow:0 0 0 0 rgba(255,45,120,0.3);}
+      50%{box-shadow:0 0 0 14px rgba(255,45,120,0);}
+    }
+    .tt-window-label{font-family:var(--font-title);font-size:13px;letter-spacing:3px;color:rgba(255,128,176,0.9);text-transform:uppercase;}
+    .tt-window-user{font-family:var(--font-mono);font-size:10px;color:rgba(255,45,120,0.6);letter-spacing:1.5px;}
+    .tt-window-hint{font-family:var(--font-mono);font-size:8px;color:rgba(255,45,120,0.3);letter-spacing:1px;line-height:1.8;max-width:200px;}
+    .tt-window-btns{display:flex;flex-direction:column;gap:6px;width:100%;max-width:200px;}
+    .tt-win-btn{
+      padding:7px 14px;border-radius:2px 4px 2px 3px;
+      font-family:var(--font-mono);font-size:8.5px;font-weight:700;
+      letter-spacing:0.8px;text-transform:uppercase;cursor:pointer;
+      transition:all 0.13s;
+    }
+    .tt-win-btn-focus{
+      background:rgba(255,45,120,0.15);
+      border:1.5px solid rgba(255,45,120,0.5);
+      color:#ff80b0;
+    }
+    .tt-win-btn-focus:hover{background:rgba(255,45,120,0.28);color:#ff2d78;}
+    .tt-win-btn-close{
+      background:rgba(10,8,6,0.4);
+      border:1px solid rgba(255,45,120,0.2);
+      color:rgba(255,45,120,0.4);
+    }
+    .tt-win-btn-close:hover{border-color:rgba(255,45,120,0.5);color:rgba(255,45,120,0.7);}
 
     /* Nota importante: visibilidad */
     .tt-visibility-note{
@@ -367,6 +404,40 @@
     .modal-box code{background:var(--traje);border:1px solid rgba(10,8,6,0.4);padding:2px 6px;border-radius:2px;font-size:10.5px;color:var(--camisa);}
     #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(50px);background:var(--corbata);color:var(--camisa);padding:8px 16px;border-radius:2px 4px 3px 3px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.8px;text-transform:uppercase;z-index:999;opacity:0;transition:all 0.28s cubic-bezier(0.34,1.56,0.64,1);pointer-events:none;white-space:nowrap;box-shadow:3px 4px 0 rgba(10,8,6,0.35);}
     #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+    /* ══ TTS styles ══ */
+    #tts-indicator{display:none;align-items:center;gap:5px;padding:3px 8px;border-radius:2px 4px 2px 3px;border:1px solid rgba(100,200,100,0.35);background:rgba(100,200,100,0.08);cursor:pointer;}
+    #tts-indicator.active{display:flex;}
+    #tts-indicator.speaking{border-color:rgba(100,200,100,0.7);background:rgba(100,200,100,0.15);animation:ttsSpeakPulse 0.8s ease-in-out infinite;}
+    @keyframes ttsSpeakPulse{0%,100%{box-shadow:0 0 0 0 rgba(100,200,100,0.3);}50%{box-shadow:0 0 0 5px rgba(100,200,100,0);}}
+    .tts-dot{width:6px;height:6px;border-radius:50%;background:#64c864;flex-shrink:0;}
+    #tts-indicator.speaking .tts-dot{animation:ttsDotBlink 0.6s ease-in-out infinite;}
+    @keyframes ttsDotBlink{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);}}
+    #tts-indicator-label{font-family:var(--font-mono);font-size:8.5px;color:#64c864;letter-spacing:0.8px;text-transform:uppercase;}
+    .tts-waves{display:none;align-items:flex-end;gap:2px;height:12px;}
+    #tts-indicator.speaking .tts-waves{display:flex;}
+    .tts-wave{width:2px;background:#64c864;border-radius:1px;animation:ttsWave 0.8s ease-in-out infinite;}
+    .tts-wave:nth-child(1){height:4px;animation-delay:0s;}.tts-wave:nth-child(2){height:8px;animation-delay:0.1s;}.tts-wave:nth-child(3){height:12px;animation-delay:0.2s;}.tts-wave:nth-child(4){height:6px;animation-delay:0.3s;}.tts-wave:nth-child(5){height:3px;animation-delay:0.4s;}
+    @keyframes ttsWave{0%,100%{transform:scaleY(0.4);}50%{transform:scaleY(1);}}
+    .msg-item.tts-reading{border-left-color:#64c864!important;background:rgba(100,200,100,0.07)!important;}
+    .tts-msg-badge{display:none;font-family:var(--font-mono);font-size:7px;padding:1px 5px;border-radius:2px;background:rgba(100,200,100,0.12);border:1px solid rgba(100,200,100,0.3);color:#64c864;letter-spacing:0.5px;margin-left:3px;}
+    .msg-item.tts-reading .tts-msg-badge{display:inline-block;}
+    .tts-list-wrap{background:var(--traje);border:1px solid rgba(10,8,6,0.4);border-radius:2px 4px 3px 3px;max-height:90px;overflow-y:auto;margin-bottom:4px;}
+    .tts-list-wrap::-webkit-scrollbar{width:3px;}.tts-list-wrap::-webkit-scrollbar-thumb{background:rgba(200,37,28,0.3);}
+    .tts-list-item{display:flex;align-items:center;justify-content:space-between;padding:3px 7px;border-bottom:1px solid rgba(10,8,6,0.2);font-family:var(--font-mono);font-size:9px;color:var(--camisa-dim);}
+    .tts-list-item:last-child{border-bottom:none;}
+    .tts-list-del{background:none;border:none;color:rgba(200,37,28,0.5);cursor:pointer;font-size:10px;padding:0 2px;transition:color 0.12s;}
+    .tts-list-del:hover{color:var(--corbata);}
+    .tts-list-empty{padding:6px 7px;font-family:var(--font-mono);font-size:8.5px;color:var(--camisa-muted);font-style:italic;}
+    .tts-platform-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px;}
+    .tts-plat-btn{padding:4px 6px;border-radius:2px 4px 2px 3px;font-family:var(--font-mono);font-size:8px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;transition:all 0.13s;border:1.5px solid rgba(10,8,6,0.4);background:var(--traje-light);color:var(--camisa-muted);text-align:center;}
+    .tts-plat-btn.ignored{opacity:0.6;text-decoration:line-through;}
+    .tts-plat-btn[data-plat="twitch"]{--pc:#9146ff;}.tts-plat-btn[data-plat="kick"]{--pc:#53fc18;}.tts-plat-btn[data-plat="youtube"]{--pc:#ff4444;}.tts-plat-btn[data-plat="tiktok"]{--pc:#ff2d78;}
+    .tts-plat-btn.ignored{background:rgba(200,37,28,0.06);border-color:rgba(200,37,28,0.25);color:var(--corbata);}
+    .tts-queue-bar{display:flex;align-items:center;gap:6px;padding:4px 8px;background:rgba(100,200,100,0.05);border:1px solid rgba(100,200,100,0.12);border-radius:2px;margin-bottom:4px;min-height:24px;}
+    .tts-queue-label{font-family:var(--font-mono);font-size:8px;color:rgba(100,200,100,0.5);letter-spacing:0.8px;flex-shrink:0;}
+    .tts-queue-text{font-family:var(--font-mono);font-size:8.5px;color:rgba(100,200,100,0.8);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .tts-queue-count{font-family:var(--font-mono);font-size:8px;color:rgba(100,200,100,0.4);flex-shrink:0;}
   </style>
 </head>
 <body>
@@ -380,6 +451,14 @@
     </div>
   </div>
   <div class="header-right">
+    <!-- Indicador TTS hablando -->
+    <div id="tts-indicator" onclick="ttsSkip()" title="TTS activo — click para saltar">
+      <span class="tts-dot"></span>
+      <span id="tts-indicator-label">TTS</span>
+      <div class="tts-waves">
+        <div class="tts-wave"></div><div class="tts-wave"></div><div class="tts-wave"></div><div class="tts-wave"></div><div class="tts-wave"></div>
+      </div>
+    </div>
     <div id="ws-dot"></div>
     <span id="ws-label">Desconectado</span>
   </div>
@@ -462,6 +541,112 @@
         <button class="btn btn-secondary btn-full" onclick="openYouTubeLive()">&#9654; Live</button>
       </div>
       <div class="hint" style="margin-top:5px;">Reconectar al encender el directo.</div>
+    </div>
+
+    <!-- ════ TTS CARD ════ -->
+    <div class="card">
+      <div class="card-title">&#9654; TTS</div>
+
+      <!-- Estado edge-tts -->
+      <div id="tts-server-status" class="info-box info-yellow" style="margin-bottom:8px;font-size:8px;">&#x23F3; Verificando edge-tts...</div>
+
+      <!-- ON/OFF + Volumen -->
+      <div class="toggle-row" style="margin-bottom:6px;">
+        <span class="toggle-label" style="font-size:10px;">TTS Activado</span>
+        <label class="toggle-switch"><input type="checkbox" id="tts-enabled" onchange="ttsToggle(this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+
+      <!-- Cola activa -->
+      <div class="tts-queue-bar" id="tts-queue-bar">
+        <span class="tts-queue-label">&#9654;</span>
+        <span class="tts-queue-text" id="tts-queue-text">Sin mensajes en cola</span>
+        <span class="tts-queue-count" id="tts-queue-count"></span>
+      </div>
+
+      <!-- Comando prefijo -->
+      <label>Comando prefijo</label>
+      <div class="input-row" style="margin-bottom:6px;">
+        <input id="tts-prefix" type="text" value="," placeholder="ej: , o !tts" style="max-width:70px;" oninput="ttsSave()"/>
+        <span class="hint" style="padding:6px 4px;">El msg debe empezar con esto</span>
+      </div>
+
+      <!-- Voz -->
+      <label>Voz</label>
+      <select id="tts-voice" onchange="ttsSave()" style="margin-bottom:6px;">
+        <optgroup label="Español (España 🇪🇸)">
+          <option value="Edge Alvaro">Edge Alvaro</option>
+          <option value="Edge Ximena">Edge Ximena</option>
+          <option value="Google Translate Español">Google Translate Español</option>
+        </optgroup>
+        <optgroup label="Español (US 🇺🇸)">
+          <option value="Edge Jorge">Edge Jorge</option>
+        </optgroup>
+        <optgroup label="Otras">
+          <option value="Edge Ana">Edge Ana (PT)</option>
+          <option value="Edge Aria">Edge Aria (EN)</option>
+          <option value="Edge Guy">Edge Guy (EN)</option>
+          <option value="Edge Jenny">Edge Jenny (EN)</option>
+        </optgroup>
+      </select>
+
+      <!-- Volumen -->
+      <label>Volumen: <span class="value-display" id="tts-vol-display">100%</span></label>
+      <input type="range" id="tts-volume" min="0" max="100" value="100" oninput="document.getElementById('tts-vol-display').textContent=this.value+'%';ttsSave();" style="margin-bottom:8px;">
+
+      <!-- Velocidad -->
+      <label>Velocidad: <span class="value-display" id="tts-rate-display">1.0x</span></label>
+      <input type="range" id="tts-rate" min="0.5" max="2" step="0.1" value="1" oninput="document.getElementById('tts-rate-display').textContent=parseFloat(this.value).toFixed(1)+'x';ttsSave();" style="margin-bottom:8px;">
+
+      <!-- Leer nombre -->
+      <div class="toggle-row" style="margin-bottom:4px;">
+        <span class="toggle-label">Leer nombre del usuario</span>
+        <label class="toggle-switch"><input type="checkbox" id="tts-say-name" checked onchange="ttsSave()"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-row" style="margin-bottom:8px;">
+        <span class="toggle-label">Leer donaciones/subs/gifts</span>
+        <label class="toggle-switch"><input type="checkbox" id="tts-say-donations" onchange="ttsSave()"><span class="toggle-slider"></span></label>
+      </div>
+
+      <div class="separator"></div>
+
+      <!-- Plataformas ignoradas -->
+      <label style="margin-bottom:4px;">Ignorar plataformas (click para silenciar)</label>
+      <div class="tts-platform-grid">
+        <button class="tts-plat-btn" data-plat="twitch"  onclick="ttsTogglePlatform('twitch')">Twitch</button>
+        <button class="tts-plat-btn" data-plat="kick"    onclick="ttsTogglePlatform('kick')">Kick</button>
+        <button class="tts-plat-btn" data-plat="youtube" onclick="ttsTogglePlatform('youtube')">YouTube</button>
+        <button class="tts-plat-btn" data-plat="tiktok"  onclick="ttsTogglePlatform('tiktok')">TikTok</button>
+      </div>
+
+      <div class="separator"></div>
+
+      <!-- Usuarios baneados -->
+      <label style="margin-bottom:3px;">Usuarios ignorados (blacklist)</label>
+      <div class="input-row" style="margin-bottom:4px;">
+        <input id="tts-ban-user-input" type="text" placeholder="Nombre de usuario..." onkeydown="if(event.key==='Enter')ttsAddUser()"/>
+        <button class="btn btn-secondary" onclick="ttsAddUser()" style="padding:5px 9px;">+</button>
+      </div>
+      <div class="tts-list-wrap" id="tts-banned-users-list">
+        <div class="tts-list-empty">Sin usuarios ignorados</div>
+      </div>
+
+      <div class="separator"></div>
+
+      <!-- Palabras/frases baneadas -->
+      <label style="margin-bottom:3px;">Palabras / frases baneadas</label>
+      <div class="input-row" style="margin-bottom:4px;">
+        <input id="tts-ban-word-input" type="text" placeholder="Palabra o frase..." onkeydown="if(event.key==='Enter')ttsAddWord()"/>
+        <button class="btn btn-secondary" onclick="ttsAddWord()" style="padding:5px 9px;">+</button>
+      </div>
+      <div class="tts-list-wrap" id="tts-banned-words-list">
+        <div class="tts-list-empty">Sin palabras baneadas</div>
+      </div>
+
+      <div class="separator" style="margin-top:6px;"></div>
+      <div class="btn-row" style="margin-top:6px;">
+        <button class="btn btn-secondary btn-full" onclick="ttsSkip()" style="font-size:8.5px;">&#x23ED; Saltar actual</button>
+        <button class="btn btn-danger btn-full" onclick="ttsClearQueue()" style="font-size:8.5px;">&#x2715; Limpiar cola</button>
+      </div>
     </div>
 
     <div class="card">
@@ -613,30 +798,45 @@
     <button class="tt-go-btn" onclick="ttLoadUser()">IR</button>
   </div>
 
-  <!-- Iframe TikTok -->
+  <!-- Área de control del popup TikTok -->
   <div class="tt-iframe-wrap" id="tt-iframe-wrap">
-    <!-- Placeholder inicial -->
+
+    <!-- Estado: sin ventana abierta -->
     <div class="tt-placeholder" id="tt-placeholder">
       <div class="tt-placeholder-icon">🎵</div>
       <div class="tt-placeholder-title">TikTok Live</div>
-      <div class="tt-placeholder-sub">Panel de visibilidad<br>para el conector</div>
+      <div class="tt-placeholder-sub">Ventana flotante<br>de visibilidad</div>
       <div class="tt-placeholder-hint">
         Escribe tu usuario arriba<br>
-        y mantén este panel abierto<br>
-        para que el servidor reciba mensajes
+        y presiona IR para abrir<br>
+        una ventana pequeña de TikTok
       </div>
     </div>
-    <iframe
-      id="tt-iframe"
-      src="about:blank"
-      allow="autoplay; camera; microphone"
-      style="display:none;width:100%;height:100%;border:none;"
-    ></iframe>
+
+    <!-- Estado: ventana popup abierta -->
+    <div class="tt-window-status" id="tt-window-status">
+      <div class="tt-window-pulse">🎵</div>
+      <div class="tt-window-label">Ventana activa</div>
+      <div class="tt-window-user" id="tt-window-user">@usuario</div>
+      <div class="tt-window-hint">
+        La ventana de TikTok está abierta.<br>
+        No la cierres ni minimices<br>para evitar throttling.
+      </div>
+      <div class="tt-window-btns">
+        <button class="tt-win-btn tt-win-btn-focus" onclick="ttFocusWindow()">
+          &#x2197; Enfocar ventana
+        </button>
+        <button class="tt-win-btn tt-win-btn-close" onclick="ttCloseWindow()">
+          &#x2715; Cerrar ventana
+        </button>
+      </div>
+    </div>
+
   </div>
 
   <!-- Nota de visibilidad -->
   <div class="tt-visibility-note">
-    &#x26A1; Mantén este panel visible para evitar throttling del navegador
+    &#x26A1; La ventana TikTok debe estar visible (no minimizada)
   </div>
 </div>
 
@@ -704,10 +904,12 @@ function processMessageHTML(d){var t=d.chatmessage||'',p=d.platform||d.type||'';
 function toggleSidebar(){var s=document.querySelector('.sidebar'),b=document.getElementById('sidebar-toggle');var c=s.classList.toggle('collapsed');b.classList.toggle('collapsed',c);store.set('sidebarCollapsed',c?'1':'0');}
 
 // ═══════════════════════════════════════════════════
-// PANEL TIKTOK LATERAL
+// PANEL TIKTOK LATERAL — abre popup window real
 // ═══════════════════════════════════════════════════
 var ttPanelOpen = false;
 var ttCurrentUser = '';
+var ttPopupWindow = null;
+var ttPopupCheckInterval = null;
 
 function toggleTikTokPanel() {
   ttPanelOpen = !ttPanelOpen;
@@ -723,12 +925,11 @@ function toggleTikTokPanel() {
 
   store.set('ttPanelOpen', ttPanelOpen ? '1' : '0');
 
-  // Si hay un usuario guardado y el panel se abre por primera vez, cargarlo
+  // Auto-cargar usuario guardado al abrir
   if (ttPanelOpen && !ttCurrentUser) {
     var saved = store.get('ttPanelUser') || currentChannels.tiktok || '';
     if (saved) {
       document.getElementById('tt-user-input').value = saved;
-      ttLoadUser();
     }
   }
 }
@@ -741,25 +942,96 @@ function ttLoadUser() {
   ttCurrentUser = user;
   store.set('ttPanelUser', user);
 
-  var iframe = document.getElementById('tt-iframe');
-  var ph     = document.getElementById('tt-placeholder');
+  // Abrir popup pequeño de TikTok
+  ttOpenPopup(user);
+}
 
-  // Cargar la página del live de TikTok
+function ttOpenPopup(user) {
+  // Si ya hay una ventana abierta, enfocarla o cerrarla
+  if (ttPopupWindow && !ttPopupWindow.closed) {
+    var newUrl = 'https://www.tiktok.com/@' + encodeURIComponent(user) + '/live';
+    ttPopupWindow.location.href = newUrl;
+    ttPopupWindow.focus();
+    ttUpdateStatusUI(user);
+    return;
+  }
+
+  // Calcular posición: esquina inferior derecha, pequeña pero visible
+  var pw = 380, ph = 520;
+  var px = window.screen.width  - pw - 10;
+  var py = window.screen.height - ph - 60;
+
   var url = 'https://www.tiktok.com/@' + encodeURIComponent(user) + '/live';
-  iframe.src = url;
-  iframe.style.display = 'block';
-  ph.style.display = 'none';
+  ttPopupWindow = window.open(
+    url,
+    'tiktok_live_panel',
+    'width='+pw+',height='+ph+',left='+px+',top='+py+',resizable=yes,scrollbars=yes'
+  );
 
-  toast('🎵 Cargando @' + user + ' live...');
+  if (!ttPopupWindow) {
+    // Bloqueador de popups activo
+    toast('⚠️ Permite popups para este sitio');
+    return;
+  }
+
+  ttUpdateStatusUI(user);
+  toast('🎵 TikTok Live abierto');
+
+  // Monitorear si la ventana se cierra
+  if (ttPopupCheckInterval) clearInterval(ttPopupCheckInterval);
+  ttPopupCheckInterval = setInterval(function() {
+    if (!ttPopupWindow || ttPopupWindow.closed) {
+      clearInterval(ttPopupCheckInterval);
+      ttPopupWindow = null;
+      ttPopupCheckInterval = null;
+      ttUpdateStatusUI(null);
+    }
+  }, 1500);
+}
+
+function ttUpdateStatusUI(user) {
+  var ph  = document.getElementById('tt-placeholder');
+  var ws  = document.getElementById('tt-window-status');
+  var wu  = document.getElementById('tt-window-user');
+  var ttDot = document.querySelector('.tt-panel-dot');
+
+  if (user) {
+    ph.style.display  = 'none';
+    ws.classList.add('active');
+    if (wu) wu.textContent = '@' + user;
+    if (ttDot) ttDot.style.background = '#ff2d78';
+  } else {
+    ph.style.display  = 'flex';
+    ws.classList.remove('active');
+    if (ttDot) ttDot.style.background = 'rgba(255,45,120,0.3)';
+  }
+}
+
+function ttFocusWindow() {
+  if (ttPopupWindow && !ttPopupWindow.closed) {
+    ttPopupWindow.focus();
+  } else {
+    ttPopupWindow = null;
+    if (ttCurrentUser) ttOpenPopup(ttCurrentUser);
+  }
+}
+
+function ttCloseWindow() {
+  if (ttPopupWindow && !ttPopupWindow.closed) {
+    ttPopupWindow.close();
+  }
+  ttPopupWindow = null;
+  if (ttPopupCheckInterval) clearInterval(ttPopupCheckInterval);
+  ttUpdateStatusUI(null);
+  toast('Ventana TikTok cerrada');
 }
 
 function ttReloadIframe() {
-  var iframe = document.getElementById('tt-iframe');
-  if (iframe.src && iframe.src !== 'about:blank') {
-    iframe.src = iframe.src; // reload
-    toast('Recargando...');
+  if (ttPopupWindow && !ttPopupWindow.closed) {
+    ttPopupWindow.location.reload();
+    toast('Recargando ventana TikTok...');
   } else if (ttCurrentUser) {
-    ttLoadUser();
+    ttOpenPopup(ttCurrentUser);
   } else {
     toast('No hay usuario cargado');
   }
@@ -768,7 +1040,11 @@ function ttReloadIframe() {
 function ttOpenExternal() {
   var user = ttCurrentUser || store.get('ttPanelUser') || currentChannels.tiktok || '';
   if (!user) { toast('Sin usuario TikTok'); return; }
-  window.open('https://www.tiktok.com/@' + encodeURIComponent(user) + '/live', '_blank', 'noopener');
+  if (ttPopupWindow && !ttPopupWindow.closed) {
+    ttPopupWindow.focus();
+  } else {
+    ttOpenPopup(user);
+  }
 }
 
 // ═══ CHAT VISOR ═══
@@ -840,7 +1116,11 @@ function closeChatVisor() {
 document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('serverUrl').value=store.get('serverUrl');
   updateOverlayUrls();
-  if(store.get('serverUrl'))connectWS(store.get('serverUrl'));
+  if(store.get('serverUrl')) {
+    connectWS(store.get('serverUrl'));
+    var savedBase = store.get('serverUrl').replace(/^wss?/,'https').replace(/\/$/,'');
+    checkEdgeTtsStatus(savedBase);
+  }
   if(store.get('sidebarCollapsed')==='1'){document.querySelector('.sidebar').classList.add('collapsed');document.getElementById('sidebar-toggle').classList.add('collapsed');}
   var sf=store.get('chatFont');if(sf){var sel=document.getElementById('fontSelector');for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===sf){sel.selectedIndex=i;break;}}applyFont(sf,true);}
   if(store.get('glowOff')==='1'){document.getElementById('glowToggle').checked=false;toggleGlow(false,true);}
@@ -944,13 +1224,15 @@ function appendMessage(data){
     var dl=data.donationType==='bits'?'\uD83D\uDC8E '+data.amount+' Bits':data.donationType==='sub'?'\u2605 Nuevo Sub':data.donationType==='resub'?'\u21BA '+data.months+' meses':data.donationType==='subgift'?'\u2726 Sub regalada':data.donationType==='superchat'?'\u2726 '+(data.amountDisplay||data.amount):data.donationType==='member'?'\u2605 Nuevo Miembro':data.donationType==='gift'?'\u2726 Regalo TikTok':data.amount?'\u2726 '+data.amount:'';
     if(dl)dHTML='<div class="msg-donation-tag">'+dl+'</div>';
   }
-  el.innerHTML=aHTML+'<div class="msg-body"><div class="msg-header"><span class="msg-user" style="'+nStyle+'">'+esc(data.chatname||'?')+'</span>'+pBadge+bHTML+'<span class="msg-time">'+time+'</span><button class="msg-highlight-btn" onclick="event.stopPropagation();sendHighlight(this.closest(\'.msg-item\'))">&#x1F4CC; Destacar</button></div><div class="msg-text">'+mHTML+'</div>'+dHTML+'</div>';
+  el.innerHTML=aHTML+'<div class="msg-body"><div class="msg-header"><span class="msg-user" style="'+nStyle+'">'+esc(data.chatname||'?')+'</span>'+pBadge+bHTML+'<span class="tts-msg-badge">&#9654; TTS</span><span class="msg-time">'+time+'</span><button class="msg-highlight-btn" onclick="event.stopPropagation();sendHighlight(this.closest(\'.msg-item\'))">&#x1F4CC; Destacar</button></div><div class="msg-text">'+mHTML+'</div>'+dHTML+'</div>';
   el._msgData=data;
   el.addEventListener('click',function(){sendHighlight(el);});
   panel.appendChild(el);
   messages.push({el:el,data:data});
   if(messages.length>MAX_MESSAGES){var old=messages.shift();if(old.el.parentNode)old.el.parentNode.removeChild(old.el);}
   if(autoScroll)requestAnimationFrame(function(){panel.scrollTop=panel.scrollHeight;});
+  // ── Hook TTS ──
+  ttsMaybeSpeak(data, el);
 }
 
 // ═══ HIGHLIGHT ═══
@@ -1042,7 +1324,38 @@ function getKickAvatarBrowser(username,cb){
 }
 
 // ═══ ACCIONES ═══
-function saveAndConnect(){var url=document.getElementById('serverUrl').value.trim();if(!url)return toast('Introduce la URL');store.set('serverUrl',url);retryDelay=1000;autoKickDone=false;connectWS(url);updateOverlayUrls();toast('Conectando...');}
+function saveAndConnect(){
+  var url=document.getElementById('serverUrl').value.trim();
+  if(!url)return toast('Introduce la URL');
+  store.set('serverUrl',url);
+  retryDelay=1000;autoKickDone=false;
+  connectWS(url);
+  updateOverlayUrls();
+  toast('Conectando...');
+  // Verificar edge-tts
+  var base=url.replace(/^wss?/,'https').replace(/\/$/,'');
+  checkEdgeTtsStatus(base);
+}
+
+function checkEdgeTtsStatus(base) {
+  var box = document.getElementById('tts-server-status');
+  if (!box) return;
+  fetch(base + '/api/tts/status')
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      if (d.available) {
+        box.className = 'info-box info-green';
+        box.innerHTML = '&#x2713; Edge TTS disponible' + (d.version ? ' v' + d.version : '') + ' — voces reales';
+      } else {
+        box.className = 'info-box info-yellow';
+        box.innerHTML = '&#x26A0; edge-tts no instalado en servidor.<br><span style="opacity:0.7">Ejecuta: <code style="background:rgba(0,0,0,0.2);padding:1px 4px;">pip install edge-tts</code></span><br>Usando Web Speech API como fallback.';
+      }
+    })
+    .catch(function() {
+      box.className = 'info-box info-yellow';
+      box.innerHTML = '&#x26A0; Servidor sin endpoint TTS — usando Web Speech API';
+    });
+}
 function toggleKickManual(){var el=document.getElementById('kick-manual-wrap');el.style.display=el.style.display==='none'?'block':'none';}
 
 async function resolveKickId(){
@@ -1115,6 +1428,463 @@ function injectTestMessage(){
   toast('Mensajes de prueba listos');
 }
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(function(){el.classList.remove('show');},2800);}
+
+// ══════════════════════════════════════════════════════════════
+// MOTOR TTS — Web Speech API
+// Basado en la lógica de Casterlabs TTS script
+// ══════════════════════════════════════════════════════════════
+
+var TTS = {
+  enabled:        false,
+  prefix:         ',',
+  voice:          'Edge Alvaro',
+  volume:         1.0,
+  rate:           1.0,
+  sayName:        true,
+  sayDonations:   false,
+  ignoredPlatforms: [],
+  bannedUsers:    [],
+  bannedWords:    [],
+  // Cola de mensajes pendientes
+  queue:          [],
+  speaking:       false,
+  // Referencia al utterance y elemento actual
+  currentEl:      null,
+  synth:          window.speechSynthesis || null,
+  // Caché de voces disponibles del sistema
+  _voices:        [],
+  _voicesLoaded:  false,
+};
+
+// Cargar voces del sistema
+function ttsLoadVoices() {
+  if (!TTS.synth) return;
+  TTS.synth.onvoiceschanged = function() {
+    TTS.voices = TTS.synth.getVoices();
+    TTS._voicesLoaded = true;
+  };
+  TTS.voices = TTS.synth.getVoices();
+  if (TTS.voices && TTS.voices.length) TTS._voicesLoaded = true;
+}
+
+// Mapa de nombre de voz Casterlabs → nombre en Web Speech API
+var TTS_VOICE_MAP = {
+  'Edge Alvaro':              ['Microsoft Alvaro Online', 'Alvaro', 'es-ES'],
+  'Edge Ximena':              ['Microsoft Ximena Online', 'Ximena', 'es-MX'],
+  'Edge Jorge':               ['Microsoft Jorge Online', 'Jorge', 'es-US'],
+  'Google Translate Español': ['Google español', 'es-ES', 'Spanish'],
+  'Edge Ana':                 ['Microsoft Ana Online', 'Ana', 'pt-BR'],
+  'Edge Aria':                ['Microsoft Aria Online', 'Aria', 'en-US'],
+  'Edge Guy':                 ['Microsoft Guy Online', 'Guy', 'en-US'],
+  'Edge Jenny':               ['Microsoft Jenny Online', 'Jenny', 'en-US'],
+};
+
+function ttsGetVoice(name) {
+  if (!TTS.synth) return null;
+  var voices = TTS.synth.getVoices();
+  var candidates = TTS_VOICE_MAP[name] || [name];
+  // Buscar coincidencia parcial en orden de preferencia
+  for (var ci = 0; ci < candidates.length; ci++) {
+    var cand = candidates[ci].toLowerCase();
+    for (var vi = 0; vi < voices.length; vi++) {
+      var vn = voices[vi].name.toLowerCase();
+      var vl = voices[vi].lang.toLowerCase();
+      if (vn.indexOf(cand) !== -1 || vl.indexOf(cand) !== -1) return voices[vi];
+    }
+  }
+  // Fallback: primera voz en español
+  for (var vi = 0; vi < voices.length; vi++) {
+    if (voices[vi].lang.startsWith('es')) return voices[vi];
+  }
+  return null;
+}
+
+// Limpia el texto: quita emojis, URLs, emotes de Twitch/Kick, minúsculas
+function ttsCleanText(text) {
+  if (!text) return '';
+  // Quitar URLs
+  text = text.replace(/https?:\/\/\S+/g, '');
+  // Quitar emotes de Kick [emote:id:name]
+  text = text.replace(/\[emote:\d+:[^\]]+\]/g, '');
+  // Quitar emojis y caracteres no ASCII (letras, números, puntuación básica)
+  text = text.replace(/[^\p{L}\p{N}\p{P}\s]/gu, function(c) {
+    // Permitir solo puntuación básica
+    return /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9?!'",.:\-\s]/.test(c) ? c : ' ';
+  });
+  // Múltiples espacios
+  text = text.replace(/\s+/g, ' ').trim();
+  // SIEMPRE en minúsculas
+  return text.toLowerCase();
+}
+
+// Decide si un mensaje debe leerse por TTS
+function ttsMaybeSpeak(data, el) {
+  if (!TTS.enabled || !TTS.synth) return;
+
+  var platform = (data.platform || data.type || '').toLowerCase();
+  var msgText  = data.chatmessage || '';
+  var username = (data.chatname || '').toLowerCase();
+
+  // ── Donaciones / eventos especiales ──
+  if (data.type === 'donation') {
+    if (!TTS.sayDonations) return;
+    var donText = '';
+    var donName = data.chatname || 'Alguien';
+    switch (data.donationType) {
+      case 'bits':    donText = donName + ' donó ' + data.amount + ' bits'; break;
+      case 'sub':     donText = donName + ' se suscribió'; break;
+      case 'resub':   donText = donName + ' se resuscribió ' + (data.months||'') + ' meses'; break;
+      case 'subgift': donText = donName + ' regaló una suscripción'; break;
+      case 'superchat': donText = donName + ' envió un superchat de ' + (data.amountDisplay || data.amount); break;
+      case 'member':  donText = donName + ' se hizo miembro'; break;
+      case 'gift':    donText = donName + ' envió un regalo de tiktok'; break;
+      default:        donText = donName + ' hizo una donación';
+    }
+    ttsEnqueue(ttsCleanText(donText), el);
+    return;
+  }
+
+  // ── Solo mensajes de chat normales ──
+  if (data.type !== 'twitch' && data.type !== 'kick' && data.type !== 'tiktok' && data.type !== 'youtube') return;
+
+  // 1. Verificar prefijo
+  var prefix = TTS.prefix.trim();
+  if (prefix && !msgText.startsWith(prefix)) return;
+  // Quitar el prefijo del texto a leer
+  var rawMsg = prefix ? msgText.slice(prefix.length).trim() : msgText.trim();
+  if (!rawMsg) return;
+
+  // 2. Plataformas ignoradas
+  if (TTS.ignoredPlatforms.indexOf(platform) !== -1) return;
+
+  // 3. Usuarios ignorados (blacklist)
+  for (var i = 0; i < TTS.bannedUsers.length; i++) {
+    if (username.indexOf(TTS.bannedUsers[i].toLowerCase()) !== -1) return;
+  }
+
+  // 4. Palabras / frases baneadas (en el mensaje original, case-insensitive)
+  var msgLower = rawMsg.toLowerCase();
+  for (var i = 0; i < TTS.bannedWords.length; i++) {
+    if (msgLower.indexOf(TTS.bannedWords[i].toLowerCase()) !== -1) return;
+  }
+
+  // 5. Ignorar si empieza con ! u otros prefijos de bot
+  if (rawMsg.startsWith('!')) return;
+
+  // 6. Construir texto a leer
+  var cleaned = ttsCleanText(rawMsg);
+  if (!cleaned) return;
+
+  var toSpeak = '';
+  if (TTS.sayName) {
+    var cleanName = ttsCleanText(data.chatname || '');
+    var verb = cleaned.includes('?') ? ' pregunta ' : ' dice ';
+    toSpeak = cleanName + verb + cleaned;
+  } else {
+    toSpeak = cleaned;
+  }
+
+  ttsEnqueue(toSpeak, el);
+}
+
+// Encolar y reproducir
+function ttsEnqueue(text, el) {
+  TTS.queue.push({ text: text, el: el || null });
+  ttsUpdateQueueUI();
+  if (!TTS.speaking) ttsPlayNext();
+}
+
+function ttsPlayNext() {
+  if (!TTS.queue.length) { TTS.speaking = false; ttsSetIndicator(false); ttsUpdateQueueUI(); return; }
+  TTS.speaking = true;
+
+  var item = TTS.queue[0];
+  TTS.currentEl = item.el;
+  if (TTS.currentEl) TTS.currentEl.classList.add('tts-reading');
+  ttsSetIndicator(true, item.text);
+
+  // ── Intentar primero con servidor edge-tts ──
+  var su = store.get('serverUrl');
+  if (su) {
+    var httpBase = su.replace(/^wss?/, 'https').replace(/\/$/, '');
+    ttsPlayViaServer(item, httpBase);
+  } else {
+    ttsPlayViaBrowser(item);
+  }
+}
+
+// Reproducción via servidor (edge-tts → MP3)
+var _ttsAudio = null;
+
+function ttsPlayViaServer(item, httpBase) {
+  if (_ttsAudio) { try { _ttsAudio.pause(); _ttsAudio.src = ''; } catch(e) {} _ttsAudio = null; }
+
+  fetch(httpBase + '/api/tts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: item.text, voice: TTS.voice, rate: TTS.rate })
+  })
+  .then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.blob();
+  })
+  .then(function(blob) {
+    var url   = URL.createObjectURL(blob);
+    var audio = new Audio(url);
+    _ttsAudio = audio;
+    audio.volume = TTS.volume;
+    audio.onended = function() {
+      URL.revokeObjectURL(url);
+      _ttsAudio = null;
+      ttsAfterPlay();
+    };
+    audio.onerror = function() {
+      URL.revokeObjectURL(url);
+      _ttsAudio = null;
+      // Fallback a browser si el audio falla
+      ttsPlayViaBrowser(item);
+    };
+    audio.play().catch(function() { ttsPlayViaBrowser(item); });
+  })
+  .catch(function() {
+    // Servidor no disponible o edge-tts no instalado → fallback
+    ttsPlayViaBrowser(item);
+  });
+}
+
+// Reproducción via Web Speech API (fallback)
+function ttsPlayViaBrowser(item) {
+  if (!TTS.synth) { ttsAfterPlay(); return; }
+  var utt  = new SpeechSynthesisUtterance(item.text);
+  var voice = ttsGetVoice(TTS.voice);
+  if (voice) utt.voice = voice;
+  utt.lang   = 'es-ES';
+  utt.volume = TTS.volume;
+  utt.rate   = TTS.rate;
+  utt.onend   = function() { ttsAfterPlay(); };
+  utt.onerror = function() { ttsAfterPlay(); };
+  TTS.synth.speak(utt);
+}
+
+function ttsAfterPlay() {
+  TTS.queue.shift();
+  if (TTS.currentEl) { TTS.currentEl.classList.remove('tts-reading'); TTS.currentEl = null; }
+  TTS.speaking = TTS.queue.length > 0;
+  ttsUpdateQueueUI();
+  if (TTS.queue.length) setTimeout(ttsPlayNext, 150);
+  else ttsSetIndicator(false);
+}
+
+// Workaround Chrome bug: resume cada 10s para evitar que se cuelgue
+setInterval(function() {
+  if (TTS.synth && TTS.speaking && TTS.synth.paused) TTS.synth.resume();
+}, 10000);
+
+function ttsSetIndicator(speaking, text) {
+  var ind = document.getElementById('tts-indicator');
+  if (!ind) return;
+  ind.classList.toggle('active', TTS.enabled);
+  ind.classList.toggle('speaking', speaking && TTS.enabled);
+  var lbl = document.getElementById('tts-indicator-label');
+  if (lbl) lbl.textContent = speaking ? 'TTS' : 'TTS';
+}
+
+function ttsUpdateQueueUI() {
+  var qt  = document.getElementById('tts-queue-text');
+  var qc  = document.getElementById('tts-queue-count');
+  if (!qt) return;
+  if (TTS.queue.length === 0) {
+    qt.textContent = 'Sin mensajes en cola';
+    if (qc) qc.textContent = '';
+  } else {
+    qt.textContent = TTS.queue[0].text;
+    if (qc) qc.textContent = TTS.queue.length > 1 ? '+' + (TTS.queue.length - 1) : '';
+  }
+}
+
+// ── Controles ──────────────────────────────────────────────
+
+function ttsToggle(on) {
+  TTS.enabled = on;
+  if (!on) {
+    if (_ttsAudio) { try { _ttsAudio.pause(); _ttsAudio.src=''; } catch(e){} _ttsAudio = null; }
+    TTS.synth && TTS.synth.cancel();
+    TTS.queue = []; TTS.speaking = false;
+    if (TTS.currentEl) { TTS.currentEl.classList.remove('tts-reading'); TTS.currentEl = null; }
+    ttsSetIndicator(false);
+    ttsUpdateQueueUI();
+  } else {
+    ttsSetIndicator(false);
+    ttsLoadVoices();
+    // Verificar si el servidor tiene edge-tts
+    var su = store.get('serverUrl');
+    if (su) {
+      var base = su.replace(/^wss?/, 'https').replace(/\/$/, '');
+      fetch(base + '/api/tts/status').then(function(r){ return r.json(); }).then(function(d){
+        if (d.available) toast('🔊 TTS activado — Edge TTS (servidor)');
+        else toast('🔊 TTS activado — Web Speech (instalar edge-tts en servidor)');
+      }).catch(function(){ toast('🔊 TTS activado — Web Speech API'); });
+    } else {
+      toast('🔊 TTS activado — Web Speech API');
+    }
+  }
+  ttsSave();
+  if (!on) toast('🔇 TTS desactivado');
+}
+
+function ttsSkip() {
+  // Cancelar audio HTML (edge-tts)
+  if (_ttsAudio) { try { _ttsAudio.pause(); _ttsAudio.src=''; } catch(e){} _ttsAudio = null; }
+  // Cancelar Web Speech API
+  if (TTS.synth) TTS.synth.cancel();
+  if (TTS.currentEl) { TTS.currentEl.classList.remove('tts-reading'); TTS.currentEl = null; }
+  TTS.queue.shift();
+  TTS.speaking = false;
+  ttsUpdateQueueUI();
+  if (TTS.queue.length) setTimeout(ttsPlayNext, 100);
+  else ttsSetIndicator(false);
+}
+
+function ttsClearQueue() {
+  if (_ttsAudio) { try { _ttsAudio.pause(); _ttsAudio.src=''; } catch(e){} _ttsAudio = null; }
+  TTS.synth && TTS.synth.cancel();
+  TTS.queue = []; TTS.speaking = false;
+  if (TTS.currentEl) { TTS.currentEl.classList.remove('tts-reading'); TTS.currentEl = null; }
+  ttsSetIndicator(false);
+  ttsUpdateQueueUI();
+  toast('Cola TTS limpiada');
+}
+
+function ttsTogglePlatform(plat) {
+  var idx = TTS.ignoredPlatforms.indexOf(plat);
+  if (idx === -1) TTS.ignoredPlatforms.push(plat);
+  else TTS.ignoredPlatforms.splice(idx, 1);
+  // Actualizar botones
+  document.querySelectorAll('.tts-plat-btn').forEach(function(b) {
+    b.classList.toggle('ignored', TTS.ignoredPlatforms.indexOf(b.dataset.plat) !== -1);
+  });
+  ttsSave();
+}
+
+function ttsAddUser() {
+  var inp = document.getElementById('tts-ban-user-input');
+  var val = (inp.value || '').trim();
+  if (!val) return;
+  if (TTS.bannedUsers.indexOf(val) === -1) { TTS.bannedUsers.push(val); ttsSave(); ttsRenderLists(); }
+  inp.value = '';
+}
+
+function ttsAddWord() {
+  var inp = document.getElementById('tts-ban-word-input');
+  var val = (inp.value || '').trim();
+  if (!val) return;
+  if (TTS.bannedWords.indexOf(val) === -1) { TTS.bannedWords.push(val); ttsSave(); ttsRenderLists(); }
+  inp.value = '';
+}
+
+function ttsRemoveUser(idx) { TTS.bannedUsers.splice(idx, 1); ttsSave(); ttsRenderLists(); }
+function ttsRemoveWord(idx) { TTS.bannedWords.splice(idx, 1); ttsSave(); ttsRenderLists(); }
+
+function ttsRenderLists() {
+  // Usuarios
+  var ul = document.getElementById('tts-banned-users-list');
+  if (ul) {
+    if (!TTS.bannedUsers.length) { ul.innerHTML = '<div class="tts-list-empty">Sin usuarios ignorados</div>'; }
+    else { ul.innerHTML = TTS.bannedUsers.map(function(u, i) { return '<div class="tts-list-item"><span>'+esc(u)+'</span><button class="tts-list-del" onclick="ttsRemoveUser('+i+')">&#x2715;</button></div>'; }).join(''); }
+  }
+  // Palabras
+  var wl = document.getElementById('tts-banned-words-list');
+  if (wl) {
+    if (!TTS.bannedWords.length) { wl.innerHTML = '<div class="tts-list-empty">Sin palabras baneadas</div>'; }
+    else { wl.innerHTML = TTS.bannedWords.map(function(w, i) { return '<div class="tts-list-item"><span>'+esc(w)+'</span><button class="tts-list-del" onclick="ttsRemoveWord('+i+')">&#x2715;</button></div>'; }).join(''); }
+  }
+}
+
+// ── Persistencia ───────────────────────────────────────────
+
+function ttsSave() {
+  // Leer controles
+  var pfx   = document.getElementById('tts-prefix');
+  var voice = document.getElementById('tts-voice');
+  var vol   = document.getElementById('tts-volume');
+  var rate  = document.getElementById('tts-rate');
+  var sayN  = document.getElementById('tts-say-name');
+  var sayD  = document.getElementById('tts-say-donations');
+  if (pfx)   TTS.prefix   = pfx.value || ',';
+  if (voice) TTS.voice    = voice.value;
+  if (vol)   TTS.volume   = parseFloat(vol.value) / 100;
+  if (rate)  TTS.rate     = parseFloat(rate.value);
+  if (sayN)  TTS.sayName  = sayN.checked;
+  if (sayD)  TTS.sayDonations = sayD.checked;
+  store.set('ttsConfig', JSON.stringify({
+    enabled:          TTS.enabled,
+    prefix:           TTS.prefix,
+    voice:            TTS.voice,
+    volume:           TTS.volume,
+    rate:             TTS.rate,
+    sayName:          TTS.sayName,
+    sayDonations:     TTS.sayDonations,
+    ignoredPlatforms: TTS.ignoredPlatforms,
+    bannedUsers:      TTS.bannedUsers,
+    bannedWords:      TTS.bannedWords,
+  }));
+}
+
+function ttsLoad() {
+  var raw = store.get('ttsConfig');
+  if (!raw) return;
+  try {
+    var c = JSON.parse(raw);
+    TTS.enabled          = !!c.enabled;
+    TTS.prefix           = c.prefix  || ',';
+    TTS.voice            = c.voice   || 'Edge Alvaro';
+    TTS.volume           = c.volume  != null ? c.volume  : 1.0;
+    TTS.rate             = c.rate    != null ? c.rate    : 1.0;
+    TTS.sayName          = c.sayName != null ? !!c.sayName : true;
+    TTS.sayDonations     = !!c.sayDonations;
+    TTS.ignoredPlatforms = c.ignoredPlatforms || [];
+    TTS.bannedUsers      = c.bannedUsers  || [];
+    TTS.bannedWords      = c.bannedWords  || [];
+
+    // Aplicar a controles
+    var enEl  = document.getElementById('tts-enabled');
+    var pfx   = document.getElementById('tts-prefix');
+    var voice = document.getElementById('tts-voice');
+    var vol   = document.getElementById('tts-volume');
+    var rate  = document.getElementById('tts-rate');
+    var sayN  = document.getElementById('tts-say-name');
+    var sayD  = document.getElementById('tts-say-donations');
+    var vd    = document.getElementById('tts-vol-display');
+    var rd    = document.getElementById('tts-rate-display');
+
+    if (enEl)  enEl.checked       = TTS.enabled;
+    if (pfx)   pfx.value          = TTS.prefix;
+    if (voice) voice.value        = TTS.voice;
+    if (vol)   { vol.value        = Math.round(TTS.volume * 100); if (vd) vd.textContent = vol.value + '%'; }
+    if (rate)  { rate.value       = TTS.rate; if (rd) rd.textContent = TTS.rate.toFixed(1) + 'x'; }
+    if (sayN)  sayN.checked       = TTS.sayName;
+    if (sayD)  sayD.checked       = TTS.sayDonations;
+
+    // Botones de plataforma
+    document.querySelectorAll('.tts-plat-btn').forEach(function(b) {
+      b.classList.toggle('ignored', TTS.ignoredPlatforms.indexOf(b.dataset.plat) !== -1);
+    });
+
+    // Listas
+    ttsRenderLists();
+
+    // Indicador
+    ttsSetIndicator(false);
+
+    if (TTS.enabled) ttsLoadVoices();
+  } catch(e) {}
+}
+
+// Inicializar TTS al cargar el DOM
+document.addEventListener('DOMContentLoaded', function() {
+  ttsLoadVoices();
+  ttsLoad();
+});
 </script>
 </body>
 </html>
