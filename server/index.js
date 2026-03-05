@@ -727,7 +727,7 @@ app.post('/api/tts', (req, res) => {
 app.get('/api/tts/status', (req, res) => res.json({
   available: edgeTtsAvailable,
   engine:    edgeTtsAvailable ? 'edge-tts-python' : 'unavailable',
-  bin:       edgeTtsBin,
+  bin:       edgeTtsPython,
   voices:    Object.keys(EDGE_TTS_VOICES),
 }));
 
