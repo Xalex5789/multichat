@@ -573,19 +573,26 @@
       <!-- Voz -->
       <label>Voz</label>
       <select id="tts-voice" onchange="ttsSave()" style="margin-bottom:6px;">
-        <optgroup label="Español (España 🇪🇸)">
+        <optgroup label="Español 🇪🇸">
           <option value="Edge Alvaro">Edge Alvaro</option>
           <option value="Edge Ximena">Edge Ximena</option>
           <option value="Google Translate Español">Google Translate Español</option>
         </optgroup>
-        <optgroup label="Español (US 🇺🇸)">
+        <optgroup label="Español (US) 🇺🇸">
           <option value="Edge Jorge">Edge Jorge</option>
         </optgroup>
-        <optgroup label="Otras">
-          <option value="Edge Ana">Edge Ana (PT)</option>
-          <option value="Edge Aria">Edge Aria (EN)</option>
-          <option value="Edge Guy">Edge Guy (EN)</option>
-          <option value="Edge Jenny">Edge Jenny (EN)</option>
+        <optgroup label="Inglés 🇺🇸">
+          <option value="Edge Aria">Edge Aria</option>
+          <option value="Edge Guy">Edge Guy</option>
+          <option value="Edge Jenny">Edge Jenny</option>
+          <option value="Edge Andrew">Edge Andrew</option>
+          <option value="Edge Ava">Edge Ava</option>
+        </optgroup>
+        <optgroup label="Portugués 🇧🇷">
+          <option value="Edge Raquel">Edge Raquel</option>
+          <option value="Edge Francisca">Edge Francisca</option>
+          <option value="Edge Antonio">Edge Antonio</option>
+          <option value="Google Translate Português">Google Translate Português</option>
         </optgroup>
       </select>
 
@@ -1456,40 +1463,33 @@ var TTS = {
   _voicesLoaded:  false,
 };
 
-// Cargar voces del sistema
+// Cargar voces — no se necesita con edge-tts server, pero se mantiene para fallback Web Speech
 function ttsLoadVoices() {
-  if (!TTS.synth) return;
-  TTS.synth.onvoiceschanged = function() {
-    TTS.voices = TTS.synth.getVoices();
-    TTS._voicesLoaded = true;
-  };
-  TTS.voices = TTS.synth.getVoices();
-  if (TTS.voices && TTS.voices.length) TTS._voicesLoaded = true;
+  // Solo se usa como fallback cuando el servidor no tiene edge-tts instalado
+  TTS._voices = (window.speechSynthesis && window.speechSynthesis.getVoices()) || [];
 }
 
-// Mapa de nombre de voz Casterlabs → nombre en Web Speech API
-var TTS_VOICE_MAP = {
-  'Edge Alvaro':              ['Microsoft Alvaro Online', 'Alvaro', 'es-ES'],
-  'Edge Ximena':              ['Microsoft Ximena Online', 'Ximena', 'es-MX'],
-  'Edge Jorge':               ['Microsoft Jorge Online', 'Jorge', 'es-US'],
-  'Google Translate Español': ['Google español', 'es-ES', 'Spanish'],
-  'Edge Ana':                 ['Microsoft Ana Online', 'Ana', 'pt-BR'],
-  'Edge Aria':                ['Microsoft Aria Online', 'Aria', 'en-US'],
-  'Edge Guy':                 ['Microsoft Guy Online', 'Guy', 'en-US'],
-  'Edge Jenny':               ['Microsoft Jenny Online', 'Jenny', 'en-US'],
+// Mapa nombre de voz → nombre en Web Speech API (fallback local)
+var TTS_WEB_VOICE_MAP = {
+  'Edge Alvaro':   ['Microsoft Alvaro', 'es-ES', 'Spanish Spain'],
+  'Edge Ximena':   ['Microsoft Dalia',  'es-MX', 'Spanish Mexico'],
+  'Edge Jorge':    ['Microsoft Jorge',  'es-MX', 'Spanish'],
+  'Edge Aria':     ['Microsoft Aria',   'en-US'],
+  'Edge Guy':      ['Microsoft Guy',    'en-US'],
+  'Edge Jenny':    ['Microsoft Jenny',  'en-US'],
+  'Edge Raquel':   ['Microsoft Raquel', 'pt-PT'],
+  'Edge Francisca':['Microsoft Francisca','pt-BR'],
 };
 
 function ttsGetVoice(name) {
-  if (!TTS.synth) return null;
-  var voices = TTS.synth.getVoices();
-  var candidates = TTS_VOICE_MAP[name] || [name];
-  // Buscar coincidencia parcial en orden de preferencia
+  if (!window.speechSynthesis) return null;
+  var voices     = window.speechSynthesis.getVoices();
+  var candidates = TTS_WEB_VOICE_MAP[name] || [name];
   for (var ci = 0; ci < candidates.length; ci++) {
     var cand = candidates[ci].toLowerCase();
     for (var vi = 0; vi < voices.length; vi++) {
-      var vn = voices[vi].name.toLowerCase();
-      var vl = voices[vi].lang.toLowerCase();
-      if (vn.indexOf(cand) !== -1 || vl.indexOf(cand) !== -1) return voices[vi];
+      if (voices[vi].name.toLowerCase().indexOf(cand) !== -1 ||
+          voices[vi].lang.toLowerCase().indexOf(cand) !== -1) return voices[vi];
     }
   }
   // Fallback: primera voz en español
