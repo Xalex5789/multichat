@@ -1519,7 +1519,7 @@ function ttsCleanText(text) {
 
 // Decide si un mensaje debe leerse por TTS
 function ttsMaybeSpeak(data, el) {
-  if (!TTS.enabled || !TTS.synth) return;
+  if (!TTS.enabled) return;
 
   var platform = (data.platform || data.type || '').toLowerCase();
   var msgText  = data.chatmessage || '';
@@ -1603,17 +1603,18 @@ function ttsPlayNext() {
   if (TTS.currentEl) TTS.currentEl.classList.add('tts-reading');
   ttsSetIndicator(true, item.text);
 
-  // ── Intentar primero con servidor edge-tts ──
+  // ── Llamar al servidor Edge TTS ──
   var su = store.get('serverUrl');
-  if (su) {
-    var httpBase = su.replace(/^wss?/, 'https').replace(/\/$/, '');
-    ttsPlayViaServer(item, httpBase);
-  } else {
-    ttsPlayViaBrowser(item);
+  if (!su) {
+    console.warn('[TTS] Sin servidor configurado, saltando mensaje');
+    ttsAfterPlay();
+    return;
   }
+  var httpBase = su.replace(/^wss?/, 'https').replace(/\/$/, '');
+  ttsPlayViaServer(item, httpBase);
 }
 
-// Reproducción via servidor (edge-tts → MP3)
+// Reproducción via servidor Edge TTS → MP3
 var _ttsAudio = null;
 
 function ttsPlayViaServer(item, httpBase) {
@@ -1633,37 +1634,14 @@ function ttsPlayViaServer(item, httpBase) {
     var audio = new Audio(url);
     _ttsAudio = audio;
     audio.volume = TTS.volume;
-    audio.onended = function() {
-      URL.revokeObjectURL(url);
-      _ttsAudio = null;
-      ttsAfterPlay();
-    };
-    audio.onerror = function() {
-      URL.revokeObjectURL(url);
-      _ttsAudio = null;
-      // Fallback a browser si el audio falla
-      ttsPlayViaBrowser(item);
-    };
-    audio.play().catch(function() { ttsPlayViaBrowser(item); });
+    audio.onended = function() { URL.revokeObjectURL(url); _ttsAudio = null; ttsAfterPlay(); };
+    audio.onerror = function() { URL.revokeObjectURL(url); _ttsAudio = null; ttsAfterPlay(); };
+    audio.play().catch(function() { ttsAfterPlay(); });
   })
-  .catch(function() {
-    // Servidor no disponible o edge-tts no instalado → fallback
-    ttsPlayViaBrowser(item);
+  .catch(function(err) {
+    console.warn('[TTS] Error servidor:', err.message);
+    ttsAfterPlay(); // saltar mensaje silenciosamente
   });
-}
-
-// Reproducción via Web Speech API (fallback)
-function ttsPlayViaBrowser(item) {
-  if (!TTS.synth) { ttsAfterPlay(); return; }
-  var utt  = new SpeechSynthesisUtterance(item.text);
-  var voice = ttsGetVoice(TTS.voice);
-  if (voice) utt.voice = voice;
-  utt.lang   = 'es-ES';
-  utt.volume = TTS.volume;
-  utt.rate   = TTS.rate;
-  utt.onend   = function() { ttsAfterPlay(); };
-  utt.onerror = function() { ttsAfterPlay(); };
-  TTS.synth.speak(utt);
 }
 
 function ttsAfterPlay() {
@@ -1674,11 +1652,6 @@ function ttsAfterPlay() {
   if (TTS.queue.length) setTimeout(ttsPlayNext, 150);
   else ttsSetIndicator(false);
 }
-
-// Workaround Chrome bug: resume cada 10s para evitar que se cuelgue
-setInterval(function() {
-  if (TTS.synth && TTS.speaking && TTS.synth.paused) TTS.synth.resume();
-}, 10000);
 
 function ttsSetIndicator(speaking, text) {
   var ind = document.getElementById('tts-indicator');
@@ -1708,35 +1681,29 @@ function ttsToggle(on) {
   TTS.enabled = on;
   if (!on) {
     if (_ttsAudio) { try { _ttsAudio.pause(); _ttsAudio.src=''; } catch(e){} _ttsAudio = null; }
-    TTS.synth && TTS.synth.cancel();
     TTS.queue = []; TTS.speaking = false;
     if (TTS.currentEl) { TTS.currentEl.classList.remove('tts-reading'); TTS.currentEl = null; }
     ttsSetIndicator(false);
     ttsUpdateQueueUI();
+    toast('🔇 TTS desactivado');
   } else {
     ttsSetIndicator(false);
-    ttsLoadVoices();
-    // Verificar si el servidor tiene edge-tts
     var su = store.get('serverUrl');
     if (su) {
       var base = su.replace(/^wss?/, 'https').replace(/\/$/, '');
-      fetch(base + '/api/tts/status').then(function(r){ return r.json(); }).then(function(d){
-        if (d.available) toast('🔊 TTS activado — Edge TTS (servidor)');
-        else toast('🔊 TTS activado — Web Speech (instalar edge-tts en servidor)');
-      }).catch(function(){ toast('🔊 TTS activado — Web Speech API'); });
+      fetch(base + '/api/tts/status')
+        .then(function(r){ return r.json(); })
+        .then(function(d){ toast('🔊 TTS activado — ' + (d.engine || 'Edge TTS')); })
+        .catch(function(){ toast('🔊 TTS activado — conecta el servidor'); });
     } else {
-      toast('🔊 TTS activado — Web Speech API');
+      toast('🔊 TTS activado — configura el servidor primero');
     }
+    ttsSave();
   }
-  ttsSave();
-  if (!on) toast('🔇 TTS desactivado');
 }
 
 function ttsSkip() {
-  // Cancelar audio HTML (edge-tts)
   if (_ttsAudio) { try { _ttsAudio.pause(); _ttsAudio.src=''; } catch(e){} _ttsAudio = null; }
-  // Cancelar Web Speech API
-  if (TTS.synth) TTS.synth.cancel();
   if (TTS.currentEl) { TTS.currentEl.classList.remove('tts-reading'); TTS.currentEl = null; }
   TTS.queue.shift();
   TTS.speaking = false;
@@ -1747,7 +1714,6 @@ function ttsSkip() {
 
 function ttsClearQueue() {
   if (_ttsAudio) { try { _ttsAudio.pause(); _ttsAudio.src=''; } catch(e){} _ttsAudio = null; }
-  TTS.synth && TTS.synth.cancel();
   TTS.queue = []; TTS.speaking = false;
   if (TTS.currentEl) { TTS.currentEl.classList.remove('tts-reading'); TTS.currentEl = null; }
   ttsSetIndicator(false);
