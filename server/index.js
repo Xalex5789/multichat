@@ -571,18 +571,21 @@ function disconnectYouTubeApi() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// TTS — Proxy Edge TTS (Microsoft Bing WebSocket)
-//
-// FIX v2.3: edgeTtsGec() corregido
-//   El cálculo anterior generaba 13 dígitos en lugar de los 18
-//   requeridos para los ticks de Windows (100ns desde 1601-01-01).
-//   Fórmula correcta:
-//     roundedMs = now - (now % 300000)        → redondear a 5 min
-//     ticks = (roundedMs + 11644473600000) * 10000
-//   El +11644473600000 convierte de epoch Unix (1970) a epoch
-//   Windows (1601). El ×10000 convierte ms a ticks de 100ns.
 // ══════════════════════════════════════════════════════════════
-const crypto = require('crypto');
+// TTS — via Python edge-tts (proceso hijo)
+//
+// El WebSocket directo a speech.platform.bing.com devuelve 403
+// desde IPs de datacenter (Render, Railway, etc.).
+// La librería Python `edge-tts` maneja esto correctamente con
+// headers y reconexiones adecuadas.
+//
+// Render incluye Python 3 por defecto. Solo necesita:
+//   pip install edge-tts   (o agregarlo al build command)
+// ══════════════════════════════════════════════════════════════
+const { spawn, execSync } = require('child_process');
+const os   = require('os');
+const path = require('path');
+const fs   = require('fs');
 
 const EDGE_TTS_VOICES = {
   'Edge Alvaro':               'es-ES-AlvaroNeural',
@@ -600,107 +603,91 @@ const EDGE_TTS_VOICES = {
   'Google Translate Português':'pt-BR-AntonioNeural',
 };
 
-const EDGE_TTS_TOKEN     = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
-const EDGE_TTS_CHROMIUM  = '130.0.2849.68';
-const EDGE_TTS_WSS       = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${EDGE_TTS_TOKEN}&Sec-MS-GEC-Version=1-${EDGE_TTS_CHROMIUM}`;
+// ── Detectar si edge-tts está instalado ──────────────────────
+let edgeTtsAvailable = false;
+let edgeTtsBin = 'edge-tts';
 
-// ─────────────────────────────────────────────────────────────
-// FIX: Cálculo correcto de ticks de Windows para el header
-// Sec-MS-GEC que autentica la conexión a Microsoft Edge TTS.
-//
-// Fórmula original (INCORRECTA — generaba 13 dígitos):
-//   const ticks = String(now - (now % (3e5 * 1e3)) + 1164447360000);
-//
-// Fórmula corregida (18 dígitos, formato correcto):
-//   const roundedMs = now - (now % (5 * 60 * 1000));
-//   const ticks = String((roundedMs + 11644473600000) * 10000);
-// ─────────────────────────────────────────────────────────────
-function edgeTtsGec() {
-  const now      = new Date();
-  const roundedMs = now - (now % (5 * 60 * 1000)); // redondear al múltiplo de 5 minutos más bajo
-  const ticks    = String((roundedMs + 11644473600000) * 10000); // ms Unix → ticks Windows 100ns
-  const data     = ticks + EDGE_TTS_TOKEN.toUpperCase();
-  return crypto.createHash('sha256').update(data).digest('hex').toUpperCase();
-}
-
-function edgeTtsSsml(text, voiceName, ratePct) {
-  const rate   = ratePct || '+0%';
-  const volume = '+0%';
-  return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>`
-    + `<voice name='${voiceName}'>`
-    + `<prosody pitch='+0Hz' rate='${rate}' volume='${volume}'>`
-    + text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    + `</prosody></voice></speak>`;
-}
-
-function edgeTtsRequest(text, voiceName, ratePct, onAudioChunk, onDone, onError) {
-  const connId = crypto.randomUUID().replace(/-/g,'');
-  const gec    = edgeTtsGec();
-  const url    = `${EDGE_TTS_WSS}&Sec-MS-GEC=${gec}&ConnectionId=${connId}`;
-
-  const ws = new NodeWS(url, {
-    headers: {
-      'Pragma':          'no-cache',
-      'Cache-Control':   'no-cache',
-      'Origin':          'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold',
-      'User-Agent':      `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${EDGE_TTS_CHROMIUM} Safari/537.36 Edg/${EDGE_TTS_CHROMIUM}`,
-      'Accept-Language': 'es-ES,es;q=0.9',
-      'Accept-Encoding': 'gzip, deflate, br',
-    }
-  });
-
-  let done  = false;
-  const timeout = setTimeout(() => {
-    if (!done) { done = true; ws.terminate(); onError(new Error('timeout')); }
-  }, 15000);
-
-  ws.on('open', () => {
-    // 1. Config message
-    const ts = new Date().toUTCString();
-    ws.send(
-      `X-Timestamp:${ts}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n`
-      + JSON.stringify({ context: { synthesis: { audio: { metadataoptions: { sentenceBoundaryEnabled: false, wordBoundaryEnabled: false }, outputFormat: 'audio-24khz-48kbitrate-mono-mp3' }}}})
-    );
-    // 2. SSML message
-    ws.send(
-      `X-RequestId:${connId}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${ts}\r\nPath:ssml\r\n\r\n`
-      + edgeTtsSsml(text, voiceName, ratePct)
-    );
-  });
-
-  ws.on('message', (data, isBinary) => {
-    if (isBinary) {
-      const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
-      const sep = buf.indexOf(Buffer.from('\r\n\r\n'));
-      if (sep !== -1) onAudioChunk(buf.slice(sep + 4));
+function detectEdgeTts() {
+  const candidates = [
+    'edge-tts',
+    path.join(os.homedir(), '.local', 'bin', 'edge-tts'),
+    '/usr/local/bin/edge-tts',
+    '/usr/bin/edge-tts',
+    // Render instala paquetes pip en este path
+    path.join(os.homedir(), '.local', 'lib', 'python3.11', 'site-packages', '..', '..', '..', 'bin', 'edge-tts'),
+  ];
+  for (const bin of candidates) {
+    try {
+      execSync(`${bin} --version`, { stdio: 'ignore', timeout: 3000 });
+      edgeTtsBin = bin;
+      edgeTtsAvailable = true;
+      console.log(`[TTS] edge-tts encontrado: ${bin}`);
       return;
-    }
-    const msg = data.toString();
-    if (msg.includes('Path:turn.end')) {
-      if (!done) { done = true; clearTimeout(timeout); ws.close(); onDone(); }
-    }
-  });
-
-  ws.on('error', (e) => { if (!done) { done = true; clearTimeout(timeout); onError(e); } });
-  ws.on('close', ()  => { clearTimeout(timeout); });
+    } catch(e) {}
+  }
+  // Intentar instalar automáticamente
+  console.log('[TTS] edge-tts no encontrado, intentando instalar...');
+  try {
+    execSync('pip install edge-tts --quiet --break-system-packages 2>/dev/null || pip3 install edge-tts --quiet', { timeout: 60000, stdio: 'pipe' });
+    edgeTtsBin = 'edge-tts';
+    edgeTtsAvailable = true;
+    console.log('[TTS] edge-tts instalado correctamente');
+  } catch(e) {
+    console.warn('[TTS] No se pudo instalar edge-tts:', e.message.slice(0, 100));
+    edgeTtsAvailable = false;
+  }
 }
+detectEdgeTts();
 
-// Caché en memoria
+// ── Caché en memoria ─────────────────────────────────────────
 const ttsMemCache = new Map();
 const TTS_CACHE_MAX = 60;
+
+// ── Generar audio con edge-tts (proceso Python) ──────────────
+function edgeTtsGenerate(text, voiceName, rate, callback) {
+  // edge-tts escribe el mp3 a stdout con --write-media -
+  const rateNum  = parseFloat(rate) || 1.0;
+  const ratePct  = (rateNum >= 1 ? '+' : '') + Math.round((rateNum - 1) * 100) + '%';
+  const args = [
+    '--voice', voiceName,
+    '--rate',  ratePct,
+    '--text',  text.slice(0, 500),
+    '--write-media', '-',   // stdout
+  ];
+
+  const proc   = spawn(edgeTtsBin, args, { timeout: 20000 });
+  const chunks = [];
+  let   errOut = '';
+
+  proc.stdout.on('data', d => chunks.push(d));
+  proc.stderr.on('data', d => { errOut += d.toString(); });
+  proc.on('close', code => {
+    const buf = Buffer.concat(chunks);
+    if (code === 0 && buf.length > 100) {
+      callback(null, buf);
+    } else {
+      callback(new Error(errOut.trim().slice(0, 150) || `exit ${code}, buf=${buf.length}b`), null);
+    }
+  });
+  proc.on('error', e => callback(e, null));
+}
 
 app.post('/api/tts', (req, res) => {
   const { text, voice, rate } = req.body;
   if (!text || typeof text !== 'string') return res.status(400).json({ error: 'text requerido' });
 
+  if (!edgeTtsAvailable) {
+    return res.status(503).json({ error: 'edge-tts no disponible en el servidor. Ejecuta: pip install edge-tts' });
+  }
+
   const voiceName = EDGE_TTS_VOICES[voice] || EDGE_TTS_VOICES['Edge Alvaro'];
   const rateNum   = parseFloat(rate) || 1.0;
-  // FIX: calcular correctamente el porcentaje de velocidad con signo
   const rateDelta = Math.round((rateNum - 1.0) * 100);
   const ratePct   = (rateDelta >= 0 ? '+' : '') + rateDelta + '%';
   const textClean = text.toLowerCase().slice(0, 500);
   const cacheKey  = `${voiceName}|${ratePct}|${textClean}`;
 
+  // Servir desde caché si existe
   if (ttsMemCache.has(cacheKey)) {
     const cached = ttsMemCache.get(cacheKey);
     res.setHeader('Content-Type', 'audio/mpeg');
@@ -708,33 +695,26 @@ app.post('/api/tts', (req, res) => {
     return res.end(cached);
   }
 
-  const chunks = [];
-  res.setHeader('Content-Type', 'audio/mpeg');
-  res.setHeader('Cache-Control', 'no-cache');
-
-  edgeTtsRequest(
-    textClean, voiceName, ratePct,
-    (chunk) => { chunks.push(chunk); res.write(chunk); },
-    () => {
-      res.end();
-      const full = Buffer.concat(chunks);
-      if (full.length > 0) {
-        if (ttsMemCache.size >= TTS_CACHE_MAX) ttsMemCache.delete(ttsMemCache.keys().next().value);
-        ttsMemCache.set(cacheKey, full);
-      }
-      console.log(`[TTS] OK — ${voiceName} [${ratePct}] "${textClean.slice(0,40)}..."`);
-    },
-    (err) => {
-      console.error('[TTS] Error:', err.message);
-      if (!res.headersSent) res.status(500).json({ error: err.message });
-      else res.end();
+  edgeTtsGenerate(textClean, voiceName, rateNum, (err, buf) => {
+    if (err) {
+      console.error('[TTS] Error edge-tts:', err.message);
+      if (!res.headersSent) return res.status(500).json({ error: err.message });
+      return res.end();
     }
-  );
+    // Cachear
+    if (ttsMemCache.size >= TTS_CACHE_MAX) ttsMemCache.delete(ttsMemCache.keys().next().value);
+    ttsMemCache.set(cacheKey, buf);
+    console.log(`[TTS] OK — ${voiceName} [${ratePct}] "${textClean.slice(0, 40)}..."`);
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.end(buf);
+  });
 });
 
 app.get('/api/tts/status', (req, res) => res.json({
-  available: true,
-  engine:    'edge-tts-native',
+  available: edgeTtsAvailable,
+  engine:    edgeTtsAvailable ? 'edge-tts-python' : 'unavailable',
+  bin:       edgeTtsBin,
   voices:    Object.keys(EDGE_TTS_VOICES),
 }));
 
