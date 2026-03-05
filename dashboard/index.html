@@ -14,6 +14,7 @@
       --stroke-dark:rgba(10,8,6,0.5);--shadow:2px 3px 0 rgba(10,8,6,0.3);
       --font-title:'Zen Antique',serif;--font-body:'Crimson Pro',serif;--font-mono:'Special Elite',monospace;
       --ov-emote-size:24px;
+      --tt-panel-width: 320px;
     }
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
     body{background:var(--checker-mid);color:var(--traje);font-family:var(--font-body);min-height:100vh;overflow:hidden;}
@@ -35,7 +36,14 @@
     #ws-dot.ok{background:var(--corbata);box-shadow:0 0 0 3px rgba(200,37,28,0.2);border-color:var(--corbata);animation:dotPulse 2.5s ease-in-out infinite;}
     @keyframes dotPulse{0%,100%{box-shadow:0 0 0 3px rgba(200,37,28,0.2);}50%{box-shadow:0 0 0 6px rgba(200,37,28,0.06);}}
     #ws-label{font-family:var(--font-mono);font-size:10px;color:var(--camisa-dim);letter-spacing:1px;text-transform:uppercase;}
+
+    /* ══════════════════════════════════════════
+       LAYOUT PRINCIPAL — ahora tiene 3 zonas:
+       sidebar | main | tiktok-panel
+       ══════════════════════════════════════════ */
     .layout{position:fixed;top:54px;left:0;right:0;bottom:0;display:flex;z-index:10;overflow:hidden;align-items:stretch;}
+
+    /* ── Sidebar izquierdo ── */
     .sidebar{width:294px;min-width:294px;height:calc(100vh - 54px);background:var(--checker-dark);border-right:1px solid rgba(10,8,6,0.4);box-shadow:2px 0 12px rgba(10,8,6,0.3);overflow-y:auto;overflow-x:hidden;padding:11px 10px 20px;display:block;transition:transform 0.4s cubic-bezier(0.4,0,0.2,1),min-width 0.4s,width 0.4s,border-color 0.3s,padding 0.4s;flex-shrink:0;z-index:20;}
     .sidebar .card{margin-bottom:7px;}.sidebar .card:last-child{margin-bottom:0;}
     .sidebar.collapsed{transform:translateX(-294px);min-width:0;width:0;border-color:transparent;padding:0;}
@@ -45,6 +53,159 @@
     #sidebar-toggle.collapsed{left:0;border-left:1px solid rgba(10,8,6,0.35);border-right:none;border-radius:5px 0 0 5px;}
     .toggle-arrow{font-size:9px;color:var(--camisa-muted);user-select:none;transition:transform 0.4s;}
     #sidebar-toggle.collapsed .toggle-arrow{transform:rotate(180deg);}
+
+    /* ══════════════════════════════════════════
+       PANEL TIKTOK DERECHO
+       ══════════════════════════════════════════ */
+    #tt-panel{
+      position:fixed;
+      top:54px;right:0;
+      width:var(--tt-panel-width);
+      height:calc(100vh - 54px);
+      background:var(--traje);
+      border-left:2px solid rgba(255,45,120,0.35);
+      box-shadow:-4px 0 24px rgba(255,45,120,0.1),-2px 0 8px rgba(10,8,6,0.4);
+      z-index:150;
+      display:flex;flex-direction:column;
+      transform:translateX(100%);
+      transition:transform 0.38s cubic-bezier(0.4,0,0.2,1),box-shadow 0.3s;
+      overflow:hidden;
+    }
+    #tt-panel.open{
+      transform:translateX(0);
+      box-shadow:-6px 0 32px rgba(255,45,120,0.18),-2px 0 10px rgba(10,8,6,0.5);
+    }
+
+    /* Botón lengüeta TikTok — siempre visible en el borde derecho */
+    #tt-toggle{
+      position:fixed;
+      top:50%;
+      right:0;
+      transform:translateY(-50%);
+      width:22px;
+      height:88px;
+      background:var(--traje);
+      border:2px solid rgba(255,45,120,0.4);
+      border-right:none;
+      border-radius:8px 0 0 8px;
+      cursor:pointer;
+      z-index:400;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+      transition:right 0.38s cubic-bezier(0.4,0,0.2,1),background 0.2s,border-color 0.2s;
+      padding:6px 3px;
+    }
+    #tt-toggle:hover{background:rgba(255,45,120,0.12);border-color:rgba(255,45,120,0.7);}
+    #tt-toggle.open{right:var(--tt-panel-width);border-color:rgba(255,45,120,0.6);}
+    #tt-toggle.open:hover{background:rgba(255,45,120,0.15);}
+    .tt-toggle-icon{font-size:14px;line-height:1;}
+    .tt-toggle-label{
+      writing-mode:vertical-rl;text-orientation:mixed;
+      font-family:var(--font-mono);font-size:6.5px;
+      color:rgba(255,45,120,0.7);letter-spacing:1.5px;text-transform:uppercase;
+      user-select:none;
+    }
+    #tt-toggle.open .tt-toggle-label{color:rgba(255,45,120,0.9);}
+
+    /* Cabecera del panel TikTok */
+    .tt-panel-header{
+      flex-shrink:0;
+      display:flex;align-items:center;gap:8px;
+      padding:10px 12px 9px;
+      background:rgba(255,45,120,0.06);
+      border-bottom:1px solid rgba(255,45,120,0.2);
+    }
+    .tt-panel-dot{
+      width:7px;height:7px;border-radius:50%;
+      background:#ff2d78;border:1.5px solid rgba(255,45,120,0.5);
+      box-shadow:0 0 0 3px rgba(255,45,120,0.15);
+      animation:ttDotPulse 2.5s ease-in-out infinite;
+      flex-shrink:0;
+    }
+    @keyframes ttDotPulse{0%,100%{box-shadow:0 0 0 3px rgba(255,45,120,0.15);}50%{box-shadow:0 0 0 7px rgba(255,45,120,0.04);}}
+    .tt-panel-title{font-family:var(--font-title);font-size:12px;letter-spacing:3px;color:#ff80b0;text-transform:uppercase;flex:1;}
+    .tt-panel-actions{display:flex;gap:4px;}
+    .tt-panel-btn{
+      padding:3px 7px;background:none;
+      border:1px solid rgba(255,45,120,0.3);border-radius:2px 4px 2px 3px;
+      color:rgba(255,45,120,0.7);font-family:var(--font-mono);font-size:8px;
+      cursor:pointer;transition:all 0.12s;letter-spacing:0.5px;text-transform:uppercase;
+    }
+    .tt-panel-btn:hover{background:rgba(255,45,120,0.15);color:#ff80b0;border-color:rgba(255,45,120,0.6);}
+
+    /* URL bar para cargar canal */
+    .tt-url-bar{
+      flex-shrink:0;
+      display:flex;align-items:center;gap:0;
+      border-bottom:1px solid rgba(255,45,120,0.15);
+      background:rgba(10,8,6,0.3);
+    }
+    .tt-url-prefix{
+      padding:7px 8px;
+      font-family:var(--font-mono);font-size:8.5px;
+      color:rgba(255,45,120,0.4);letter-spacing:0.3px;
+      white-space:nowrap;flex-shrink:0;
+      border-right:1px solid rgba(255,45,120,0.1);
+    }
+    #tt-user-input{
+      flex:1;background:transparent;border:none;outline:none;
+      padding:7px 8px;
+      font-family:var(--font-mono);font-size:10px;color:var(--camisa);
+      letter-spacing:0.5px;
+    }
+    #tt-user-input::placeholder{color:rgba(222,218,212,0.2);}
+    .tt-go-btn{
+      padding:7px 10px;background:rgba(255,45,120,0.12);border:none;
+      border-left:1px solid rgba(255,45,120,0.15);
+      color:rgba(255,45,120,0.8);font-family:var(--font-mono);font-size:9px;
+      cursor:pointer;transition:all 0.12s;letter-spacing:0.5px;flex-shrink:0;
+    }
+    .tt-go-btn:hover{background:rgba(255,45,120,0.22);color:#ff2d78;}
+
+    /* Contenido del iframe */
+    .tt-iframe-wrap{
+      flex:1;position:relative;overflow:hidden;
+      background:var(--traje-light);
+    }
+    #tt-iframe{
+      width:100%;height:100%;border:none;display:block;
+      /* Sin filtros para que TikTok se vea normal */
+    }
+
+    /* Estado vacío / placeholder */
+    .tt-placeholder{
+      position:absolute;inset:0;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:14px;padding:24px;text-align:center;
+      background:linear-gradient(160deg,#120008 0%,#0a0005 50%,#130012 100%);
+    }
+    .tt-placeholder-icon{font-size:48px;animation:ttIconBounce 3s ease-in-out infinite;}
+    @keyframes ttIconBounce{0%,100%{transform:scale(1) rotate(-4deg);}50%{transform:scale(1.1) rotate(4deg);}}
+    .tt-placeholder-title{font-family:var(--font-title);font-size:14px;letter-spacing:3px;color:rgba(255,128,176,0.8);text-transform:uppercase;}
+    .tt-placeholder-sub{font-family:var(--font-mono);font-size:8.5px;color:rgba(255,45,120,0.4);letter-spacing:1.5px;line-height:1.9;text-transform:uppercase;}
+    .tt-placeholder-hint{
+      font-family:var(--font-mono);font-size:8px;
+      color:rgba(255,45,120,0.25);letter-spacing:1px;
+      border:1px solid rgba(255,45,120,0.1);
+      padding:6px 10px;border-radius:2px;line-height:1.7;
+    }
+
+    /* Nota importante: visibilidad */
+    .tt-visibility-note{
+      flex-shrink:0;
+      padding:5px 10px;
+      background:rgba(255,45,120,0.07);
+      border-top:1px solid rgba(255,45,120,0.12);
+      font-family:var(--font-mono);font-size:7.5px;
+      color:rgba(255,45,120,0.5);letter-spacing:0.8px;
+      line-height:1.6;text-align:center;
+    }
+
+    /* ── Cuando el panel TikTok está abierto, el main se encoge ── */
+    .main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;background:var(--checker-mid);position:relative;transition:margin-right 0.38s cubic-bezier(0.4,0,0.2,1);}
+    .main.tt-open{margin-right:var(--tt-panel-width);}
+    .main::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;background-image:repeating-linear-gradient(to bottom,transparent,transparent 29px,rgba(10,8,6,0.1) 29px,rgba(10,8,6,0.1) 30px);}
+
+    /* ══ Cards, inputs, etc. ══ */
     .card{background:var(--guante);border-top:1.5px solid rgba(10,8,6,0.5);border-left:1.5px solid rgba(10,8,6,0.5);border-right:1px solid rgba(10,8,6,0.2);border-bottom:1px solid rgba(10,8,6,0.2);border-radius:2px 5px 3px 4px;padding:10px 12px;box-shadow:var(--shadow);position:relative;flex-shrink:0;overflow:visible;}
     .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--corbata),rgba(200,37,28,0.2) 55%,transparent);}
     .card-title{font-family:var(--font-title);font-size:8.5px;letter-spacing:3px;text-transform:uppercase;color:var(--camisa-dim);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
@@ -82,9 +243,6 @@
     .platform-info{flex:1;min-width:0;}
     .platform-name{font-family:var(--font-title);font-size:11.5px;color:var(--camisa);letter-spacing:0.3px;}
     .platform-channel{font-family:var(--font-mono);font-size:8.5px;color:var(--camisa-muted);}
-    .tag{display:inline-block;padding:1px 6px;border-radius:999px;font-family:var(--font-mono);font-size:7.5px;font-weight:700;letter-spacing:0.5px;}
-    .tag-connector{background:rgba(222,218,212,0.08);border:1px solid rgba(222,218,212,0.18);color:var(--camisa-dim);}
-    .tag-puppeteer{background:var(--corbata-dim);border:1px solid rgba(200,37,28,0.3);color:var(--corbata);}
     .info-box{border-radius:2px 4px 3px 3px;padding:7px 9px;font-family:var(--font-mono);font-size:9px;line-height:1.7;}
     .info-box a{color:inherit;}
     .info-red{background:var(--corbata-soft);border:1px solid rgba(200,37,28,0.4);color:var(--corbata);}
@@ -100,8 +258,6 @@
     input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--corbata);cursor:pointer;border:2px solid var(--guante);box-shadow:1px 1px 0 rgba(10,8,6,0.3);}
     input[type=color]{width:32px;height:24px;border:1px solid rgba(200,37,28,0.4);border-radius:2px;cursor:pointer;background:transparent;padding:1px;}
     .separator{border-top:1px solid rgba(200,37,28,0.15);margin:5px 0;}
-    .main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;background:var(--checker-mid);position:relative;}
-    .main::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;background-image:repeating-linear-gradient(to bottom,transparent,transparent 29px,rgba(10,8,6,0.1) 29px,rgba(10,8,6,0.1) 30px);}
     .chat-panel{flex:1;overflow-y:auto;overflow-x:hidden;padding:13px 15px;display:flex;flex-direction:column;gap:5px;position:relative;z-index:1;}
     .chat-panel::-webkit-scrollbar{width:3px;}.chat-panel::-webkit-scrollbar-track{background:transparent;}.chat-panel::-webkit-scrollbar-thumb{background:rgba(10,8,6,0.25);border-radius:2px;}.chat-panel::-webkit-scrollbar-thumb:hover{background:rgba(200,37,28,0.4);}
     .chat-spacer{flex:1;min-height:0;}
@@ -126,7 +282,6 @@
     .msg-user{font-family:var(--font-title);font-size:13px;color:var(--camisa);letter-spacing:0.3px;white-space:nowrap;}
     .msg-platform{display:inline-flex;align-items:center;gap:2px;font-family:var(--font-mono);font-size:7.5px;padding:1px 5px;border-radius:2px;font-weight:700;letter-spacing:0.5px;background:rgba(222,218,212,0.07);border:1px solid rgba(222,218,212,0.15);color:var(--camisa-dim);}
     .msg-platform svg{width:8px;height:8px;flex-shrink:0;}
-    .msg-badge{height:13px;width:auto;vertical-align:middle;filter:grayscale(100%);}
     .msg-time{font-family:var(--font-mono);font-size:8.5px;color:var(--camisa-muted);margin-left:auto;white-space:nowrap;}
     .msg-text{font-size:13px;color:var(--camisa);line-height:1.55;word-break:break-word;font-family:var(--font-body);}
     .msg-text img.emote{height:var(--ov-emote-size,24px);width:auto;vertical-align:middle;margin:0 2px;filter:grayscale(40%);}
@@ -140,7 +295,7 @@
     #hl-bar strong{color:var(--camisa);max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-body);font-size:12px;text-transform:none;font-weight:400;}
     .input-bar{border-top:2px solid var(--corbata);background:var(--traje);position:relative;z-index:1;display:flex;flex-direction:column;gap:0;}
 
-    /* ═══ CHAT VISOR ═══ */
+    /* Chat visor */
     .chat-visor{position:absolute;top:0;left:0;right:0;bottom:0;z-index:50;display:flex;flex-direction:column;background:var(--traje);transform:translateY(100%);opacity:0;transition:transform 0.32s cubic-bezier(0.4,0,0.2,1),opacity 0.25s;pointer-events:none;}
     .chat-visor.open{transform:translateY(0);opacity:1;pointer-events:all;}
     .chat-visor-header{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--traje);border-bottom:1px solid rgba(200,37,28,0.15);flex-shrink:0;}
@@ -169,14 +324,11 @@
     .chat-visor-unavailable .uv-btn.youtube:hover{background:rgba(255,68,68,0.18);}
     .chat-visor-unavailable .uv-btn.tiktok{border:1.5px solid rgba(255,45,120,0.45);color:#ff80b0;background:rgba(255,45,120,0.08);}
     .chat-visor-unavailable .uv-btn.tiktok:hover{background:rgba(255,45,120,0.18);}
-    /* Preview TikTok — video/gif de fondo en el panel */
     .tt-preview-bg{position:absolute;inset:0;background:linear-gradient(135deg,#1a0010,#0d0008,#1a001a);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
     .tt-preview-logo{font-size:52px;animation:ttBounce 2s ease-in-out infinite;}
     @keyframes ttBounce{0%,100%{transform:scale(1) rotate(-3deg);}50%{transform:scale(1.08) rotate(3deg);}}
     .tt-preview-user{font-family:var(--font-title);font-size:16px;letter-spacing:4px;color:rgba(255,128,176,0.9);text-transform:uppercase;}
     .tt-preview-sub{font-family:var(--font-mono);font-size:9px;color:rgba(255,45,120,0.5);letter-spacing:2px;text-transform:uppercase;}
-    .tw-preview-loading{font-family:var(--font-mono);font-size:9px;color:rgba(145,70,255,0.6);letter-spacing:1px;position:absolute;bottom:12px;left:50%;transform:translateX(-50%);animation:blink 1.5s ease-in-out infinite;}
-    @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
 
     /* Target row */
     .target-row{display:flex;align-items:center;gap:4px;padding:6px 13px 5px;border-bottom:1px solid rgba(200,37,28,0.12);background:rgba(10,8,6,0.18);overflow-x:auto;scrollbar-width:none;}
@@ -204,8 +356,6 @@
     .target-btn.unavailable{opacity:0.3;cursor:not-allowed;}
     .target-btn.unavailable:hover{border-color:rgba(10,8,6,0.45);color:var(--camisa-muted);box-shadow:1px 2px 0 rgba(10,8,6,0.2);}
     .input-row-msg{display:flex;gap:7px;padding:8px 13px;}
-    .input-targets-indicator{display:flex;align-items:center;gap:3px;padding:0 7px;background:rgba(10,8,6,0.2);border-top:1px solid rgba(10,8,6,0.4);border-left:1px solid rgba(10,8,6,0.4);border-right:1px solid rgba(10,8,6,0.12);border-bottom:1px solid rgba(10,8,6,0.12);border-radius:2px 4px 3px 3px;flex-shrink:0;}
-    .input-targets-indicator .iti-dot{width:5px;height:5px;border-radius:50%;background:var(--dot-color);box-shadow:0 0 0 2px var(--dot-glow);transition:all 0.2s;flex-shrink:0;}
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,8,6,0.7);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
     .modal-overlay.open{display:flex;}
     .modal-box{background:var(--traje-light);border-top:2px solid var(--corbata);border-left:2px solid rgba(10,8,6,0.5);border-right:1.5px solid rgba(10,8,6,0.2);border-bottom:1.5px solid rgba(10,8,6,0.2);border-radius:2px 6px 4px 5px;padding:26px;max-width:480px;width:90%;position:relative;box-shadow:5px 6px 0 rgba(10,8,6,0.3),0 20px 50px rgba(10,8,6,0.5);}
@@ -240,6 +390,7 @@
     <span class="toggle-arrow">&#9664;</span>
   </button>
 
+  <!-- ════ SIDEBAR IZQUIERDO ════ -->
   <div class="sidebar">
     <div class="card">
       <div class="card-title">&#9675; Servidor</div>
@@ -296,7 +447,8 @@
       <div class="card-title">&#9678; TikTok</div>
       <div class="btn-row" style="margin-bottom:8px;">
         <button class="btn btn-secondary btn-full" onclick="restartTikTok()">&#8634; Reconectar</button>
-        <button class="btn btn-secondary btn-full" onclick="openTikTokLive()">&#9654; Live</button>
+        <!-- Ahora abre el panel lateral en lugar de ventana nueva -->
+        <button class="btn btn-secondary btn-full" onclick="toggleTikTokPanel()">&#9654; Panel Live</button>
       </div>
       <div class="info-box info-red" style="margin-bottom:6px;">Error 403: <a href="#" onclick="openModal('tiktok-modal');return false;">usar SESSION_ID</a></div>
       <div class="hint">Tambien se recomienda configurar TIKTOK_TARGET_IDC en el servidor.</div>
@@ -380,8 +532,9 @@
     </div>
   </div>
 
-  <div class="main">
-    <!-- CHAT VISOR -->
+  <!-- ════ AREA PRINCIPAL ════ -->
+  <div class="main" id="main-area">
+    <!-- Chat visor embebido -->
     <div class="chat-visor" id="chat-visor">
       <div class="chat-visor-header">
         <span class="chat-visor-title" id="visor-title">Preview</span>
@@ -423,6 +576,12 @@
         <button class="target-btn viewer-btn" data-view="tiktok" onclick="openChatVisor('tiktok')" id="view-tiktok" title="Ver TikTok">
           <span class="tb-dot"></span>TikTok
         </button>
+        <!-- Separador y botón panel TikTok -->
+        <span class="target-sep"></span>
+        <button class="target-btn" id="tt-panel-quick-btn" onclick="toggleTikTokPanel()" title="Abrir panel TikTok Live lateral"
+          style="--tb-color:#ff2d78;--tb-bg:rgba(255,45,120,0.1);--tb-glow:rgba(255,45,120,0.2);">
+          <span class="tb-dot"></span>🎵 TikTok Live
+        </button>
       </div>
       <div class="input-row-msg">
         <input id="custom-msg-input" type="text" placeholder="Escribe y pulsa Enter..." onkeydown="if(event.key==='Enter')sendCustomMessage()" style="flex:1;" />
@@ -433,6 +592,61 @@
   </div>
 </div>
 
+<!-- ════════════════════════════════════════
+     PANEL TIKTOK LATERAL DERECHO
+     ════════════════════════════════════════ -->
+<div id="tt-panel">
+  <div class="tt-panel-header">
+    <span class="tt-panel-dot"></span>
+    <span class="tt-panel-title">TikTok Live</span>
+    <div class="tt-panel-actions">
+      <button class="tt-panel-btn" onclick="ttReloadIframe()" title="Recargar">&#8634;</button>
+      <button class="tt-panel-btn" onclick="ttOpenExternal()" title="Abrir en nueva pestaña">&#x2197;</button>
+      <button class="tt-panel-btn" onclick="toggleTikTokPanel()" title="Cerrar panel">&#x2715;</button>
+    </div>
+  </div>
+
+  <!-- Barra de usuario -->
+  <div class="tt-url-bar">
+    <span class="tt-url-prefix">tiktok.com/@</span>
+    <input id="tt-user-input" type="text" placeholder="tu_usuario" onkeydown="if(event.key==='Enter')ttLoadUser()">
+    <button class="tt-go-btn" onclick="ttLoadUser()">IR</button>
+  </div>
+
+  <!-- Iframe TikTok -->
+  <div class="tt-iframe-wrap" id="tt-iframe-wrap">
+    <!-- Placeholder inicial -->
+    <div class="tt-placeholder" id="tt-placeholder">
+      <div class="tt-placeholder-icon">🎵</div>
+      <div class="tt-placeholder-title">TikTok Live</div>
+      <div class="tt-placeholder-sub">Panel de visibilidad<br>para el conector</div>
+      <div class="tt-placeholder-hint">
+        Escribe tu usuario arriba<br>
+        y mantén este panel abierto<br>
+        para que el servidor reciba mensajes
+      </div>
+    </div>
+    <iframe
+      id="tt-iframe"
+      src="about:blank"
+      allow="autoplay; camera; microphone"
+      style="display:none;width:100%;height:100%;border:none;"
+    ></iframe>
+  </div>
+
+  <!-- Nota de visibilidad -->
+  <div class="tt-visibility-note">
+    &#x26A1; Mantén este panel visible para evitar throttling del navegador
+  </div>
+</div>
+
+<!-- Botón lengüeta lateral derecho -->
+<button id="tt-toggle" onclick="toggleTikTokPanel()" title="Panel TikTok Live">
+  <span class="tt-toggle-icon">🎵</span>
+  <span class="tt-toggle-label">TikTok</span>
+</button>
+
+<!-- Modal TikTok session -->
 <div id="tiktok-modal" class="modal-overlay">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal('tiktok-modal')">&#x2715;</button>
@@ -489,170 +703,137 @@ function processMessageHTML(d){var t=d.chatmessage||'',p=d.platform||d.type||'';
 
 function toggleSidebar(){var s=document.querySelector('.sidebar'),b=document.getElementById('sidebar-toggle');var c=s.classList.toggle('collapsed');b.classList.toggle('collapsed',c);store.set('sidebarCollapsed',c?'1':'0');}
 
-// ═══ CHAT VISOR — previsualizacion embebida ═══
+// ═══════════════════════════════════════════════════
+// PANEL TIKTOK LATERAL
+// ═══════════════════════════════════════════════════
+var ttPanelOpen = false;
+var ttCurrentUser = '';
+
+function toggleTikTokPanel() {
+  ttPanelOpen = !ttPanelOpen;
+  var panel   = document.getElementById('tt-panel');
+  var toggle  = document.getElementById('tt-toggle');
+  var main    = document.getElementById('main-area');
+  var quickBtn= document.getElementById('tt-panel-quick-btn');
+
+  panel.classList.toggle('open', ttPanelOpen);
+  toggle.classList.toggle('open', ttPanelOpen);
+  main.classList.toggle('tt-open', ttPanelOpen);
+  quickBtn.classList.toggle('active', ttPanelOpen);
+
+  store.set('ttPanelOpen', ttPanelOpen ? '1' : '0');
+
+  // Si hay un usuario guardado y el panel se abre por primera vez, cargarlo
+  if (ttPanelOpen && !ttCurrentUser) {
+    var saved = store.get('ttPanelUser') || currentChannels.tiktok || '';
+    if (saved) {
+      document.getElementById('tt-user-input').value = saved;
+      ttLoadUser();
+    }
+  }
+}
+
+function ttLoadUser() {
+  var input = document.getElementById('tt-user-input');
+  var user  = input.value.trim().replace(/^@/, '');
+  if (!user) { toast('Escribe un usuario de TikTok'); return; }
+
+  ttCurrentUser = user;
+  store.set('ttPanelUser', user);
+
+  var iframe = document.getElementById('tt-iframe');
+  var ph     = document.getElementById('tt-placeholder');
+
+  // Cargar la página del live de TikTok
+  var url = 'https://www.tiktok.com/@' + encodeURIComponent(user) + '/live';
+  iframe.src = url;
+  iframe.style.display = 'block';
+  ph.style.display = 'none';
+
+  toast('🎵 Cargando @' + user + ' live...');
+}
+
+function ttReloadIframe() {
+  var iframe = document.getElementById('tt-iframe');
+  if (iframe.src && iframe.src !== 'about:blank') {
+    iframe.src = iframe.src; // reload
+    toast('Recargando...');
+  } else if (ttCurrentUser) {
+    ttLoadUser();
+  } else {
+    toast('No hay usuario cargado');
+  }
+}
+
+function ttOpenExternal() {
+  var user = ttCurrentUser || store.get('ttPanelUser') || currentChannels.tiktok || '';
+  if (!user) { toast('Sin usuario TikTok'); return; }
+  window.open('https://www.tiktok.com/@' + encodeURIComponent(user) + '/live', '_blank', 'noopener');
+}
+
+// ═══ CHAT VISOR ═══
 var _visorOpenFn = null;
 
 var VISOR_CONFIG = {
   twitch: {
-    label: 'Twitch Chat',
-    badge: 'TWITCH',
-    icon: '🟣',
-    getUrl: function(ch) {
-      if (!ch) return null;
-      // Popout oficial de Twitch — se puede embeber sin login para ver
-      return 'https://www.twitch.tv/popout/' + encodeURIComponent(ch) + '/chat?popout=';
-    },
-    openLive: function(ch) {
-      if (ch) window.open('https://www.twitch.tv/' + encodeURIComponent(ch), '_blank', 'noopener');
-    },
-    noChMsg: 'Canal de Twitch no configurado',
-    noChSub: 'Conecta tu canal de Twitch en el servidor.'
+    label: 'Twitch Chat', badge: 'TWITCH',
+    getUrl: function(ch) { return ch ? 'https://www.twitch.tv/popout/' + encodeURIComponent(ch) + '/chat?popout=' : null; },
+    openLive: function(ch) { if (ch) window.open('https://www.twitch.tv/' + encodeURIComponent(ch), '_blank', 'noopener'); },
+    noChMsg: 'Canal de Twitch no configurado', noChSub: 'Conecta tu canal de Twitch en el servidor.'
   },
   kick: {
-    label: 'Kick Chat',
-    badge: 'KICK',
-    icon: '🟢',
-    getUrl: function(ch) {
-      if (!ch) return null;
-      return 'https://kick.com/' + encodeURIComponent(ch) + '/chatroom';
-    },
-    openLive: function(ch) {
-      if (ch) window.open('https://kick.com/' + encodeURIComponent(ch), '_blank', 'noopener');
-    },
-    noChMsg: 'Canal de Kick no configurado',
-    noChSub: 'Conecta tu canal de Kick para ver el chat aqui.'
+    label: 'Kick Chat', badge: 'KICK',
+    getUrl: function(ch) { return ch ? 'https://kick.com/' + encodeURIComponent(ch) + '/chatroom' : null; },
+    openLive: function(ch) { if (ch) window.open('https://kick.com/' + encodeURIComponent(ch), '_blank', 'noopener'); },
+    noChMsg: 'Canal de Kick no configurado', noChSub: 'Conecta tu canal de Kick para ver el chat aqui.'
   },
   youtube: {
-    label: 'YouTube Live',
-    badge: 'YOUTUBE',
-    icon: '▶️',
+    label: 'YouTube Live', badge: 'YOUTUBE',
     getUrl: function() { return null; },
-    openLive: function(ch) {
-      if (!ch) return;
-      var h = ch.startsWith('@') ? ch : '@' + ch;
-      window.open('https://www.youtube.com/' + h + '/live', '_blank', 'noopener');
-    },
-    noChMsg: 'YouTube no permite chat embebido',
-    noChSub: 'YouTube bloquea los iframes de chat. Abre el live directamente.',
-    showOpenBtn: true
+    openLive: function(ch) { if (!ch) return; var h = ch.startsWith('@') ? ch : '@' + ch; window.open('https://www.youtube.com/' + h + '/live', '_blank', 'noopener'); },
+    noChMsg: 'YouTube no permite chat embebido', noChSub: 'YouTube bloquea los iframes. Abre el live directamente.', showOpenBtn: true
   },
   tiktok: {
-    label: 'TikTok Live',
-    badge: 'TIKTOK',
-    icon: '🎵',
+    label: 'TikTok Live', badge: 'TIKTOK',
     getUrl: function() { return null; },
-    openLive: function(ch) {
-      if (!ch) return;
-      var u = ch.startsWith('@') ? ch : '@' + ch;
-      window.open('https://www.tiktok.com/' + u + '/live', '_blank', 'noopener');
-    },
-    noChMsg: 'TikTok no permite chat embebido',
-    noChSub: 'TikTok bloquea los iframes. Abre el live en nueva pestana.',
-    showOpenBtn: true,
-    // Panel personalizado con animacion cuando no hay iframe
-    customPanel: function(ch) {
-      var user = ch || '';
-      return '<div class="tt-preview-bg">' +
-        '<div class="tt-preview-logo">🎵</div>' +
-        (user ? '<div class="tt-preview-user">@' + esc(user) + '</div>' : '') +
-        '<div class="tt-preview-sub">TikTok no permite previsualizacion embebida</div>' +
-        '</div>';
-    }
+    openLive: function(ch) { if (!ch) return; var u = ch.startsWith('@') ? ch : '@' + ch; window.open('https://www.tiktok.com/' + u + '/live', '_blank', 'noopener'); },
+    noChMsg: 'TikTok — usar panel lateral', noChSub: 'Usa el botón 🎵 TikTok Live para abrir el panel lateral derecho.', showOpenBtn: true,
+    customPanel: function(ch) { var user = ch || ''; return '<div class="tt-preview-bg"><div class="tt-preview-logo">🎵</div>' + (user ? '<div class="tt-preview-user">@' + esc(user) + '</div>' : '') + '<div class="tt-preview-sub">Usa el panel lateral para TikTok</div></div>'; }
   }
 };
 
-function visorOpenLive() {
-  if (_visorOpenFn) _visorOpenFn();
-}
+function visorOpenLive() { if (_visorOpenFn) _visorOpenFn(); }
 
 function openChatVisor(platform) {
-  var cfg = VISOR_CONFIG[platform];
-  if (!cfg) return;
+  var cfg = VISOR_CONFIG[platform]; if (!cfg) return;
   if (currentVisor === platform) { closeChatVisor(); return; }
-
   var ch = currentChannels[platform] || '';
   var url = cfg.getUrl(ch);
-
-  var visor      = document.getElementById('chat-visor');
-  var iframe     = document.getElementById('visor-iframe');
-  var titleEl    = document.getElementById('visor-title');
-  var badge      = document.getElementById('visor-badge');
-  var unavail    = document.getElementById('visor-unavailable');
-  var unavailMsg = document.getElementById('visor-unavailable-msg');
-  var unavailSub = document.getElementById('visor-unavailable-sub');
-  var unavailBtn = document.getElementById('visor-uv-btn');
-  var unavailIcon= document.getElementById('visor-uv-icon');
-  var openBtn    = document.getElementById('visor-open-btn');
-  var wrap       = document.getElementById('visor-iframe-wrap');
-
-  badge.className = 'chat-visor-badge ' + platform;
-  badge.textContent = cfg.badge;
-  titleEl.textContent = cfg.label + (ch ? ' \u2014 @' + ch : '');
-
-  // Funcion de abrir live para ambos botones
-  _visorOpenFn = cfg.openLive ? function() { cfg.openLive(ch); } : null;
-
-  // Boton header
-  if (openBtn) {
-    if (_visorOpenFn && ch) { openBtn.style.display = 'inline-block'; }
-    else { openBtn.style.display = 'none'; }
-  }
-
-  // Limpiar panel personalizado previo
-  var prev = wrap.querySelector('.tt-preview-bg');
-  if (prev) prev.remove();
-
-  if (url) {
-    // Iframe disponible (Twitch, Kick)
-    iframe.style.display = 'block';
-    unavail.style.display = 'none';
-    iframe.src = url;
-  } else if (cfg.customPanel && ch) {
-    // Panel personalizado (TikTok con canal)
-    iframe.style.display = 'none';
-    unavail.style.display = 'none';
-    wrap.insertAdjacentHTML('beforeend', cfg.customPanel(ch));
-    // Boton en el panel
-    if (unavailBtn) { unavailBtn.className = 'uv-btn ' + platform; unavailBtn.style.display = 'inline-block'; }
-  } else {
-    // Sin canal o sin soporte
-    iframe.style.display = 'none';
-    iframe.src = 'about:blank';
-    unavail.style.display = 'flex';
-    if (unavailIcon) unavailIcon.textContent = cfg.noChMsg.includes('no') ? '\u26A0' : '\u29B8';
-    unavailMsg.textContent = cfg.noChMsg;
-    unavailSub.textContent = cfg.noChSub;
-    if (unavailBtn) {
-      if (cfg.showOpenBtn && ch) {
-        unavailBtn.className = 'uv-btn ' + platform;
-        unavailBtn.style.display = 'inline-block';
-      } else {
-        unavailBtn.style.display = 'none';
-      }
-    }
-  }
-
-  document.querySelectorAll('.viewer-btn').forEach(function(b) { b.classList.remove('viewing'); });
-  var btn = document.getElementById('view-' + platform);
-  if (btn) btn.classList.add('viewing');
-
-  currentVisor = platform;
-  visor.classList.add('open');
+  var visor=document.getElementById('chat-visor'),iframe=document.getElementById('visor-iframe');
+  var titleEl=document.getElementById('visor-title'),badge=document.getElementById('visor-badge');
+  var unavail=document.getElementById('visor-unavailable'),unavailMsg=document.getElementById('visor-unavailable-msg');
+  var unavailSub=document.getElementById('visor-unavailable-sub'),unavailBtn=document.getElementById('visor-uv-btn');
+  var unavailIcon=document.getElementById('visor-uv-icon'),openBtn=document.getElementById('visor-open-btn');
+  var wrap=document.getElementById('visor-iframe-wrap');
+  badge.className='chat-visor-badge '+platform; badge.textContent=cfg.badge;
+  titleEl.textContent=cfg.label+(ch?' \u2014 @'+ch:'');
+  _visorOpenFn=cfg.openLive?function(){cfg.openLive(ch);}:null;
+  if(openBtn){if(_visorOpenFn&&ch){openBtn.style.display='inline-block';}else{openBtn.style.display='none';}}
+  var prev=wrap.querySelector('.tt-preview-bg');if(prev)prev.remove();
+  if(url){iframe.style.display='block';unavail.style.display='none';iframe.src=url;}
+  else if(cfg.customPanel&&ch){iframe.style.display='none';unavail.style.display='none';wrap.insertAdjacentHTML('beforeend',cfg.customPanel(ch));if(unavailBtn){unavailBtn.className='uv-btn '+platform;unavailBtn.style.display='inline-block';}}
+  else{iframe.style.display='none';iframe.src='about:blank';unavail.style.display='flex';if(unavailIcon)unavailIcon.textContent='\u26A0';unavailMsg.textContent=cfg.noChMsg;unavailSub.textContent=cfg.noChSub;if(unavailBtn){if(cfg.showOpenBtn&&ch){unavailBtn.className='uv-btn '+platform;unavailBtn.style.display='inline-block';}else{unavailBtn.style.display='none';}}}
+  document.querySelectorAll('.viewer-btn').forEach(function(b){b.classList.remove('viewing');});
+  var btn=document.getElementById('view-'+platform);if(btn)btn.classList.add('viewing');
+  currentVisor=platform;visor.classList.add('open');
 }
 
 function closeChatVisor() {
-  var visor = document.getElementById('chat-visor');
-  var iframe = document.getElementById('visor-iframe');
-  var wrap   = document.getElementById('visor-iframe-wrap');
+  var visor=document.getElementById('chat-visor'),iframe=document.getElementById('visor-iframe'),wrap=document.getElementById('visor-iframe-wrap');
   visor.classList.remove('open');
-  document.querySelectorAll('.viewer-btn').forEach(function(b) { b.classList.remove('viewing'); });
-  currentVisor = null;
-  _visorOpenFn = null;
-  setTimeout(function() {
-    iframe.src = 'about:blank';
-    var prev = wrap.querySelector('.tt-preview-bg');
-    if (prev) prev.remove();
-  }, 350);
+  document.querySelectorAll('.viewer-btn').forEach(function(b){b.classList.remove('viewing');});
+  currentVisor=null;_visorOpenFn=null;
+  setTimeout(function(){iframe.src='about:blank';var prev=wrap.querySelector('.tt-preview-bg');if(prev)prev.remove();},350);
 }
 
 // ═══ INIT ═══
@@ -668,6 +849,19 @@ document.addEventListener('DOMContentLoaded',function(){
   var se=store.get('emoteSize');if(se){document.getElementById('emoteSize').value=se;setCfgVar('--ov-emote-size',se+'px','val-emote');}
   var sm=store.get('maxMsg');if(sm){var n=parseInt(sm);MAX_MESSAGES=n;document.getElementById('maxMsgRange').value=n;document.getElementById('val-maxMsg').textContent=n;}
   document.getElementById('chat-panel').addEventListener('scroll',function(){autoScroll=(this.scrollHeight-this.scrollTop-this.clientHeight)<80;});
+
+  // Restaurar estado del panel TikTok
+  if(store.get('ttPanelOpen')==='1'){
+    // Pequeño delay para que el layout esté listo
+    setTimeout(function(){
+      ttPanelOpen = false; // reset para que toggleTikTokPanel lo abra
+      toggleTikTokPanel();
+    }, 200);
+  }
+
+  // Restaurar usuario TikTok en input
+  var savedTtUser = store.get('ttPanelUser');
+  if(savedTtUser) document.getElementById('tt-user-input').value = savedTtUser;
 });
 
 function applyFont(v,s){document.documentElement.style.setProperty('--font-body',v);document.getElementById('font-preview').style.fontFamily=v;store.set('chatFont',v);if(!s)toast('Fuente cambiada');}
@@ -678,7 +872,6 @@ function setMsgNameSize(v){document.getElementById('val-fontName').textContent=v
 function applyColorPrimary(v,s){document.documentElement.style.setProperty('--corbata',v);if(!s){store.set('accentColor',v);toast('Color aplicado');}}
 
 // ═══ WEBSOCKET ═══
-// Deduplicacion en el cliente — evita mostrar mensajes que ya proceso el bridge de Kick
 var _clientSeenMids = {};
 
 function connectWS(url){
@@ -692,12 +885,7 @@ function connectWS(url){
       var d=JSON.parse(e.data);
       if(d.type==='status'){handleStatus(d);return;}
       if(d.type==='highlight'||d.type==='highlight_clear'||d.type==='custom_message')return;
-      // Deduplicar por mid en cliente
-      if(d.mid){
-        var now=Date.now();
-        if(_clientSeenMids[d.mid]&&(now-_clientSeenMids[d.mid])<6000)return;
-        _clientSeenMids[d.mid]=now;
-      }
+      if(d.mid){var now=Date.now();if(_clientSeenMids[d.mid]&&(now-_clientSeenMids[d.mid])<6000)return;_clientSeenMids[d.mid]=now;}
       appendMessage(d);
     }catch(err){}
   };
@@ -724,12 +912,11 @@ function handleStatus(data){
     if(sid&&(!kickWs||kickWs.readyState>1))connectKickBrowser(sid);
     else if(!sid&&!autoKickDone&&data.channels&&data.channels.kick){autoKickDone=true;setTimeout(resolveKickId,1500);}
   }
-  // Actualizar titulo del visor si esta abierto
-  if(currentVisor){
-    var cfg=VISOR_CONFIG[currentVisor];
-    var ch=currentChannels[currentVisor]||'';
-    if(cfg){document.getElementById('visor-title').textContent=cfg.label+(ch?' \u2014 @'+ch:'');}
+  // Auto-rellenar usuario TikTok en el panel si está vacío
+  if(data.channels&&data.channels.tiktok&&!store.get('ttPanelUser')){
+    document.getElementById('tt-user-input').value=data.channels.tiktok;
   }
+  if(currentVisor){var cfg=VISOR_CONFIG[currentVisor];var ch=currentChannels[currentVisor]||'';if(cfg){document.getElementById('visor-title').textContent=cfg.label+(ch?' \u2014 @'+ch:'');}}
 }
 function setPlatformStatus(p,c,ch){var dot=document.getElementById('dot-'+p),el=document.getElementById('ch-'+p);if(dot)dot.className='platform-dot'+(c?' ok':'');if(el)el.textContent=ch||'\u2014';}
 
@@ -811,12 +998,7 @@ function tryKickUrl(c,u,i){
     try{
       var msg=JSON.parse(e.data),ev=msg.event||'';
       if(ev==='pusher:connection_established'||ev==='pusher:pong')return;
-      if(ev==='pusher_internal:subscription_succeeded'){
-        var box=document.getElementById('kick-status-box');
-        if(box){box.className='info-box info-green';box.innerHTML='\u2713 Kick conectado (chatroom '+c+')';}
-        if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'kick_connected'}));
-        return;
-      }
+      if(ev==='pusher_internal:subscription_succeeded'){var box=document.getElementById('kick-status-box');if(box){box.className='info-box info-green';box.innerHTML='\u2713 Kick conectado (chatroom '+c+')';}if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'kick_connected'}));return;}
       if(ev==='pusher:error'){kickWs.close();return;}
       if(ev.indexOf('ChatMessageEvent')===-1)return;
       var d=typeof msg.data==='string'?JSON.parse(msg.data):msg.data;
@@ -825,7 +1007,6 @@ function tryKickUrl(c,u,i){
       var un=(d.sender&&d.sender.username)||'Unknown';
       var nc=(d.sender&&d.sender.identity&&d.sender.identity.color)||'#888';
       var mid=d.id||('kick-'+Date.now());
-      // Deduplicar en cliente antes de agregar al panel y enviar al servidor
       var now=Date.now();
       if(_clientSeenMids[mid]&&(now-_clientSeenMids[mid])<6000)return;
       _clientSeenMids[mid]=now;
@@ -837,8 +1018,7 @@ function tryKickUrl(c,u,i){
     }catch(err){}
   };
   kickWs.onclose=function(e){
-    var box=document.getElementById('kick-status-box');
-    if(box){box.className='info-box info-yellow';box.innerHTML='\u21BA Kick desconectado...';}
+    var box=document.getElementById('kick-status-box');if(box){box.className='info-box info-yellow';box.innerHTML='\u21BA Kick desconectado...';}
     if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'kick_disconnected'}));
     var ni=e.code===4001?(i+1)%u.length:i;
     kickRetryDelay=Math.min(kickRetryDelay*1.5,30000);
@@ -897,7 +1077,6 @@ async function sendKickId(idParam){
 
 async function restartTikTok(){var su=store.get('serverUrl');if(!su)return toast('Configura la URL');var hu=su.replace(/^wss?/,'https').replace(/\/$/,'');try{var r=await fetch(hu+'/api/tiktok/restart',{method:'POST'});var d=await r.json();toast(d.ok?'\u21BA TikTok reconectando...':'Error');}catch(e){toast('No se pudo conectar');}}
 async function restartYouTube(){var su=store.get('serverUrl');if(!su)return toast('Configura la URL');var hu=su.replace(/^wss?/,'https').replace(/\/$/,'');var ytBox=document.getElementById('youtube-status-box');if(ytBox){ytBox.className='info-box info-yellow';ytBox.innerHTML='\u23F3 Buscando live...';}try{var r=await fetch(hu+'/api/youtube/restart',{method:'POST'});var d=await r.json();toast(d.ok?'\u21BA YouTube reconectando...':'Error');}catch(e){toast('No se pudo conectar');}}
-function openTikTokLive(){var u=currentChannels.tiktok||'';if(!u)return toast('TikTok no configurado');window.open('https://www.tiktok.com/@'+u+'/live','_blank','noopener');}
 function openYouTubeLive(){var c=currentChannels.youtube||'';if(!c)return toast('YouTube no configurado');var h=c.startsWith('@')?c:'@'+c;window.open('https://www.youtube.com/'+h+'/live','_blank','noopener');}
 
 function sendCustomMessage(){
