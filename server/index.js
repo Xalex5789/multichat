@@ -621,6 +621,101 @@ function disconnectYouTubeApi() {
 }
 
 // ══════════════════════════════════════════════════════════════
+// TTS — edge-tts (Python) como endpoint de audio
+//
+// Requiere en el servidor:  pip install edge-tts
+// Voces disponibles:
+//   Edge Alvaro  → es-ES-AlvaroNeural
+//   Edge Ximena  → es-ES-ElviraNeural
+//   Edge Jorge   → es-MX-JorgeNeural
+// ══════════════════════════════════════════════════════════════
+const { spawn } = require('child_process');
+const os        = require('os');
+const path      = require('path');
+const fs        = require('fs');
+
+const EDGE_TTS_VOICES = {
+  // Español
+  'Edge Alvaro':              'es-ES-AlvaroNeural',
+  'Edge Ximena':              'es-MX-DaliaNeural',
+  'Google Translate Español': 'es-ES-AlvaroNeural',
+  'Edge Jorge':               'es-MX-JorgeNeural',
+  // Inglés
+  'Edge Aria':                'en-US-AriaNeural',
+  'Edge Guy':                 'en-US-GuyNeural',
+  'Edge Jenny':               'en-US-JennyNeural',
+  'Edge Andrew':              'en-US-AndrewNeural',
+  'Edge Ava':                 'en-US-AvaNeural',
+  // Portugués
+  'Edge Raquel':              'pt-PT-RaquelNeural',
+  'Edge Francisca':           'pt-BR-FranciscaNeural',
+  'Edge Antonio':             'pt-BR-AntonioNeural',
+  'Google Translate Português': 'pt-BR-AntonioNeural',
+};
+
+const ttsAudioCache = new Map();
+
+app.post('/api/tts', (req, res) => {
+  const { text, voice, rate } = req.body;
+  if (!text || typeof text !== 'string') return res.status(400).json({ error: 'text requerido' });
+
+  const edgeVoice  = EDGE_TTS_VOICES[voice] || EDGE_TTS_VOICES['Edge Alvaro'];
+  const rateNum    = parseFloat(rate) || 1.0;
+  const rateSign   = rateNum >= 1 ? '+' : '-';
+  const ratePct    = rateSign + Math.abs(Math.round((rateNum - 1) * 100)) + '%';
+  const textLower  = text.toLowerCase().slice(0, 500);
+  const cacheKey   = `${edgeVoice}|${ratePct}|${textLower}`;
+
+  // Caché en disco
+  if (ttsAudioCache.has(cacheKey)) {
+    const cached = ttsAudioCache.get(cacheKey);
+    if (fs.existsSync(cached)) {
+      res.setHeader('Content-Type', 'audio/mpeg');
+      return fs.createReadStream(cached).pipe(res);
+    }
+    ttsAudioCache.delete(cacheKey);
+  }
+
+  const tmpFile = path.join(os.tmpdir(), `meeve_tts_${Date.now()}_${Math.random().toString(36).slice(2)}.mp3`);
+  const args    = ['-m', 'edge_tts', '--voice', edgeVoice, '--rate', ratePct, '--text', textLower, '--write-media', tmpFile];
+  const proc    = spawn('python3', args, { timeout: 15000 });
+
+  let errBuf = '';
+  proc.stderr.on('data', d => errBuf += d.toString());
+
+  proc.on('close', (code) => {
+    if (code !== 0 || !fs.existsSync(tmpFile)) {
+      console.error('[TTS] edge-tts error (code', code, '):', errBuf.slice(0, 200));
+      return res.status(500).json({ error: 'edge-tts no disponible', hint: 'pip install edge-tts' });
+    }
+    // Gestionar caché (max 50 archivos)
+    if (ttsAudioCache.size >= 50) {
+      const firstKey  = ttsAudioCache.keys().next().value;
+      const oldFile   = ttsAudioCache.get(firstKey);
+      ttsAudioCache.delete(firstKey);
+      try { fs.unlinkSync(oldFile); } catch(e) {}
+    }
+    ttsAudioCache.set(cacheKey, tmpFile);
+
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Cache-Control', 'no-cache');
+    fs.createReadStream(tmpFile).pipe(res);
+  });
+
+  proc.on('error', () => {
+    res.status(500).json({ error: 'python3 no encontrado', hint: 'pip install edge-tts' });
+  });
+});
+
+app.get('/api/tts/status', (req, res) => {
+  const proc = spawn('python3', ['-c', 'import edge_tts; print(edge_tts.__version__)'], { timeout: 5000 });
+  let out = '';
+  proc.stdout.on('data', d => out += d.toString());
+  proc.on('close', code => res.json({ available: code === 0, version: out.trim() || null }));
+  proc.on('error', () => res.json({ available: false, version: null }));
+});
+
+// ══════════════════════════════════════════════════════════════
 // ENDPOINTS
 // ══════════════════════════════════════════════════════════════
 app.get('/health', (req, res) => res.json({ ok: true, uptime: Math.floor(process.uptime()), messages: state.msgCount, clients: state.clients.size, twitch: state.twitch.connected, kick: state.kick.connected, tiktok: state.tiktok.connected, youtube: state.youtube.connected }));
@@ -635,7 +730,7 @@ app.post('/api/youtube/disconnect', (req, res) => { disconnectYouTubeApi(); res.
 // START
 // ══════════════════════════════════════════════════════════════
 server.listen(CONFIG.port, () => {
-  console.log(`\nMEEVE MULTICHAT SERVER v2.2`);
+  console.log(`\nMEEVE MULTICHAT SERVER v2.3`);
   console.log(`Puerto   : ${CONFIG.port}`);
   console.log(`Twitch   : ${CONFIG.twitch || '(no config)'}`);
   console.log(`Kick     : ${CONFIG.kick || '(no config)'} (ID: ${CONFIG.kickId || 'auto'})`);
