@@ -1,11 +1,9 @@
 // ============================================================
-//  MEEVE MULTICHAT SERVER v2.2
+//  MEEVE MULTICHAT SERVER v2.3
 //  Fix TikTok: campos correctos según tiktok-live-connector v1.2.x
-//    - giftDetails.giftName / giftDetails.diamondCount / giftDetails.giftType
-//    - Quitar opciones inválidas: connectWithUniqueId, requestPollingIntervalMs
-//    - mid usa msgId cuando está disponible (dedup real)
-//    - profilePictureUrls array fallback
-//  Fix: broadcast() deduplica mid globalmente
+//  Fix TTS: edgeTtsGec() corregido — cálculo de ticks de Windows
+//    era incorrecto (13 dígitos en vez de 18), causando que
+//    Microsoft rechazara el WebSocket con 403 silencioso.
 // ============================================================
 const express  = require('express');
 const http     = require('http');
@@ -332,42 +330,13 @@ function tryKickPusher(channelId) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// TIKTOK v1.2.x  — CORREGIDO
-//
-// Cambios respecto a v2.1:
-//
-// 1. Opciones de conexión:
-//    ❌ connectWithUniqueId: true     → no existe en v1.2.x, eliminado
-//    ❌ requestPollingIntervalMs      → no existe en v1.2.x, eliminado
-//    ✅ processInitialData: false      → válido
-//    ✅ enableExtendedGiftInfo: true   → válido
-//    ✅ sessionId / ttTargetIdc        → válidos
-//
-// 2. Evento CHAT:
-//    ✅ data.user?.uniqueId            → correcto
-//    ✅ data.comment                   → correcto
-//    ✅ data.user?.profilePictureUrl   → correcto
-//    ✅ mid usa data.msgId cuando existe (dedup real)
-//    ✅ profilePictureUrls[0] como fallback
-//
-// 3. Evento GIFT — CAMPOS CORREGIDOS:
-//    ❌ data.giftType        → en v1.2.x es data.giftDetails?.giftType
-//    ❌ data.giftName        → en v1.2.x es data.giftDetails?.giftName
-//    ❌ data.diamondCount    → en v1.2.x es data.giftDetails?.diamondCount
-//    ❌ data.extendedGiftInfo?.name → también está en data.giftDetails?.giftName
-//    ✅ data.repeatCount     → correcto
-//    ✅ data.repeatEnd       → correcto
-//
-// 4. Avatar TikTok:
-//    Ahora usa profilePictureUrls[0] como fallback si profilePictureUrl falta
+// TIKTOK v1.2.x
 // ══════════════════════════════════════════════════════════════
 
 let ttRetryDelay = 15000, ttRetryTimeout = null;
 
-// Helper: obtiene avatar de un objeto user de TikTok
 function getTikTokAvatar(user) {
   if (!user) return null;
-  // v1.2.x expone profilePictureUrl (string) o profilePictureUrls (array)
   return user.profilePictureUrl
     || (Array.isArray(user.profilePictureUrls) && user.profilePictureUrls[0])
     || null;
@@ -380,14 +349,11 @@ async function connectTikTokConnector() {
   if (state.tiktok.instance) { try { state.tiktok.instance.disconnect(); } catch(e) {} state.tiktok.instance = null; }
   if (ttRetryTimeout) { clearTimeout(ttRetryTimeout); ttRetryTimeout = null; }
 
-  // Configurar API key de Euler si está disponible
   if (CONFIG.eulerApiKey && SignConfig) SignConfig.apiKey = CONFIG.eulerApiKey;
 
-  // ── Opciones válidas para v1.2.x ──
-  // NOTA: connectWithUniqueId y requestPollingIntervalMs NO existen en v1.2.x
   const opts = {
-    processInitialData:     false,  // No procesar mensajes viejos al conectar
-    enableExtendedGiftInfo: true,   // Para tener giftDetails completo
+    processInitialData:     false,
+    enableExtendedGiftInfo: true,
   };
 
   if (CONFIG.tiktokSession && CONFIG.tiktokIdc) {
@@ -434,14 +400,11 @@ async function connectTikTokConnector() {
     return;
   }
 
-  // ── Chat ─────────────────────────────────────────────────────
-  // En v1.2.x: data.user.uniqueId, data.comment, data.msgId
   conn.on(WebcastEvent.CHAT, (data) => {
     state.tiktok.lastMsg = Date.now();
     const uniqueId  = data.user?.uniqueId  || data.uniqueId  || 'TikToker';
     const userId    = data.user?.userId    || data.userId    || uniqueId;
     const avatar    = getTikTokAvatar(data.user);
-    // Usa msgId como mid para deduplicación real entre reconexiones
     const mid = data.msgId ? `tt-msg-${data.msgId}` : `tt-${userId}-${Date.now()}`;
     broadcast({
       type:        'tiktok',
@@ -454,15 +417,8 @@ async function connectTikTokConnector() {
     });
   });
 
-  // ── Regalos ───────────────────────────────────────────────────
-  // CORRECCIÓN PRINCIPAL: en v1.2.x los campos de regalo están en data.giftDetails
-  //   data.giftDetails.giftType  (antes: data.giftType)
-  //   data.giftDetails.giftName  (antes: data.giftName / data.extendedGiftInfo.name)
-  //   data.giftDetails.diamondCount (antes: data.diamondCount)
   conn.on(WebcastEvent.GIFT, (data) => {
     state.tiktok.lastMsg = Date.now();
-
-    // Streak: ignorar eventos intermedios (solo procesar cuando termina)
     const giftType = data.giftDetails?.giftType ?? data.giftType;
     if (giftType === 1 && !data.repeatEnd) return;
 
@@ -470,13 +426,11 @@ async function connectTikTokConnector() {
     const userId    = data.user?.userId   || data.userId   || uniqueId;
     const avatar    = getTikTokAvatar(data.user);
 
-    // Nombre del regalo — buscar en giftDetails primero (v1.2.x), luego fallbacks
     const giftName = data.giftDetails?.giftName
       || data.giftDetails?.name
       || data.giftName
       || `Gift #${data.giftId}`;
 
-    // Costo en diamantes — buscar en giftDetails primero (v1.2.x)
     const diamondCount = data.giftDetails?.diamondCount
       || data.giftDetails?.diamond_count
       || data.diamondCount
@@ -501,7 +455,6 @@ async function connectTikTokConnector() {
     });
   });
 
-  // ── Suscripciones ─────────────────────────────────────────────
   conn.on(WebcastEvent.SUBSCRIBE, (data) => {
     const uniqueId = data.user?.uniqueId || data.uniqueId || 'TikToker';
     const userId   = data.user?.userId   || uniqueId;
@@ -518,7 +471,6 @@ async function connectTikTokConnector() {
     });
   });
 
-  // ── Desconexión ───────────────────────────────────────────────
   const onDisconnect = () => {
     console.log('[TikTok] Desconectado');
     state.tiktok.connected = false;
@@ -529,7 +481,6 @@ async function connectTikTokConnector() {
   else conn.on('disconnected', onDisconnect);
 }
 
-// Watchdog: reconecta si no llegan mensajes en 3 minutos
 setInterval(() => {
   if (state.tiktok.connected && state.tiktok.lastMsg > 0 && Date.now() - state.tiktok.lastMsg > 180000) {
     console.log('[TikTok] Watchdog: sin mensajes por 3 min, reconectando...');
@@ -621,8 +572,15 @@ function disconnectYouTubeApi() {
 
 // ══════════════════════════════════════════════════════════════
 // TTS — Proxy Edge TTS (Microsoft Bing WebSocket)
-// Sin Python, sin dependencias extra — usa ws (ya instalado)
-// Voces: https://casterlabs.co/tts-voices
+//
+// FIX v2.3: edgeTtsGec() corregido
+//   El cálculo anterior generaba 13 dígitos en lugar de los 18
+//   requeridos para los ticks de Windows (100ns desde 1601-01-01).
+//   Fórmula correcta:
+//     roundedMs = now - (now % 300000)        → redondear a 5 min
+//     ticks = (roundedMs + 11644473600000) * 10000
+//   El +11644473600000 convierte de epoch Unix (1970) a epoch
+//   Windows (1601). El ×10000 convierte ms a ticks de 100ns.
 // ══════════════════════════════════════════════════════════════
 const crypto = require('crypto');
 
@@ -646,11 +604,22 @@ const EDGE_TTS_TOKEN     = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
 const EDGE_TTS_CHROMIUM  = '130.0.2849.68';
 const EDGE_TTS_WSS       = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${EDGE_TTS_TOKEN}&Sec-MS-GEC-Version=1-${EDGE_TTS_CHROMIUM}`;
 
+// ─────────────────────────────────────────────────────────────
+// FIX: Cálculo correcto de ticks de Windows para el header
+// Sec-MS-GEC que autentica la conexión a Microsoft Edge TTS.
+//
+// Fórmula original (INCORRECTA — generaba 13 dígitos):
+//   const ticks = String(now - (now % (3e5 * 1e3)) + 1164447360000);
+//
+// Fórmula corregida (18 dígitos, formato correcto):
+//   const roundedMs = now - (now % (5 * 60 * 1000));
+//   const ticks = String((roundedMs + 11644473600000) * 10000);
+// ─────────────────────────────────────────────────────────────
 function edgeTtsGec() {
-  // Sec-MS-GEC: SHA256 de la fecha + token en formato específico
-  const now   = new Date();
-  const ticks = String(now - (now % (3e5 * 1e3)) + 1164447360000); // rounded to 5min
-  const data  = ticks + EDGE_TTS_TOKEN.toUpperCase();
+  const now      = new Date();
+  const roundedMs = now - (now % (5 * 60 * 1000)); // redondear al múltiplo de 5 minutos más bajo
+  const ticks    = String((roundedMs + 11644473600000) * 10000); // ms Unix → ticks Windows 100ns
+  const data     = ticks + EDGE_TTS_TOKEN.toUpperCase();
   return crypto.createHash('sha256').update(data).digest('hex').toUpperCase();
 }
 
@@ -680,7 +649,10 @@ function edgeTtsRequest(text, voiceName, ratePct, onAudioChunk, onDone, onError)
     }
   });
 
-  const timeout = setTimeout(() => { ws.terminate(); onError(new Error('timeout')); }, 15000);
+  let done  = false;
+  const timeout = setTimeout(() => {
+    if (!done) { done = true; ws.terminate(); onError(new Error('timeout')); }
+  }, 15000);
 
   ws.on('open', () => {
     // 1. Config message
@@ -698,25 +670,22 @@ function edgeTtsRequest(text, voiceName, ratePct, onAudioChunk, onDone, onError)
 
   ws.on('message', (data, isBinary) => {
     if (isBinary) {
-      // Audio chunk: skip 2-byte header + text header up to \r\n\r\n
-      const buf   = Buffer.isBuffer(data) ? data : Buffer.from(data);
-      const sep   = buf.indexOf(Buffer.from('\r\n\r\n'));
+      const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
+      const sep = buf.indexOf(Buffer.from('\r\n\r\n'));
       if (sep !== -1) onAudioChunk(buf.slice(sep + 4));
       return;
     }
     const msg = data.toString();
     if (msg.includes('Path:turn.end')) {
-      clearTimeout(timeout);
-      ws.close();
-      onDone();
+      if (!done) { done = true; clearTimeout(timeout); ws.close(); onDone(); }
     }
   });
 
-  ws.on('error', (e) => { clearTimeout(timeout); onError(e); });
+  ws.on('error', (e) => { if (!done) { done = true; clearTimeout(timeout); onError(e); } });
   ws.on('close', ()  => { clearTimeout(timeout); });
 }
 
-// Caché en memoria (evita llamadas repetidas)
+// Caché en memoria
 const ttsMemCache = new Map();
 const TTS_CACHE_MAX = 60;
 
@@ -726,8 +695,9 @@ app.post('/api/tts', (req, res) => {
 
   const voiceName = EDGE_TTS_VOICES[voice] || EDGE_TTS_VOICES['Edge Alvaro'];
   const rateNum   = parseFloat(rate) || 1.0;
-  const rateSign  = rateNum >= 1 ? '+' : '-';
-  const ratePct   = rateSign + Math.abs(Math.round((rateNum - 1) * 100)) + '%';
+  // FIX: calcular correctamente el porcentaje de velocidad con signo
+  const rateDelta = Math.round((rateNum - 1.0) * 100);
+  const ratePct   = (rateDelta >= 0 ? '+' : '') + rateDelta + '%';
   const textClean = text.toLowerCase().slice(0, 500);
   const cacheKey  = `${voiceName}|${ratePct}|${textClean}`;
 
@@ -748,9 +718,11 @@ app.post('/api/tts', (req, res) => {
     () => {
       res.end();
       const full = Buffer.concat(chunks);
-      if (ttsMemCache.size >= TTS_CACHE_MAX) ttsMemCache.delete(ttsMemCache.keys().next().value);
-      ttsMemCache.set(cacheKey, full);
-      console.log(`[TTS] OK — ${voiceName} "${textClean.slice(0,40)}..."`);
+      if (full.length > 0) {
+        if (ttsMemCache.size >= TTS_CACHE_MAX) ttsMemCache.delete(ttsMemCache.keys().next().value);
+        ttsMemCache.set(cacheKey, full);
+      }
+      console.log(`[TTS] OK — ${voiceName} [${ratePct}] "${textClean.slice(0,40)}..."`);
     },
     (err) => {
       console.error('[TTS] Error:', err.message);
@@ -760,8 +732,11 @@ app.post('/api/tts', (req, res) => {
   );
 });
 
-app.get('/api/tts/status', (req, res) => res.json({ available: true, engine: 'edge-tts-native', voices: Object.keys(EDGE_TTS_VOICES) }));
-
+app.get('/api/tts/status', (req, res) => res.json({
+  available: true,
+  engine:    'edge-tts-native',
+  voices:    Object.keys(EDGE_TTS_VOICES),
+}));
 
 // ══════════════════════════════════════════════════════════════
 // ENDPOINTS
