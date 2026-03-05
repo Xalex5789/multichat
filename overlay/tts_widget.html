@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Meeve TTS Widget</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: transparent;
+      width: 1px; height: 1px;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+<!-- Widget invisible — solo audio TTS. Añadir como fuente de navegador en OBS (sin captura visual). -->
+<script>
+// ══════════════════════════════════════════════════════════════
+//  MEEVE TTS WIDGET v1.0
+//  Widget invisible — se conecta al mismo servidor WS y reproduce
+//  TTS usando /api/tts del servidor (edge-tts).
+//  Usar en OBS como Browser Source con "Silenciar cuando no visible" DESMARCADO.
+//  Tamaño recomendado: 1x1 px (completamente invisible).
+// ══════════════════════════════════════════════════════════════
+
+// ── Leer parámetros de la URL ──────────────────────────────
+function urlParam(name, def) {
+  var p = new URLSearchParams(window.location.search);
+  return p.has(name) ? p.get(name) : (def !== undefined ? def : '');
+}
+
+var SERVER_URL   = urlParam('server', '');
+var TTS_VOICE    = urlParam('voice',  'Edge Alvaro');
+var TTS_RATE     = parseFloat(urlParam('rate',   '1.0'));
+var TTS_VOLUME   = parseFloat(urlParam('volume', '1.0'));
+var TTS_PREFIX   = urlParam('prefix',  ',');
+var TTS_SAY_NAME = urlParam('sayname', '1') === '1';
+var TTS_SAY_DONA = urlParam('saydon',  '0') === '1';
+// Plataformas ignoradas: "twitch,kick" → array
+var TTS_IGNORE_PLATS = urlParam('ignore', '').split(',').filter(Boolean);
+// Usuarios ignorados
+var TTS_IGNORE_USERS = urlParam('bannedusers', '').split(',').filter(Boolean).map(function(u){ return u.toLowerCase(); });
+// Palabras baneadas
+var TTS_BANNED_WORDS = urlParam('bannedwords', '').split('|').filter(Boolean).map(function(w){ return w.toLowerCase(); });
+
+// ── Estado ────────────────────────────────────────────────
+var ws           = null;
+var retryDelay   = 2000;
+var queue        = [];
+var speaking     = false;
+var currentAudio = null;
+
+// ── Conexión WS ───────────────────────────────────────────
+function connect() {
+  if (!SERVER_URL) return;
+  var wsUrl = SERVER_URL.replace(/^https?/, 'ws').replace(/\/$/, '');
+  try { ws = new WebSocket(wsUrl); } catch(e) { scheduleRetry(); return; }
+  ws.onopen    = function() { retryDelay = 2000; };
+  ws.onmessage = function(e) {
+    try { var d = JSON.parse(e.data); handleMessage(d); } catch(err) {}
+  };
+  ws.onclose   = function() { ws = null; scheduleRetry(); };
+  ws.onerror   = function() { if(ws) ws.close(); };
+}
+function scheduleRetry() { retryDelay = Math.min(retryDelay * 1.5, 30000); setTimeout(connect, retryDelay); }
+
+// ── Lógica de mensajes ────────────────────────────────────
+function handleMessage(data) {
+  // Normalizar plataforma: usar platform o type
+  var platform = (data.platform || data.type || '').toLowerCase();
+  // Normalizar type también
+  var msgType  = (data.type || '').toLowerCase();
+
+  // ── Donaciones ──
+  if (msgType === 'donation') {
+    if (!TTS_SAY_DONA) return;
+    var donName = data.chatname || 'Alguien';
+    var donText = '';
+    switch (data.donationType) {
+      case 'bits':      donText = donName + ' donó ' + data.amount + ' bits'; break;
+      case 'sub':       donText = donName + ' se suscribió'; break;
+      case 'resub':     donText = donName + ' se resuscribió ' + (data.months||'') + ' meses'; break;
+      case 'subgift':   donText = donName + ' regaló una suscripción'; break;
+      case 'superchat': donText = donName + ' envió superchat de ' + (data.amountDisplay || data.amount || ''); break;
+      case 'member':    donText = donName + ' se hizo miembro'; break;
+      case 'gift':      donText = donName + ' envió un regalo en tiktok'; break;
+      default:          donText = donName + ' hizo una donación';
+    }
+    enqueue(cleanText(donText));
+    return;
+  }
+
+  // ── Mensajes normales de chat ──
+  // Aceptar: twitch, kick, tiktok, youtube + variantes con _message suffix
+  var isChat = (
+    platform === 'twitch' || platform === 'kick' ||
+    platform === 'tiktok' || platform === 'youtube' ||
+    msgType  === 'twitch' || msgType  === 'kick' ||
+    msgType  === 'tiktok' || msgType  === 'youtube' ||
+    msgType  === 'kick_message'
+  );
+  if (!isChat) return;
+
+  // Normalizar plataforma final (kick_message → kick)
+  var plat = platform.replace('_message', '');
+
+  // 1. Plataformas ignoradas
+  if (TTS_IGNORE_PLATS.indexOf(plat) !== -1) return;
+
+  // 2. Prefijo
+  var msgText = data.chatmessage || '';
+  var prefix  = TTS_PREFIX.trim();
+  if (prefix && !msgText.startsWith(prefix)) return;
+  var rawMsg = prefix ? msgText.slice(prefix.length).trim() : msgText.trim();
+  if (!rawMsg) return;
+
+  // 3. Usuarios ignorados
+  var username = (data.chatname || '').toLowerCase();
+  for (var i = 0; i < TTS_IGNORE_USERS.length; i++) {
+    if (username.indexOf(TTS_IGNORE_USERS[i]) !== -1) return;
+  }
+
+  // 4. Palabras baneadas
+  var msgLower = rawMsg.toLowerCase();
+  for (var i = 0; i < TTS_BANNED_WORDS.length; i++) {
+    if (msgLower.indexOf(TTS_BANNED_WORDS[i]) !== -1) return;
+  }
+
+  // 5. Ignorar comandos de bot
+  if (rawMsg.startsWith('!')) return;
+
+  // 6. Construir texto
+  var cleaned = cleanText(rawMsg);
+  if (!cleaned) return;
+
+  var toSpeak = '';
+  if (TTS_SAY_NAME) {
+    var cleanName = cleanText(data.chatname || '');
+    var verb      = cleaned.includes('?') ? ' pregunta ' : ' dice ';
+    toSpeak = cleanName + verb + cleaned;
+  } else {
+    toSpeak = cleaned;
+  }
+
+  enqueue(toSpeak);
+}
+
+// ── Limpieza de texto ─────────────────────────────────────
+function cleanText(text) {
+  if (!text) return '';
+  text = text.replace(/https?:\/\/\S+/g, '');
+  text = text.replace(/\[emote:\d+:[^\]]+\]/g, '');
+  // Quitar emojis (todo lo que no sea letras, números, puntuación básica)
+  text = text.replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
+             .replace(/[\u{2600}-\u{27BF}]/gu, '')
+             .replace(/[\u{1F300}-\u{1F9FF}]/gu, '');
+  text = text.replace(/\s+/g, ' ').trim().toLowerCase();
+  return text;
+}
+
+// ── Cola de audio ─────────────────────────────────────────
+function enqueue(text) {
+  queue.push(text);
+  if (!speaking) playNext();
+}
+
+function playNext() {
+  if (!queue.length) { speaking = false; return; }
+  speaking = true;
+
+  var text    = queue[0];
+  var httpBase= SERVER_URL.replace(/^wss?/, 'https').replace(/\/$/, '');
+
+  if (currentAudio) { try { currentAudio.pause(); currentAudio.src = ''; } catch(e){} currentAudio = null; }
+
+  fetch(httpBase + '/api/tts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: text, voice: TTS_VOICE, rate: TTS_RATE })
+  })
+  .then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.blob();
+  })
+  .then(function(blob) {
+    var url   = URL.createObjectURL(blob);
+    var audio = new Audio(url);
+    currentAudio = audio;
+    audio.volume = TTS_VOLUME;
+    audio.onended = function() { URL.revokeObjectURL(url); currentAudio = null; afterPlay(); };
+    audio.onerror = function() { URL.revokeObjectURL(url); currentAudio = null; afterPlay(); };
+    audio.play().catch(function() { afterPlay(); });
+  })
+  .catch(function() { afterPlay(); });
+}
+
+function afterPlay() {
+  queue.shift();
+  speaking = queue.length > 0;
+  if (queue.length) setTimeout(playNext, 120);
+}
+
+// ── Arrancar ──────────────────────────────────────────────
+if (SERVER_URL) connect();
+</script>
+</body>
+</html>
