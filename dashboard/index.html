@@ -36,14 +36,7 @@
     #ws-dot.ok{background:var(--corbata);box-shadow:0 0 0 3px rgba(200,37,28,0.2);border-color:var(--corbata);animation:dotPulse 2.5s ease-in-out infinite;}
     @keyframes dotPulse{0%,100%{box-shadow:0 0 0 3px rgba(200,37,28,0.2);}50%{box-shadow:0 0 0 6px rgba(200,37,28,0.06);}}
     #ws-label{font-family:var(--font-mono);font-size:10px;color:var(--camisa-dim);letter-spacing:1px;text-transform:uppercase;}
-
-    /* ══════════════════════════════════════════
-       LAYOUT PRINCIPAL — ahora tiene 3 zonas:
-       sidebar | main | tiktok-panel
-       ══════════════════════════════════════════ */
     .layout{position:fixed;top:54px;left:0;right:0;bottom:0;display:flex;z-index:10;overflow:hidden;align-items:stretch;}
-
-    /* ── Sidebar izquierdo ── */
     .sidebar{width:294px;min-width:294px;height:calc(100vh - 54px);background:var(--checker-dark);border-right:1px solid rgba(10,8,6,0.4);box-shadow:2px 0 12px rgba(10,8,6,0.3);overflow-y:auto;overflow-x:hidden;padding:11px 10px 20px;display:block;transition:transform 0.4s cubic-bezier(0.4,0,0.2,1),min-width 0.4s,width 0.4s,border-color 0.3s,padding 0.4s;flex-shrink:0;z-index:20;}
     .sidebar .card{margin-bottom:7px;}.sidebar .card:last-child{margin-bottom:0;}
     .sidebar.collapsed{transform:translateX(-294px);min-width:0;width:0;border-color:transparent;padding:0;}
@@ -53,196 +46,52 @@
     #sidebar-toggle.collapsed{left:0;border-left:1px solid rgba(10,8,6,0.35);border-right:none;border-radius:5px 0 0 5px;}
     .toggle-arrow{font-size:9px;color:var(--camisa-muted);user-select:none;transition:transform 0.4s;}
     #sidebar-toggle.collapsed .toggle-arrow{transform:rotate(180deg);}
-
-    /* ══════════════════════════════════════════
-       PANEL TIKTOK DERECHO
-       ══════════════════════════════════════════ */
-    #tt-panel{
-      position:fixed;
-      top:54px;right:0;
-      width:var(--tt-panel-width);
-      height:calc(100vh - 54px);
-      background:var(--traje);
-      border-left:2px solid rgba(255,45,120,0.35);
-      box-shadow:-4px 0 24px rgba(255,45,120,0.1),-2px 0 8px rgba(10,8,6,0.4);
-      z-index:150;
-      display:flex;flex-direction:column;
-      transform:translateX(100%);
-      transition:transform 0.38s cubic-bezier(0.4,0,0.2,1),box-shadow 0.3s;
-      overflow:hidden;
-    }
-    #tt-panel.open{
-      transform:translateX(0);
-      box-shadow:-6px 0 32px rgba(255,45,120,0.18),-2px 0 10px rgba(10,8,6,0.5);
-    }
-
-    /* Botón lengüeta TikTok — siempre visible en el borde derecho */
-    #tt-toggle{
-      position:fixed;
-      top:50%;
-      right:0;
-      transform:translateY(-50%);
-      width:22px;
-      height:88px;
-      background:var(--traje);
-      border:2px solid rgba(255,45,120,0.4);
-      border-right:none;
-      border-radius:8px 0 0 8px;
-      cursor:pointer;
-      z-index:400;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-      transition:right 0.38s cubic-bezier(0.4,0,0.2,1),background 0.2s,border-color 0.2s;
-      padding:6px 3px;
-    }
+    #tt-panel{position:fixed;top:54px;right:0;width:var(--tt-panel-width);height:calc(100vh - 54px);background:var(--traje);border-left:2px solid rgba(255,45,120,0.35);box-shadow:-4px 0 24px rgba(255,45,120,0.1),-2px 0 8px rgba(10,8,6,0.4);z-index:150;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.38s cubic-bezier(0.4,0,0.2,1),box-shadow 0.3s;overflow:hidden;}
+    #tt-panel.open{transform:translateX(0);box-shadow:-6px 0 32px rgba(255,45,120,0.18),-2px 0 10px rgba(10,8,6,0.5);}
+    #tt-toggle{position:fixed;top:50%;right:0;transform:translateY(-50%);width:22px;height:88px;background:var(--traje);border:2px solid rgba(255,45,120,0.4);border-right:none;border-radius:8px 0 0 8px;cursor:pointer;z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:right 0.38s cubic-bezier(0.4,0,0.2,1),background 0.2s,border-color 0.2s;padding:6px 3px;}
     #tt-toggle:hover{background:rgba(255,45,120,0.12);border-color:rgba(255,45,120,0.7);}
     #tt-toggle.open{right:var(--tt-panel-width);border-color:rgba(255,45,120,0.6);}
     #tt-toggle.open:hover{background:rgba(255,45,120,0.15);}
     .tt-toggle-icon{font-size:14px;line-height:1;}
-    .tt-toggle-label{
-      writing-mode:vertical-rl;text-orientation:mixed;
-      font-family:var(--font-mono);font-size:6.5px;
-      color:rgba(255,45,120,0.7);letter-spacing:1.5px;text-transform:uppercase;
-      user-select:none;
-    }
+    .tt-toggle-label{writing-mode:vertical-rl;text-orientation:mixed;font-family:var(--font-mono);font-size:6.5px;color:rgba(255,45,120,0.7);letter-spacing:1.5px;text-transform:uppercase;user-select:none;}
     #tt-toggle.open .tt-toggle-label{color:rgba(255,45,120,0.9);}
-
-    /* Cabecera del panel TikTok */
-    .tt-panel-header{
-      flex-shrink:0;
-      display:flex;align-items:center;gap:8px;
-      padding:10px 12px 9px;
-      background:rgba(255,45,120,0.06);
-      border-bottom:1px solid rgba(255,45,120,0.2);
-    }
-    .tt-panel-dot{
-      width:7px;height:7px;border-radius:50%;
-      background:#ff2d78;border:1.5px solid rgba(255,45,120,0.5);
-      box-shadow:0 0 0 3px rgba(255,45,120,0.15);
-      animation:ttDotPulse 2.5s ease-in-out infinite;
-      flex-shrink:0;
-    }
+    .tt-panel-header{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:10px 12px 9px;background:rgba(255,45,120,0.06);border-bottom:1px solid rgba(255,45,120,0.2);}
+    .tt-panel-dot{width:7px;height:7px;border-radius:50%;background:#ff2d78;border:1.5px solid rgba(255,45,120,0.5);box-shadow:0 0 0 3px rgba(255,45,120,0.15);animation:ttDotPulse 2.5s ease-in-out infinite;flex-shrink:0;}
     @keyframes ttDotPulse{0%,100%{box-shadow:0 0 0 3px rgba(255,45,120,0.15);}50%{box-shadow:0 0 0 7px rgba(255,45,120,0.04);}}
     .tt-panel-title{font-family:var(--font-title);font-size:12px;letter-spacing:3px;color:#ff80b0;text-transform:uppercase;flex:1;}
     .tt-panel-actions{display:flex;gap:4px;}
-    .tt-panel-btn{
-      padding:3px 7px;background:none;
-      border:1px solid rgba(255,45,120,0.3);border-radius:2px 4px 2px 3px;
-      color:rgba(255,45,120,0.7);font-family:var(--font-mono);font-size:8px;
-      cursor:pointer;transition:all 0.12s;letter-spacing:0.5px;text-transform:uppercase;
-    }
+    .tt-panel-btn{padding:3px 7px;background:none;border:1px solid rgba(255,45,120,0.3);border-radius:2px 4px 2px 3px;color:rgba(255,45,120,0.7);font-family:var(--font-mono);font-size:8px;cursor:pointer;transition:all 0.12s;letter-spacing:0.5px;text-transform:uppercase;}
     .tt-panel-btn:hover{background:rgba(255,45,120,0.15);color:#ff80b0;border-color:rgba(255,45,120,0.6);}
-
-    /* URL bar para cargar canal */
-    .tt-url-bar{
-      flex-shrink:0;
-      display:flex;align-items:center;gap:0;
-      border-bottom:1px solid rgba(255,45,120,0.15);
-      background:rgba(10,8,6,0.3);
-    }
-    .tt-url-prefix{
-      padding:7px 8px;
-      font-family:var(--font-mono);font-size:8.5px;
-      color:rgba(255,45,120,0.4);letter-spacing:0.3px;
-      white-space:nowrap;flex-shrink:0;
-      border-right:1px solid rgba(255,45,120,0.1);
-    }
-    #tt-user-input{
-      flex:1;background:transparent;border:none;outline:none;
-      padding:7px 8px;
-      font-family:var(--font-mono);font-size:10px;color:var(--camisa);
-      letter-spacing:0.5px;
-    }
+    .tt-url-bar{flex-shrink:0;display:flex;align-items:center;gap:0;border-bottom:1px solid rgba(255,45,120,0.15);background:rgba(10,8,6,0.3);}
+    .tt-url-prefix{padding:7px 8px;font-family:var(--font-mono);font-size:8.5px;color:rgba(255,45,120,0.4);letter-spacing:0.3px;white-space:nowrap;flex-shrink:0;border-right:1px solid rgba(255,45,120,0.1);}
+    #tt-user-input{flex:1;background:transparent;border:none;outline:none;padding:7px 8px;font-family:var(--font-mono);font-size:10px;color:var(--camisa);letter-spacing:0.5px;}
     #tt-user-input::placeholder{color:rgba(222,218,212,0.2);}
-    .tt-go-btn{
-      padding:7px 10px;background:rgba(255,45,120,0.12);border:none;
-      border-left:1px solid rgba(255,45,120,0.15);
-      color:rgba(255,45,120,0.8);font-family:var(--font-mono);font-size:9px;
-      cursor:pointer;transition:all 0.12s;letter-spacing:0.5px;flex-shrink:0;
-    }
+    .tt-go-btn{padding:7px 10px;background:rgba(255,45,120,0.12);border:none;border-left:1px solid rgba(255,45,120,0.15);color:rgba(255,45,120,0.8);font-family:var(--font-mono);font-size:9px;cursor:pointer;transition:all 0.12s;letter-spacing:0.5px;flex-shrink:0;}
     .tt-go-btn:hover{background:rgba(255,45,120,0.22);color:#ff2d78;}
-
-    /* Contenido del panel TikTok — popup control */
-    .tt-iframe-wrap{
-      flex:1;position:relative;overflow:hidden;
-      background:linear-gradient(160deg,#120008 0%,#0a0005 50%,#130012 100%);
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      gap:0;
-    }
-
-    /* Estado vacío / placeholder */
-    .tt-placeholder{
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      gap:14px;padding:24px;text-align:center;width:100%;
-    }
+    .tt-iframe-wrap{flex:1;position:relative;overflow:hidden;background:linear-gradient(160deg,#120008 0%,#0a0005 50%,#130012 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;}
+    .tt-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;width:100%;}
     .tt-placeholder-icon{font-size:48px;animation:ttIconBounce 3s ease-in-out infinite;}
     @keyframes ttIconBounce{0%,100%{transform:scale(1) rotate(-4deg);}50%{transform:scale(1.1) rotate(4deg);}}
     .tt-placeholder-title{font-family:var(--font-title);font-size:14px;letter-spacing:3px;color:rgba(255,128,176,0.8);text-transform:uppercase;}
     .tt-placeholder-sub{font-family:var(--font-mono);font-size:8.5px;color:rgba(255,45,120,0.4);letter-spacing:1.5px;line-height:1.9;text-transform:uppercase;}
-    .tt-placeholder-hint{
-      font-family:var(--font-mono);font-size:8px;
-      color:rgba(255,45,120,0.25);letter-spacing:1px;
-      border:1px solid rgba(255,45,120,0.1);
-      padding:6px 10px;border-radius:2px;line-height:1.7;
-    }
-
-    /* Estado: ventana abierta */
-    .tt-window-status{
-      display:none;flex-direction:column;align-items:center;justify-content:center;
-      gap:16px;padding:24px;text-align:center;width:100%;
-    }
+    .tt-placeholder-hint{font-family:var(--font-mono);font-size:8px;color:rgba(255,45,120,0.25);letter-spacing:1px;border:1px solid rgba(255,45,120,0.1);padding:6px 10px;border-radius:2px;line-height:1.7;}
+    .tt-window-status{display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;width:100%;}
     .tt-window-status.active{display:flex;}
-    .tt-window-pulse{
-      width:64px;height:64px;border-radius:50%;
-      background:rgba(255,45,120,0.1);
-      border:2px solid rgba(255,45,120,0.4);
-      display:flex;align-items:center;justify-content:center;
-      font-size:28px;
-      animation:ttWinPulse 2s ease-in-out infinite;
-    }
-    @keyframes ttWinPulse{
-      0%,100%{box-shadow:0 0 0 0 rgba(255,45,120,0.3);}
-      50%{box-shadow:0 0 0 14px rgba(255,45,120,0);}
-    }
+    .tt-window-pulse{width:64px;height:64px;border-radius:50%;background:rgba(255,45,120,0.1);border:2px solid rgba(255,45,120,0.4);display:flex;align-items:center;justify-content:center;font-size:28px;animation:ttWinPulse 2s ease-in-out infinite;}
+    @keyframes ttWinPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,45,120,0.3);}50%{box-shadow:0 0 0 14px rgba(255,45,120,0);}}
     .tt-window-label{font-family:var(--font-title);font-size:13px;letter-spacing:3px;color:rgba(255,128,176,0.9);text-transform:uppercase;}
     .tt-window-user{font-family:var(--font-mono);font-size:10px;color:rgba(255,45,120,0.6);letter-spacing:1.5px;}
     .tt-window-hint{font-family:var(--font-mono);font-size:8px;color:rgba(255,45,120,0.3);letter-spacing:1px;line-height:1.8;max-width:200px;}
     .tt-window-btns{display:flex;flex-direction:column;gap:6px;width:100%;max-width:200px;}
-    .tt-win-btn{
-      padding:7px 14px;border-radius:2px 4px 2px 3px;
-      font-family:var(--font-mono);font-size:8.5px;font-weight:700;
-      letter-spacing:0.8px;text-transform:uppercase;cursor:pointer;
-      transition:all 0.13s;
-    }
-    .tt-win-btn-focus{
-      background:rgba(255,45,120,0.15);
-      border:1.5px solid rgba(255,45,120,0.5);
-      color:#ff80b0;
-    }
+    .tt-win-btn{padding:7px 14px;border-radius:2px 4px 2px 3px;font-family:var(--font-mono);font-size:8.5px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;cursor:pointer;transition:all 0.13s;}
+    .tt-win-btn-focus{background:rgba(255,45,120,0.15);border:1.5px solid rgba(255,45,120,0.5);color:#ff80b0;}
     .tt-win-btn-focus:hover{background:rgba(255,45,120,0.28);color:#ff2d78;}
-    .tt-win-btn-close{
-      background:rgba(10,8,6,0.4);
-      border:1px solid rgba(255,45,120,0.2);
-      color:rgba(255,45,120,0.4);
-    }
+    .tt-win-btn-close{background:rgba(10,8,6,0.4);border:1px solid rgba(255,45,120,0.2);color:rgba(255,45,120,0.4);}
     .tt-win-btn-close:hover{border-color:rgba(255,45,120,0.5);color:rgba(255,45,120,0.7);}
-
-    /* Nota importante: visibilidad */
-    .tt-visibility-note{
-      flex-shrink:0;
-      padding:5px 10px;
-      background:rgba(255,45,120,0.07);
-      border-top:1px solid rgba(255,45,120,0.12);
-      font-family:var(--font-mono);font-size:7.5px;
-      color:rgba(255,45,120,0.5);letter-spacing:0.8px;
-      line-height:1.6;text-align:center;
-    }
-
-    /* ── Cuando el panel TikTok está abierto, el main se encoge ── */
+    .tt-visibility-note{flex-shrink:0;padding:5px 10px;background:rgba(255,45,120,0.07);border-top:1px solid rgba(255,45,120,0.12);font-family:var(--font-mono);font-size:7.5px;color:rgba(255,45,120,0.5);letter-spacing:0.8px;line-height:1.6;text-align:center;}
     .main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;background:var(--checker-mid);position:relative;transition:margin-right 0.38s cubic-bezier(0.4,0,0.2,1);}
     .main.tt-open{margin-right:var(--tt-panel-width);}
     .main::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;background-image:repeating-linear-gradient(to bottom,transparent,transparent 29px,rgba(10,8,6,0.1) 29px,rgba(10,8,6,0.1) 30px);}
-
-    /* ══ Cards, inputs, etc. ══ */
     .card{background:var(--guante);border-top:1.5px solid rgba(10,8,6,0.5);border-left:1.5px solid rgba(10,8,6,0.5);border-right:1px solid rgba(10,8,6,0.2);border-bottom:1px solid rgba(10,8,6,0.2);border-radius:2px 5px 3px 4px;padding:10px 12px;box-shadow:var(--shadow);position:relative;flex-shrink:0;overflow:visible;}
     .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--corbata),rgba(200,37,28,0.2) 55%,transparent);}
     .card-title{font-family:var(--font-title);font-size:8.5px;letter-spacing:3px;text-transform:uppercase;color:var(--camisa-dim);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
@@ -331,8 +180,6 @@
     #hl-bar.active{display:flex;}
     #hl-bar strong{color:var(--camisa);max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-body);font-size:12px;text-transform:none;font-weight:400;}
     .input-bar{border-top:2px solid var(--corbata);background:var(--traje);position:relative;z-index:1;display:flex;flex-direction:column;gap:0;}
-
-    /* Chat visor */
     .chat-visor{position:absolute;top:0;left:0;right:0;bottom:0;z-index:50;display:flex;flex-direction:column;background:var(--traje);transform:translateY(100%);opacity:0;transition:transform 0.32s cubic-bezier(0.4,0,0.2,1),opacity 0.25s;pointer-events:none;}
     .chat-visor.open{transform:translateY(0);opacity:1;pointer-events:all;}
     .chat-visor-header{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--traje);border-bottom:1px solid rgba(200,37,28,0.15);flex-shrink:0;}
@@ -366,8 +213,6 @@
     @keyframes ttBounce{0%,100%{transform:scale(1) rotate(-3deg);}50%{transform:scale(1.08) rotate(3deg);}}
     .tt-preview-user{font-family:var(--font-title);font-size:16px;letter-spacing:4px;color:rgba(255,128,176,0.9);text-transform:uppercase;}
     .tt-preview-sub{font-family:var(--font-mono);font-size:9px;color:rgba(255,45,120,0.5);letter-spacing:2px;text-transform:uppercase;}
-
-    /* Target row */
     .target-row{display:flex;align-items:center;gap:4px;padding:6px 13px 5px;border-bottom:1px solid rgba(200,37,28,0.12);background:rgba(10,8,6,0.18);overflow-x:auto;scrollbar-width:none;}
     .target-row::-webkit-scrollbar{display:none;}
     .target-label{font-family:var(--font-mono);font-size:7.5px;color:var(--camisa-muted);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;margin-right:3px;flex-shrink:0;}
@@ -377,7 +222,6 @@
     .target-btn:hover{border-color:rgba(222,218,212,0.25);color:var(--camisa);}
     .target-btn.active{border-color:var(--tb-color,var(--corbata));color:var(--tb-color,var(--corbata));background:var(--tb-bg,rgba(200,37,28,0.1));box-shadow:0 0 0 1px var(--tb-color,var(--corbata)),1px 2px 0 rgba(10,8,6,0.2);}
     .target-btn.active .tb-dot{background:var(--tb-color,var(--corbata));box-shadow:0 0 0 2px var(--tb-glow,rgba(200,37,28,0.2));border-color:var(--tb-color,var(--corbata));}
-    .target-btn[data-target="console"]{--tb-color:#c8251c;--tb-bg:rgba(200,37,28,0.1);--tb-glow:rgba(200,37,28,0.2);}
     .target-btn[data-target="twitch"]{--tb-color:#9146ff;--tb-bg:rgba(145,70,255,0.1);--tb-glow:rgba(145,70,255,0.2);}
     .target-btn[data-target="kick"]{--tb-color:#53fc18;--tb-bg:rgba(83,252,24,0.08);--tb-glow:rgba(83,252,24,0.18);}
     .target-btn[data-target="youtube"]{--tb-color:#ff4444;--tb-bg:rgba(255,68,68,0.1);--tb-glow:rgba(255,68,68,0.2);}
@@ -390,8 +234,6 @@
     .target-btn.viewer-btn.viewing{border-color:var(--tb-color);color:var(--tb-color);background:var(--tb-bg);box-shadow:0 0 0 1px var(--tb-color),1px 2px 0 rgba(10,8,6,0.2);}
     .target-btn.viewer-btn.viewing .tb-dot{background:var(--tb-color);box-shadow:0 0 0 2px var(--tb-glow);border-color:var(--tb-color);animation:dotPulse 2s ease-in-out infinite;}
     .target-sep{width:1px;height:18px;background:rgba(200,37,28,0.2);flex-shrink:0;margin:0 4px;}
-    .target-btn.unavailable{opacity:0.3;cursor:not-allowed;}
-    .target-btn.unavailable:hover{border-color:rgba(10,8,6,0.45);color:var(--camisa-muted);box-shadow:1px 2px 0 rgba(10,8,6,0.2);}
     .input-row-msg{display:flex;gap:7px;padding:8px 13px;}
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,8,6,0.7);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
     .modal-overlay.open{display:flex;}
@@ -405,8 +247,8 @@
     #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(50px);background:var(--corbata);color:var(--camisa);padding:8px 16px;border-radius:2px 4px 3px 3px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.8px;text-transform:uppercase;z-index:999;opacity:0;transition:all 0.28s cubic-bezier(0.34,1.56,0.64,1);pointer-events:none;white-space:nowrap;box-shadow:3px 4px 0 rgba(10,8,6,0.35);}
     #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-    /* ══ TTS styles ══ */
-    #tts-indicator{display:none;align-items:center;gap:5px;padding:3px 8px;border-radius:2px 4px 2px 3px;border:1px solid rgba(100,200,100,0.35);background:rgba(100,200,100,0.08);cursor:pointer;}
+    /* TTS indicator en header */
+    #tts-indicator{display:none;align-items:center;gap:5px;padding:3px 8px;border-radius:2px 4px 2px 3px;border:1px solid rgba(100,200,100,0.35);background:rgba(100,200,100,0.08);cursor:pointer;user-select:none;}
     #tts-indicator.active{display:flex;}
     #tts-indicator.speaking{border-color:rgba(100,200,100,0.7);background:rgba(100,200,100,0.15);animation:ttsSpeakPulse 0.8s ease-in-out infinite;}
     @keyframes ttsSpeakPulse{0%,100%{box-shadow:0 0 0 0 rgba(100,200,100,0.3);}50%{box-shadow:0 0 0 5px rgba(100,200,100,0);}}
@@ -419,9 +261,11 @@
     .tts-wave{width:2px;background:#64c864;border-radius:1px;animation:ttsWave 0.8s ease-in-out infinite;}
     .tts-wave:nth-child(1){height:4px;animation-delay:0s;}.tts-wave:nth-child(2){height:8px;animation-delay:0.1s;}.tts-wave:nth-child(3){height:12px;animation-delay:0.2s;}.tts-wave:nth-child(4){height:6px;animation-delay:0.3s;}.tts-wave:nth-child(5){height:3px;animation-delay:0.4s;}
     @keyframes ttsWave{0%,100%{transform:scaleY(0.4);}50%{transform:scaleY(1);}}
-    .msg-item.tts-reading{border-left-color:#64c864!important;background:rgba(100,200,100,0.07)!important;}
-    .tts-msg-badge{display:none;font-family:var(--font-mono);font-size:7px;padding:1px 5px;border-radius:2px;background:rgba(100,200,100,0.12);border:1px solid rgba(100,200,100,0.3);color:#64c864;letter-spacing:0.5px;margin-left:3px;}
-    .msg-item.tts-reading .tts-msg-badge{display:inline-block;}
+
+    /* TTS card en sidebar */
+    .tts-platform-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px;}
+    .tts-plat-btn{padding:4px 6px;border-radius:2px 4px 2px 3px;font-family:var(--font-mono);font-size:8px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;transition:all 0.13s;border:1.5px solid rgba(10,8,6,0.4);background:var(--traje-light);color:var(--camisa-muted);text-align:center;}
+    .tts-plat-btn.ignored{background:rgba(200,37,28,0.06);border-color:rgba(200,37,28,0.25);color:var(--corbata);text-decoration:line-through;opacity:0.7;}
     .tts-list-wrap{background:var(--traje);border:1px solid rgba(10,8,6,0.4);border-radius:2px 4px 3px 3px;max-height:90px;overflow-y:auto;margin-bottom:4px;}
     .tts-list-wrap::-webkit-scrollbar{width:3px;}.tts-list-wrap::-webkit-scrollbar-thumb{background:rgba(200,37,28,0.3);}
     .tts-list-item{display:flex;align-items:center;justify-content:space-between;padding:3px 7px;border-bottom:1px solid rgba(10,8,6,0.2);font-family:var(--font-mono);font-size:9px;color:var(--camisa-dim);}
@@ -429,15 +273,17 @@
     .tts-list-del{background:none;border:none;color:rgba(200,37,28,0.5);cursor:pointer;font-size:10px;padding:0 2px;transition:color 0.12s;}
     .tts-list-del:hover{color:var(--corbata);}
     .tts-list-empty{padding:6px 7px;font-family:var(--font-mono);font-size:8.5px;color:var(--camisa-muted);font-style:italic;}
-    .tts-platform-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px;}
-    .tts-plat-btn{padding:4px 6px;border-radius:2px 4px 2px 3px;font-family:var(--font-mono);font-size:8px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;transition:all 0.13s;border:1.5px solid rgba(10,8,6,0.4);background:var(--traje-light);color:var(--camisa-muted);text-align:center;}
-    .tts-plat-btn.ignored{opacity:0.6;text-decoration:line-through;}
-    .tts-plat-btn[data-plat="twitch"]{--pc:#9146ff;}.tts-plat-btn[data-plat="kick"]{--pc:#53fc18;}.tts-plat-btn[data-plat="youtube"]{--pc:#ff4444;}.tts-plat-btn[data-plat="tiktok"]{--pc:#ff2d78;}
-    .tts-plat-btn.ignored{background:rgba(200,37,28,0.06);border-color:rgba(200,37,28,0.25);color:var(--corbata);}
     .tts-queue-bar{display:flex;align-items:center;gap:6px;padding:4px 8px;background:rgba(100,200,100,0.05);border:1px solid rgba(100,200,100,0.12);border-radius:2px;margin-bottom:4px;min-height:24px;}
     .tts-queue-label{font-family:var(--font-mono);font-size:8px;color:rgba(100,200,100,0.5);letter-spacing:0.8px;flex-shrink:0;}
     .tts-queue-text{font-family:var(--font-mono);font-size:8.5px;color:rgba(100,200,100,0.8);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     .tts-queue-count{font-family:var(--font-mono);font-size:8px;color:rgba(100,200,100,0.4);flex-shrink:0;}
+    .msg-item.tts-reading{border-left-color:#64c864!important;background:rgba(100,200,100,0.07)!important;}
+    .tts-msg-badge{display:none;font-family:var(--font-mono);font-size:7px;padding:1px 5px;border-radius:2px;background:rgba(100,200,100,0.12);border:1px solid rgba(100,200,100,0.3);color:#64c864;letter-spacing:0.5px;margin-left:3px;}
+    .msg-item.tts-reading .tts-msg-badge{display:inline-block;}
+
+    /* TTS widget URL box */
+    .tts-widget-url-box{background:var(--traje);border:1px solid rgba(100,200,100,0.3);border-radius:2px 4px 3px 3px;padding:5px 8px;font-family:monospace;font-size:8px;color:rgba(100,200,100,0.8);word-break:break-all;cursor:pointer;transition:all 0.15s;line-height:1.6;opacity:0.9;margin-bottom:3px;}
+    .tts-widget-url-box:hover{border-color:rgba(100,200,100,0.6);opacity:1;}
   </style>
 </head>
 <body>
@@ -451,10 +297,9 @@
     </div>
   </div>
   <div class="header-right">
-    <!-- Indicador TTS hablando -->
-    <div id="tts-indicator" onclick="ttsSkip()" title="TTS activo — click para saltar">
+    <div id="tts-indicator" title="TTS activo en widget OBS">
       <span class="tts-dot"></span>
-      <span id="tts-indicator-label">TTS</span>
+      <span id="tts-indicator-label">TTS ON</span>
       <div class="tts-waves">
         <div class="tts-wave"></div><div class="tts-wave"></div><div class="tts-wave"></div><div class="tts-wave"></div><div class="tts-wave"></div>
       </div>
@@ -469,8 +314,9 @@
     <span class="toggle-arrow">&#9664;</span>
   </button>
 
-  <!-- ════ SIDEBAR IZQUIERDO ════ -->
+  <!-- ════ SIDEBAR ════ -->
   <div class="sidebar">
+
     <div class="card">
       <div class="card-title">&#9675; Servidor</div>
       <label>URL del servidor</label>
@@ -526,7 +372,6 @@
       <div class="card-title">&#9678; TikTok</div>
       <div class="btn-row" style="margin-bottom:8px;">
         <button class="btn btn-secondary btn-full" onclick="restartTikTok()">&#8634; Reconectar</button>
-        <!-- Ahora abre el panel lateral en lugar de ventana nueva -->
         <button class="btn btn-secondary btn-full" onclick="toggleTikTokPanel()">&#9654; Panel Live</button>
       </div>
       <div class="info-box info-red" style="margin-bottom:6px;">Error 403: <a href="#" onclick="openModal('tiktok-modal');return false;">usar SESSION_ID</a></div>
@@ -543,27 +388,27 @@
       <div class="hint" style="margin-top:5px;">Reconectar al encender el directo.</div>
     </div>
 
-    <!-- ════ TTS CARD ════ -->
+    <!-- ════ TTS CARD — Widget separado ════ -->
     <div class="card">
-      <div class="card-title">&#9654; TTS</div>
+      <div class="card-title">&#9654; TTS &#x2014; Widget OBS</div>
 
-      <!-- Estado edge-tts -->
+      <!-- Estado edge-tts en servidor -->
       <div id="tts-server-status" class="info-box info-yellow" style="margin-bottom:8px;font-size:8px;">&#x23F3; Verificando edge-tts...</div>
 
-      <!-- ON/OFF + Volumen -->
+      <!-- ON/OFF -->
       <div class="toggle-row" style="margin-bottom:6px;">
         <span class="toggle-label" style="font-size:10px;">TTS Activado</span>
         <label class="toggle-switch"><input type="checkbox" id="tts-enabled" onchange="ttsToggle(this.checked)"><span class="toggle-slider"></span></label>
       </div>
 
-      <!-- Cola activa -->
+      <!-- Cola activa (reflejo del widget) -->
       <div class="tts-queue-bar" id="tts-queue-bar">
         <span class="tts-queue-label">&#9654;</span>
-        <span class="tts-queue-text" id="tts-queue-text">Sin mensajes en cola</span>
+        <span class="tts-queue-text" id="tts-queue-text">Widget desconectado</span>
         <span class="tts-queue-count" id="tts-queue-count"></span>
       </div>
 
-      <!-- Comando prefijo -->
+      <!-- Prefijo -->
       <label>Comando prefijo</label>
       <div class="input-row" style="margin-bottom:6px;">
         <input id="tts-prefix" type="text" value="," placeholder="ej: , o !tts" style="max-width:70px;" oninput="ttsSave()"/>
@@ -578,7 +423,7 @@
           <option value="Edge Ximena">Edge Ximena</option>
           <option value="Google Translate Español">Google Translate Español</option>
         </optgroup>
-        <optgroup label="Español (US) 🇺🇸">
+        <optgroup label="Español (MX)">
           <option value="Edge Jorge">Edge Jorge</option>
         </optgroup>
         <optgroup label="Inglés 🇺🇸">
@@ -604,7 +449,7 @@
       <label>Velocidad: <span class="value-display" id="tts-rate-display">1.0x</span></label>
       <input type="range" id="tts-rate" min="0.5" max="2" step="0.1" value="1" oninput="document.getElementById('tts-rate-display').textContent=parseFloat(this.value).toFixed(1)+'x';ttsSave();" style="margin-bottom:8px;">
 
-      <!-- Leer nombre -->
+      <!-- Opciones -->
       <div class="toggle-row" style="margin-bottom:4px;">
         <span class="toggle-label">Leer nombre del usuario</span>
         <label class="toggle-switch"><input type="checkbox" id="tts-say-name" checked onchange="ttsSave()"><span class="toggle-slider"></span></label>
@@ -617,7 +462,7 @@
       <div class="separator"></div>
 
       <!-- Plataformas ignoradas -->
-      <label style="margin-bottom:4px;">Ignorar plataformas (click para silenciar)</label>
+      <label style="margin-bottom:4px;">Ignorar plataformas</label>
       <div class="tts-platform-grid">
         <button class="tts-plat-btn" data-plat="twitch"  onclick="ttsTogglePlatform('twitch')">Twitch</button>
         <button class="tts-plat-btn" data-plat="kick"    onclick="ttsTogglePlatform('kick')">Kick</button>
@@ -627,8 +472,8 @@
 
       <div class="separator"></div>
 
-      <!-- Usuarios baneados -->
-      <label style="margin-bottom:3px;">Usuarios ignorados (blacklist)</label>
+      <!-- Usuarios ignorados -->
+      <label style="margin-bottom:3px;">Usuarios ignorados</label>
       <div class="input-row" style="margin-bottom:4px;">
         <input id="tts-ban-user-input" type="text" placeholder="Nombre de usuario..." onkeydown="if(event.key==='Enter')ttsAddUser()"/>
         <button class="btn btn-secondary" onclick="ttsAddUser()" style="padding:5px 9px;">+</button>
@@ -639,7 +484,7 @@
 
       <div class="separator"></div>
 
-      <!-- Palabras/frases baneadas -->
+      <!-- Palabras baneadas -->
       <label style="margin-bottom:3px;">Palabras / frases baneadas</label>
       <div class="input-row" style="margin-bottom:4px;">
         <input id="tts-ban-word-input" type="text" placeholder="Palabra o frase..." onkeydown="if(event.key==='Enter')ttsAddWord()"/>
@@ -650,10 +495,15 @@
       </div>
 
       <div class="separator" style="margin-top:6px;"></div>
-      <div class="btn-row" style="margin-top:6px;">
-        <button class="btn btn-secondary btn-full" onclick="ttsSkip()" style="font-size:8.5px;">&#x23ED; Saltar actual</button>
-        <button class="btn btn-danger btn-full" onclick="ttsClearQueue()" style="font-size:8.5px;">&#x2715; Limpiar cola</button>
+
+      <!-- URL del widget TTS para OBS -->
+      <label style="margin-bottom:4px;">&#x1F508; URL Widget TTS para OBS</label>
+      <div class="tts-widget-url-box" id="tts-widget-url" onclick="copyTtsWidgetUrl()" title="Click para copiar">Configura el servidor primero...</div>
+      <div class="btn-row" style="margin-bottom:5px;">
+        <button class="btn btn-secondary btn-full" style="font-size:8.5px;" onclick="copyTtsWidgetUrl()">&#x2398; Copiar URL</button>
+        <button class="btn btn-secondary btn-full" style="font-size:8.5px;" onclick="openTtsWidget()">&#x2197; Abrir</button>
       </div>
+      <div class="hint" style="margin-bottom:6px;">Añadir en OBS como Browser Source 1x1px.<br>&#x26A0; No silenciar la fuente en OBS.</div>
     </div>
 
     <div class="card">
@@ -726,7 +576,6 @@
 
   <!-- ════ AREA PRINCIPAL ════ -->
   <div class="main" id="main-area">
-    <!-- Chat visor embebido -->
     <div class="chat-visor" id="chat-visor">
       <div class="chat-visor-header">
         <span class="chat-visor-title" id="visor-title">Preview</span>
@@ -756,21 +605,12 @@
     <div class="input-bar">
       <div class="target-row">
         <span class="target-label">&#x1F441;</span>
-        <button class="target-btn viewer-btn" data-view="twitch" onclick="openChatVisor('twitch')" id="view-twitch" title="Ver Twitch">
-          <span class="tb-dot"></span>Twitch
-        </button>
-        <button class="target-btn viewer-btn" data-view="kick" onclick="openChatVisor('kick')" id="view-kick" title="Ver Kick">
-          <span class="tb-dot"></span>Kick
-        </button>
-        <button class="target-btn viewer-btn" data-view="youtube" onclick="openChatVisor('youtube')" id="view-youtube" title="Ver YouTube">
-          <span class="tb-dot"></span>YouTube
-        </button>
-        <button class="target-btn viewer-btn" data-view="tiktok" onclick="openChatVisor('tiktok')" id="view-tiktok" title="Ver TikTok">
-          <span class="tb-dot"></span>TikTok
-        </button>
-        <!-- Separador y botón panel TikTok -->
+        <button class="target-btn viewer-btn" data-view="twitch" onclick="openChatVisor('twitch')" id="view-twitch"><span class="tb-dot"></span>Twitch</button>
+        <button class="target-btn viewer-btn" data-view="kick"   onclick="openChatVisor('kick')"   id="view-kick"><span class="tb-dot"></span>Kick</button>
+        <button class="target-btn viewer-btn" data-view="youtube" onclick="openChatVisor('youtube')" id="view-youtube"><span class="tb-dot"></span>YouTube</button>
+        <button class="target-btn viewer-btn" data-view="tiktok" onclick="openChatVisor('tiktok')" id="view-tiktok"><span class="tb-dot"></span>TikTok</button>
         <span class="target-sep"></span>
-        <button class="target-btn" id="tt-panel-quick-btn" onclick="toggleTikTokPanel()" title="Abrir panel TikTok Live lateral"
+        <button class="target-btn" id="tt-panel-quick-btn" onclick="toggleTikTokPanel()"
           style="--tb-color:#ff2d78;--tb-bg:rgba(255,45,120,0.1);--tb-glow:rgba(255,45,120,0.2);">
           <span class="tb-dot"></span>🎵 TikTok Live
         </button>
@@ -784,70 +624,43 @@
   </div>
 </div>
 
-<!-- ════════════════════════════════════════
-     PANEL TIKTOK LATERAL DERECHO
-     ════════════════════════════════════════ -->
+<!-- ════ PANEL TIKTOK ════ -->
 <div id="tt-panel">
   <div class="tt-panel-header">
     <span class="tt-panel-dot"></span>
     <span class="tt-panel-title">TikTok Live</span>
     <div class="tt-panel-actions">
-      <button class="tt-panel-btn" onclick="ttReloadIframe()" title="Recargar">&#8634;</button>
-      <button class="tt-panel-btn" onclick="ttOpenExternal()" title="Abrir en nueva pestaña">&#x2197;</button>
-      <button class="tt-panel-btn" onclick="toggleTikTokPanel()" title="Cerrar panel">&#x2715;</button>
+      <button class="tt-panel-btn" onclick="ttReloadIframe()">&#8634;</button>
+      <button class="tt-panel-btn" onclick="ttOpenExternal()">&#x2197;</button>
+      <button class="tt-panel-btn" onclick="toggleTikTokPanel()">&#x2715;</button>
     </div>
   </div>
-
-  <!-- Barra de usuario -->
   <div class="tt-url-bar">
     <span class="tt-url-prefix">tiktok.com/@</span>
     <input id="tt-user-input" type="text" placeholder="tu_usuario" onkeydown="if(event.key==='Enter')ttLoadUser()">
     <button class="tt-go-btn" onclick="ttLoadUser()">IR</button>
   </div>
-
-  <!-- Área de control del popup TikTok -->
   <div class="tt-iframe-wrap" id="tt-iframe-wrap">
-
-    <!-- Estado: sin ventana abierta -->
     <div class="tt-placeholder" id="tt-placeholder">
       <div class="tt-placeholder-icon">🎵</div>
       <div class="tt-placeholder-title">TikTok Live</div>
       <div class="tt-placeholder-sub">Ventana flotante<br>de visibilidad</div>
-      <div class="tt-placeholder-hint">
-        Escribe tu usuario arriba<br>
-        y presiona IR para abrir<br>
-        una ventana pequeña de TikTok
-      </div>
+      <div class="tt-placeholder-hint">Escribe tu usuario arriba<br>y presiona IR para abrir<br>una ventana pequeña de TikTok</div>
     </div>
-
-    <!-- Estado: ventana popup abierta -->
     <div class="tt-window-status" id="tt-window-status">
       <div class="tt-window-pulse">🎵</div>
       <div class="tt-window-label">Ventana activa</div>
       <div class="tt-window-user" id="tt-window-user">@usuario</div>
-      <div class="tt-window-hint">
-        La ventana de TikTok está abierta.<br>
-        No la cierres ni minimices<br>para evitar throttling.
-      </div>
+      <div class="tt-window-hint">La ventana de TikTok está abierta.<br>No la cierres ni minimices<br>para evitar throttling.</div>
       <div class="tt-window-btns">
-        <button class="tt-win-btn tt-win-btn-focus" onclick="ttFocusWindow()">
-          &#x2197; Enfocar ventana
-        </button>
-        <button class="tt-win-btn tt-win-btn-close" onclick="ttCloseWindow()">
-          &#x2715; Cerrar ventana
-        </button>
+        <button class="tt-win-btn tt-win-btn-focus" onclick="ttFocusWindow()">&#x2197; Enfocar ventana</button>
+        <button class="tt-win-btn tt-win-btn-close" onclick="ttCloseWindow()">&#x2715; Cerrar ventana</button>
       </div>
     </div>
-
   </div>
-
-  <!-- Nota de visibilidad -->
-  <div class="tt-visibility-note">
-    &#x26A1; La ventana TikTok debe estar visible (no minimizada)
-  </div>
+  <div class="tt-visibility-note">&#x26A1; La ventana TikTok debe estar visible (no minimizada)</div>
 </div>
 
-<!-- Botón lengüeta lateral derecho -->
 <button id="tt-toggle" onclick="toggleTikTokPanel()" title="Panel TikTok Live">
   <span class="tt-toggle-icon">🎵</span>
   <span class="tt-toggle-label">TikTok</span>
@@ -906,215 +719,74 @@ var LOGOS={
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function processTwitchEmotes(t,e){if(!e||!e.length)return esc(t);var s=e.slice().sort(function(a,b){return a.start-b.start;}),r='',c=0;for(var i=0;i<s.length;i++){var x=s[i];if(x.start>c)r+=esc(t.slice(c,x.start));r+='<img class="emote" src="'+esc(x.url)+'" alt="'+esc(x.text)+'" onerror="this.style.display=\'none\'">';c=x.end+1;}if(c<t.length)r+=esc(t.slice(c));return r;}
 function parseKickEmotes(t){return esc(t).replace(/\[emote:(\d+):([^\]]+)\]/g,function(m,id,n){return '<img class="emote" src="https://files.kick.com/emotes/'+id+'/fullsize" alt="'+esc(n)+'" onerror="this.style.display=\'none\'">';});}
-function processMessageHTML(d){var t=d.chatmessage||'',p=d.platform||d.type||'';if(p==='twitch'&&d.chatemotes&&d.chatemotes.length)return processTwitchEmotes(t,d.chatemotes);if(p==='kick')return parseKickEmotes(t);return esc(t);}
+function processMessageHTML(d){var t=d.chatmessage||'',p=d.platform||d.type||'';if(p==='twitch'&&d.chatemotes&&d.chatemotes.length)return processTwitchEmotes(t,d.chatemotes);if(p==='kick'||p==='kick_message')return parseKickEmotes(t);return esc(t);}
 
 function toggleSidebar(){var s=document.querySelector('.sidebar'),b=document.getElementById('sidebar-toggle');var c=s.classList.toggle('collapsed');b.classList.toggle('collapsed',c);store.set('sidebarCollapsed',c?'1':'0');}
 
-// ═══════════════════════════════════════════════════
-// PANEL TIKTOK LATERAL — abre popup window real
-// ═══════════════════════════════════════════════════
-var ttPanelOpen = false;
-var ttCurrentUser = '';
-var ttPopupWindow = null;
-var ttPopupCheckInterval = null;
+// ═══ PANEL TIKTOK ═══
+var ttPanelOpen=false,ttCurrentUser='',ttPopupWindow=null,ttPopupCheckInterval=null;
 
-function toggleTikTokPanel() {
-  ttPanelOpen = !ttPanelOpen;
-  var panel   = document.getElementById('tt-panel');
-  var toggle  = document.getElementById('tt-toggle');
-  var main    = document.getElementById('main-area');
-  var quickBtn= document.getElementById('tt-panel-quick-btn');
-
-  panel.classList.toggle('open', ttPanelOpen);
-  toggle.classList.toggle('open', ttPanelOpen);
-  main.classList.toggle('tt-open', ttPanelOpen);
-  quickBtn.classList.toggle('active', ttPanelOpen);
-
-  store.set('ttPanelOpen', ttPanelOpen ? '1' : '0');
-
-  // Auto-cargar usuario guardado al abrir
-  if (ttPanelOpen && !ttCurrentUser) {
-    var saved = store.get('ttPanelUser') || currentChannels.tiktok || '';
-    if (saved) {
-      document.getElementById('tt-user-input').value = saved;
-    }
-  }
+function toggleTikTokPanel(){
+  ttPanelOpen=!ttPanelOpen;
+  var panel=document.getElementById('tt-panel'),toggle=document.getElementById('tt-toggle'),main=document.getElementById('main-area'),qb=document.getElementById('tt-panel-quick-btn');
+  panel.classList.toggle('open',ttPanelOpen);toggle.classList.toggle('open',ttPanelOpen);main.classList.toggle('tt-open',ttPanelOpen);qb.classList.toggle('active',ttPanelOpen);
+  store.set('ttPanelOpen',ttPanelOpen?'1':'0');
+  if(ttPanelOpen&&!ttCurrentUser){var saved=store.get('ttPanelUser')||currentChannels.tiktok||'';if(saved)document.getElementById('tt-user-input').value=saved;}
 }
-
-function ttLoadUser() {
-  var input = document.getElementById('tt-user-input');
-  var user  = input.value.trim().replace(/^@/, '');
-  if (!user) { toast('Escribe un usuario de TikTok'); return; }
-
-  ttCurrentUser = user;
-  store.set('ttPanelUser', user);
-
-  // Abrir popup pequeño de TikTok
-  ttOpenPopup(user);
+function ttLoadUser(){var input=document.getElementById('tt-user-input');var user=input.value.trim().replace(/^@/,'');if(!user){toast('Escribe un usuario de TikTok');return;}ttCurrentUser=user;store.set('ttPanelUser',user);ttOpenPopup(user);}
+function ttOpenPopup(user){
+  if(ttPopupWindow&&!ttPopupWindow.closed){ttPopupWindow.location.href='https://www.tiktok.com/@'+encodeURIComponent(user)+'/live';ttPopupWindow.focus();ttUpdateStatusUI(user);return;}
+  var pw=380,ph=520,px=window.screen.width-pw-10,py=window.screen.height-ph-60;
+  ttPopupWindow=window.open('https://www.tiktok.com/@'+encodeURIComponent(user)+'/live','tiktok_live_panel','width='+pw+',height='+ph+',left='+px+',top='+py+',resizable=yes,scrollbars=yes');
+  if(!ttPopupWindow){toast('⚠️ Permite popups para este sitio');return;}
+  ttUpdateStatusUI(user);toast('🎵 TikTok Live abierto');
+  if(ttPopupCheckInterval)clearInterval(ttPopupCheckInterval);
+  ttPopupCheckInterval=setInterval(function(){if(!ttPopupWindow||ttPopupWindow.closed){clearInterval(ttPopupCheckInterval);ttPopupWindow=null;ttPopupCheckInterval=null;ttUpdateStatusUI(null);}},1500);
 }
-
-function ttOpenPopup(user) {
-  // Si ya hay una ventana abierta, enfocarla o cerrarla
-  if (ttPopupWindow && !ttPopupWindow.closed) {
-    var newUrl = 'https://www.tiktok.com/@' + encodeURIComponent(user) + '/live';
-    ttPopupWindow.location.href = newUrl;
-    ttPopupWindow.focus();
-    ttUpdateStatusUI(user);
-    return;
-  }
-
-  // Calcular posición: esquina inferior derecha, pequeña pero visible
-  var pw = 380, ph = 520;
-  var px = window.screen.width  - pw - 10;
-  var py = window.screen.height - ph - 60;
-
-  var url = 'https://www.tiktok.com/@' + encodeURIComponent(user) + '/live';
-  ttPopupWindow = window.open(
-    url,
-    'tiktok_live_panel',
-    'width='+pw+',height='+ph+',left='+px+',top='+py+',resizable=yes,scrollbars=yes'
-  );
-
-  if (!ttPopupWindow) {
-    // Bloqueador de popups activo
-    toast('⚠️ Permite popups para este sitio');
-    return;
-  }
-
-  ttUpdateStatusUI(user);
-  toast('🎵 TikTok Live abierto');
-
-  // Monitorear si la ventana se cierra
-  if (ttPopupCheckInterval) clearInterval(ttPopupCheckInterval);
-  ttPopupCheckInterval = setInterval(function() {
-    if (!ttPopupWindow || ttPopupWindow.closed) {
-      clearInterval(ttPopupCheckInterval);
-      ttPopupWindow = null;
-      ttPopupCheckInterval = null;
-      ttUpdateStatusUI(null);
-    }
-  }, 1500);
+function ttUpdateStatusUI(user){
+  var ph=document.getElementById('tt-placeholder'),ws2=document.getElementById('tt-window-status'),wu=document.getElementById('tt-window-user'),d=document.querySelector('.tt-panel-dot');
+  if(user){ph.style.display='none';ws2.classList.add('active');if(wu)wu.textContent='@'+user;if(d)d.style.background='#ff2d78';}
+  else{ph.style.display='flex';ws2.classList.remove('active');if(d)d.style.background='rgba(255,45,120,0.3)';}
 }
-
-function ttUpdateStatusUI(user) {
-  var ph  = document.getElementById('tt-placeholder');
-  var ws  = document.getElementById('tt-window-status');
-  var wu  = document.getElementById('tt-window-user');
-  var ttDot = document.querySelector('.tt-panel-dot');
-
-  if (user) {
-    ph.style.display  = 'none';
-    ws.classList.add('active');
-    if (wu) wu.textContent = '@' + user;
-    if (ttDot) ttDot.style.background = '#ff2d78';
-  } else {
-    ph.style.display  = 'flex';
-    ws.classList.remove('active');
-    if (ttDot) ttDot.style.background = 'rgba(255,45,120,0.3)';
-  }
-}
-
-function ttFocusWindow() {
-  if (ttPopupWindow && !ttPopupWindow.closed) {
-    ttPopupWindow.focus();
-  } else {
-    ttPopupWindow = null;
-    if (ttCurrentUser) ttOpenPopup(ttCurrentUser);
-  }
-}
-
-function ttCloseWindow() {
-  if (ttPopupWindow && !ttPopupWindow.closed) {
-    ttPopupWindow.close();
-  }
-  ttPopupWindow = null;
-  if (ttPopupCheckInterval) clearInterval(ttPopupCheckInterval);
-  ttUpdateStatusUI(null);
-  toast('Ventana TikTok cerrada');
-}
-
-function ttReloadIframe() {
-  if (ttPopupWindow && !ttPopupWindow.closed) {
-    ttPopupWindow.location.reload();
-    toast('Recargando ventana TikTok...');
-  } else if (ttCurrentUser) {
-    ttOpenPopup(ttCurrentUser);
-  } else {
-    toast('No hay usuario cargado');
-  }
-}
-
-function ttOpenExternal() {
-  var user = ttCurrentUser || store.get('ttPanelUser') || currentChannels.tiktok || '';
-  if (!user) { toast('Sin usuario TikTok'); return; }
-  if (ttPopupWindow && !ttPopupWindow.closed) {
-    ttPopupWindow.focus();
-  } else {
-    ttOpenPopup(user);
-  }
-}
+function ttFocusWindow(){if(ttPopupWindow&&!ttPopupWindow.closed)ttPopupWindow.focus();else if(ttCurrentUser)ttOpenPopup(ttCurrentUser);}
+function ttCloseWindow(){if(ttPopupWindow&&!ttPopupWindow.closed)ttPopupWindow.close();ttPopupWindow=null;if(ttPopupCheckInterval)clearInterval(ttPopupCheckInterval);ttUpdateStatusUI(null);toast('Ventana TikTok cerrada');}
+function ttReloadIframe(){if(ttPopupWindow&&!ttPopupWindow.closed){ttPopupWindow.location.reload();toast('Recargando...');}else if(ttCurrentUser)ttOpenPopup(ttCurrentUser);else toast('No hay usuario cargado');}
+function ttOpenExternal(){var user=ttCurrentUser||store.get('ttPanelUser')||currentChannels.tiktok||'';if(!user){toast('Sin usuario TikTok');return;}if(ttPopupWindow&&!ttPopupWindow.closed)ttPopupWindow.focus();else ttOpenPopup(user);}
 
 // ═══ CHAT VISOR ═══
-var _visorOpenFn = null;
-
-var VISOR_CONFIG = {
-  twitch: {
-    label: 'Twitch Chat', badge: 'TWITCH',
-    getUrl: function(ch) { return ch ? 'https://www.twitch.tv/popout/' + encodeURIComponent(ch) + '/chat?popout=' : null; },
-    openLive: function(ch) { if (ch) window.open('https://www.twitch.tv/' + encodeURIComponent(ch), '_blank', 'noopener'); },
-    noChMsg: 'Canal de Twitch no configurado', noChSub: 'Conecta tu canal de Twitch en el servidor.'
-  },
-  kick: {
-    label: 'Kick Chat', badge: 'KICK',
-    getUrl: function(ch) { return ch ? 'https://kick.com/' + encodeURIComponent(ch) + '/chatroom' : null; },
-    openLive: function(ch) { if (ch) window.open('https://kick.com/' + encodeURIComponent(ch), '_blank', 'noopener'); },
-    noChMsg: 'Canal de Kick no configurado', noChSub: 'Conecta tu canal de Kick para ver el chat aqui.'
-  },
-  youtube: {
-    label: 'YouTube Live', badge: 'YOUTUBE',
-    getUrl: function() { return null; },
-    openLive: function(ch) { if (!ch) return; var h = ch.startsWith('@') ? ch : '@' + ch; window.open('https://www.youtube.com/' + h + '/live', '_blank', 'noopener'); },
-    noChMsg: 'YouTube no permite chat embebido', noChSub: 'YouTube bloquea los iframes. Abre el live directamente.', showOpenBtn: true
-  },
-  tiktok: {
-    label: 'TikTok Live', badge: 'TIKTOK',
-    getUrl: function() { return null; },
-    openLive: function(ch) { if (!ch) return; var u = ch.startsWith('@') ? ch : '@' + ch; window.open('https://www.tiktok.com/' + u + '/live', '_blank', 'noopener'); },
-    noChMsg: 'TikTok — usar panel lateral', noChSub: 'Usa el botón 🎵 TikTok Live para abrir el panel lateral derecho.', showOpenBtn: true,
-    customPanel: function(ch) { var user = ch || ''; return '<div class="tt-preview-bg"><div class="tt-preview-logo">🎵</div>' + (user ? '<div class="tt-preview-user">@' + esc(user) + '</div>' : '') + '<div class="tt-preview-sub">Usa el panel lateral para TikTok</div></div>'; }
-  }
+var _visorOpenFn=null;
+var VISOR_CONFIG={
+  twitch:{label:'Twitch Chat',badge:'TWITCH',getUrl:function(ch){return ch?'https://www.twitch.tv/popout/'+encodeURIComponent(ch)+'/chat?popout=':null;},openLive:function(ch){if(ch)window.open('https://www.twitch.tv/'+encodeURIComponent(ch),'_blank','noopener');},noChMsg:'Canal de Twitch no configurado',noChSub:'Conecta tu canal de Twitch en el servidor.'},
+  kick:{label:'Kick Chat',badge:'KICK',getUrl:function(ch){return ch?'https://kick.com/'+encodeURIComponent(ch)+'/chatroom':null;},openLive:function(ch){if(ch)window.open('https://kick.com/'+encodeURIComponent(ch),'_blank','noopener');},noChMsg:'Canal de Kick no configurado',noChSub:'Conecta tu canal de Kick para ver el chat aqui.'},
+  youtube:{label:'YouTube Live',badge:'YOUTUBE',getUrl:function(){return null;},openLive:function(ch){if(!ch)return;var h=ch.startsWith('@')?ch:'@'+ch;window.open('https://www.youtube.com/'+h+'/live','_blank','noopener');},noChMsg:'YouTube no permite chat embebido',noChSub:'YouTube bloquea los iframes. Abre el live directamente.',showOpenBtn:true},
+  tiktok:{label:'TikTok Live',badge:'TIKTOK',getUrl:function(){return null;},openLive:function(ch){if(!ch)return;var u=ch.startsWith('@')?ch:'@'+ch;window.open('https://www.tiktok.com/'+u+'/live','_blank','noopener');},noChMsg:'TikTok — usar panel lateral',noChSub:'Usa el botón 🎵 TikTok Live para abrir el panel lateral derecho.',showOpenBtn:true,customPanel:function(ch){var user=ch||'';return '<div class="tt-preview-bg"><div class="tt-preview-logo">🎵</div>'+(user?'<div class="tt-preview-user">@'+esc(user)+'</div>':'')+'<div class="tt-preview-sub">Usa el panel lateral para TikTok</div></div>';}}
 };
-
-function visorOpenLive() { if (_visorOpenFn) _visorOpenFn(); }
-
-function openChatVisor(platform) {
-  var cfg = VISOR_CONFIG[platform]; if (!cfg) return;
-  if (currentVisor === platform) { closeChatVisor(); return; }
-  var ch = currentChannels[platform] || '';
-  var url = cfg.getUrl(ch);
+function visorOpenLive(){if(_visorOpenFn)_visorOpenFn();}
+function openChatVisor(platform){
+  var cfg=VISOR_CONFIG[platform];if(!cfg)return;
+  if(currentVisor===platform){closeChatVisor();return;}
+  var ch=currentChannels[platform]||'';var url=cfg.getUrl(ch);
   var visor=document.getElementById('chat-visor'),iframe=document.getElementById('visor-iframe');
   var titleEl=document.getElementById('visor-title'),badge=document.getElementById('visor-badge');
   var unavail=document.getElementById('visor-unavailable'),unavailMsg=document.getElementById('visor-unavailable-msg');
   var unavailSub=document.getElementById('visor-unavailable-sub'),unavailBtn=document.getElementById('visor-uv-btn');
   var unavailIcon=document.getElementById('visor-uv-icon'),openBtn=document.getElementById('visor-open-btn');
   var wrap=document.getElementById('visor-iframe-wrap');
-  badge.className='chat-visor-badge '+platform; badge.textContent=cfg.badge;
+  badge.className='chat-visor-badge '+platform;badge.textContent=cfg.badge;
   titleEl.textContent=cfg.label+(ch?' \u2014 @'+ch:'');
   _visorOpenFn=cfg.openLive?function(){cfg.openLive(ch);}:null;
-  if(openBtn){if(_visorOpenFn&&ch){openBtn.style.display='inline-block';}else{openBtn.style.display='none';}}
+  if(openBtn){openBtn.style.display=(_visorOpenFn&&ch)?'inline-block':'none';}
   var prev=wrap.querySelector('.tt-preview-bg');if(prev)prev.remove();
   if(url){iframe.style.display='block';unavail.style.display='none';iframe.src=url;}
   else if(cfg.customPanel&&ch){iframe.style.display='none';unavail.style.display='none';wrap.insertAdjacentHTML('beforeend',cfg.customPanel(ch));if(unavailBtn){unavailBtn.className='uv-btn '+platform;unavailBtn.style.display='inline-block';}}
-  else{iframe.style.display='none';iframe.src='about:blank';unavail.style.display='flex';if(unavailIcon)unavailIcon.textContent='\u26A0';unavailMsg.textContent=cfg.noChMsg;unavailSub.textContent=cfg.noChSub;if(unavailBtn){if(cfg.showOpenBtn&&ch){unavailBtn.className='uv-btn '+platform;unavailBtn.style.display='inline-block';}else{unavailBtn.style.display='none';}}}
+  else{iframe.style.display='none';iframe.src='about:blank';unavail.style.display='flex';if(unavailIcon)unavailIcon.textContent='\u26A0';unavailMsg.textContent=cfg.noChMsg;unavailSub.textContent=cfg.noChSub;if(unavailBtn){if(cfg.showOpenBtn&&ch){unavailBtn.className='uv-btn '+platform;unavailBtn.style.display='inline-block';}else unavailBtn.style.display='none';}}
   document.querySelectorAll('.viewer-btn').forEach(function(b){b.classList.remove('viewing');});
   var btn=document.getElementById('view-'+platform);if(btn)btn.classList.add('viewing');
   currentVisor=platform;visor.classList.add('open');
 }
-
-function closeChatVisor() {
+function closeChatVisor(){
   var visor=document.getElementById('chat-visor'),iframe=document.getElementById('visor-iframe'),wrap=document.getElementById('visor-iframe-wrap');
-  visor.classList.remove('open');
-  document.querySelectorAll('.viewer-btn').forEach(function(b){b.classList.remove('viewing');});
+  visor.classList.remove('open');document.querySelectorAll('.viewer-btn').forEach(function(b){b.classList.remove('viewing');});
   currentVisor=null;_visorOpenFn=null;
   setTimeout(function(){iframe.src='about:blank';var prev=wrap.querySelector('.tt-preview-bg');if(prev)prev.remove();},350);
 }
@@ -1123,11 +795,7 @@ function closeChatVisor() {
 document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('serverUrl').value=store.get('serverUrl');
   updateOverlayUrls();
-  if(store.get('serverUrl')) {
-    connectWS(store.get('serverUrl'));
-    var savedBase = store.get('serverUrl').replace(/^wss?/,'https').replace(/\/$/,'');
-    checkEdgeTtsStatus(savedBase);
-  }
+  if(store.get('serverUrl')){connectWS(store.get('serverUrl'));var base=store.get('serverUrl').replace(/^wss?/,'https').replace(/\/$/,'');checkEdgeTtsStatus(base);}
   if(store.get('sidebarCollapsed')==='1'){document.querySelector('.sidebar').classList.add('collapsed');document.getElementById('sidebar-toggle').classList.add('collapsed');}
   var sf=store.get('chatFont');if(sf){var sel=document.getElementById('fontSelector');for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===sf){sel.selectedIndex=i;break;}}applyFont(sf,true);}
   if(store.get('glowOff')==='1'){document.getElementById('glowToggle').checked=false;toggleGlow(false,true);}
@@ -1136,19 +804,9 @@ document.addEventListener('DOMContentLoaded',function(){
   var se=store.get('emoteSize');if(se){document.getElementById('emoteSize').value=se;setCfgVar('--ov-emote-size',se+'px','val-emote');}
   var sm=store.get('maxMsg');if(sm){var n=parseInt(sm);MAX_MESSAGES=n;document.getElementById('maxMsgRange').value=n;document.getElementById('val-maxMsg').textContent=n;}
   document.getElementById('chat-panel').addEventListener('scroll',function(){autoScroll=(this.scrollHeight-this.scrollTop-this.clientHeight)<80;});
-
-  // Restaurar estado del panel TikTok
-  if(store.get('ttPanelOpen')==='1'){
-    // Pequeño delay para que el layout esté listo
-    setTimeout(function(){
-      ttPanelOpen = false; // reset para que toggleTikTokPanel lo abra
-      toggleTikTokPanel();
-    }, 200);
-  }
-
-  // Restaurar usuario TikTok en input
-  var savedTtUser = store.get('ttPanelUser');
-  if(savedTtUser) document.getElementById('tt-user-input').value = savedTtUser;
+  if(store.get('ttPanelOpen')==='1'){setTimeout(function(){ttPanelOpen=false;toggleTikTokPanel();},200);}
+  var savedTtUser=store.get('ttPanelUser');if(savedTtUser)document.getElementById('tt-user-input').value=savedTtUser;
+  ttsLoad();
 });
 
 function applyFont(v,s){document.documentElement.style.setProperty('--font-body',v);document.getElementById('font-preview').style.fontFamily=v;store.set('chatFont',v);if(!s)toast('Fuente cambiada');}
@@ -1159,8 +817,7 @@ function setMsgNameSize(v){document.getElementById('val-fontName').textContent=v
 function applyColorPrimary(v,s){document.documentElement.style.setProperty('--corbata',v);if(!s){store.set('accentColor',v);toast('Color aplicado');}}
 
 // ═══ WEBSOCKET ═══
-var _clientSeenMids = {};
-
+var _clientSeenMids={};
 function connectWS(url){
   if(!url)return;
   if(ws){try{ws.close();}catch(e){}}
@@ -1199,11 +856,8 @@ function handleStatus(data){
     if(sid&&(!kickWs||kickWs.readyState>1))connectKickBrowser(sid);
     else if(!sid&&!autoKickDone&&data.channels&&data.channels.kick){autoKickDone=true;setTimeout(resolveKickId,1500);}
   }
-  // Auto-rellenar usuario TikTok en el panel si está vacío
-  if(data.channels&&data.channels.tiktok&&!store.get('ttPanelUser')){
-    document.getElementById('tt-user-input').value=data.channels.tiktok;
-  }
-  if(currentVisor){var cfg=VISOR_CONFIG[currentVisor];var ch=currentChannels[currentVisor]||'';if(cfg){document.getElementById('visor-title').textContent=cfg.label+(ch?' \u2014 @'+ch:'');}}
+  if(data.channels&&data.channels.tiktok&&!store.get('ttPanelUser'))document.getElementById('tt-user-input').value=data.channels.tiktok;
+  if(currentVisor){var cfg=VISOR_CONFIG[currentVisor];var ch=currentChannels[currentVisor]||'';if(cfg)document.getElementById('visor-title').textContent=cfg.label+(ch?' \u2014 @'+ch:'');}
 }
 function setPlatformStatus(p,c,ch){var dot=document.getElementById('dot-'+p),el=document.getElementById('ch-'+p);if(dot)dot.className='platform-dot'+(c?' ok':'');if(el)el.textContent=ch||'\u2014';}
 
@@ -1212,14 +866,16 @@ function appendMessage(data){
   if(!data.chatname&&!data.chatmessage)return;
   var panel=document.getElementById('chat-panel');
   var ph=document.getElementById('chat-placeholder');if(ph)ph.remove();
-  var platform=data.platform||data.type||'custom';
+
+  // Normalizar plataforma — kick_message → kick
+  var platform=(data.platform||data.type||'custom').toLowerCase().replace('_message','');
   var logo=LOGOS[platform]||LOGOS.custom;
   var time=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
   var el=document.createElement('div');
   el.className='msg-item '+platform;
   el.dataset.mid=data.mid||'';
   var avatarInner='';
-  if(data.chatimg){avatarInner='<img src="'+esc(data.chatimg)+'" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display=\'none\'">';}
+  if(data.chatimg)avatarInner='<img src="'+esc(data.chatimg)+'" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display=\'none\'">';
   var aHTML='<div class="msg-avatar">'+avatarInner+'<div class="msg-avatar-fallback" style="'+(data.chatimg?'display:none':'')+'">'+logo+'</div></div>';
   var pLabel=platform.charAt(0).toUpperCase()+platform.slice(1);
   var pBadge='<span class="msg-platform"><span style="width:8px;height:8px;display:inline-flex;opacity:0.5;">'+logo+'</span>'+pLabel+'</span>';
@@ -1238,8 +894,6 @@ function appendMessage(data){
   messages.push({el:el,data:data});
   if(messages.length>MAX_MESSAGES){var old=messages.shift();if(old.el.parentNode)old.el.parentNode.removeChild(old.el);}
   if(autoScroll)requestAnimationFrame(function(){panel.scrollTop=panel.scrollHeight;});
-  // ── Hook TTS ──
-  ttsMaybeSpeak(data, el);
 }
 
 // ═══ HIGHLIGHT ═══
@@ -1264,7 +918,6 @@ function clearHighlight(){
 
 // ═══ KICK BRIDGE ═══
 var kickWs=null,kickRetryDelay=3000,kickRetryTimeout=null;
-
 function connectKickBrowser(channelId){
   if(!channelId)return;
   if(kickWs){try{kickWs.onmessage=null;kickWs.onclose=null;kickWs.onerror=null;kickWs.close();}catch(e){}kickWs=null;}
@@ -1275,7 +928,6 @@ function connectKickBrowser(channelId){
   var idx=parseInt(localStorage.getItem('kickWsUrlIndex')||'0');
   tryKickUrl(channelId,urls,idx);
 }
-
 function tryKickUrl(c,u,i){
   if(i>=u.length)i=0;
   try{kickWs=new WebSocket(u[i]);}catch(e){kickRetryTimeout=setTimeout(function(){tryKickUrl(c,u,(i+1)%u.length);},5000);return;}
@@ -1287,7 +939,12 @@ function tryKickUrl(c,u,i){
     try{
       var msg=JSON.parse(e.data),ev=msg.event||'';
       if(ev==='pusher:connection_established'||ev==='pusher:pong')return;
-      if(ev==='pusher_internal:subscription_succeeded'){var box=document.getElementById('kick-status-box');if(box){box.className='info-box info-green';box.innerHTML='\u2713 Kick conectado (chatroom '+c+')';}if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'kick_connected'}));return;}
+      if(ev==='pusher_internal:subscription_succeeded'){
+        var box=document.getElementById('kick-status-box');
+        if(box){box.className='info-box info-green';box.innerHTML='\u2713 Kick conectado (chatroom '+c+')';}
+        if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'kick_connected'}));
+        return;
+      }
       if(ev==='pusher:error'){kickWs.close();return;}
       if(ev.indexOf('ChatMessageEvent')===-1)return;
       var d=typeof msg.data==='string'?JSON.parse(msg.data):msg.data;
@@ -1300,7 +957,8 @@ function tryKickUrl(c,u,i){
       if(_clientSeenMids[mid]&&(now-_clientSeenMids[mid])<6000)return;
       _clientSeenMids[mid]=now;
       getKickAvatarBrowser(un,function(av){
-        var cm={type:'kick_message',platform:'kick',chatname:un,chatmessage:d.content,nameColor:nc,chatimg:av||null,roles:kr,mid:mid};
+        // platform y type SIEMPRE como 'kick' para compatibilidad con TTS
+        var cm={type:'kick',platform:'kick',chatname:un,chatmessage:d.content,nameColor:nc,chatimg:av||null,roles:kr,mid:mid};
         appendMessage(cm);
         if(ws&&ws.readyState===1)ws.send(JSON.stringify(cm));
       });
@@ -1316,7 +974,6 @@ function tryKickUrl(c,u,i){
   kickWs.onerror=function(){};
   var pi=setInterval(function(){if(kickWs&&kickWs.readyState===1)kickWs.send(JSON.stringify({event:'pusher:ping',data:{}}));else clearInterval(pi);},25000);
 }
-
 var kickAvatarCache={},kickAvatarPending={};
 function getKickAvatarBrowser(username,cb){
   if(!username)return cb(null);
@@ -1334,37 +991,24 @@ function getKickAvatarBrowser(username,cb){
 function saveAndConnect(){
   var url=document.getElementById('serverUrl').value.trim();
   if(!url)return toast('Introduce la URL');
-  store.set('serverUrl',url);
-  retryDelay=1000;autoKickDone=false;
-  connectWS(url);
-  updateOverlayUrls();
+  store.set('serverUrl',url);retryDelay=1000;autoKickDone=false;
+  connectWS(url);updateOverlayUrls();
   toast('Conectando...');
-  // Verificar edge-tts
   var base=url.replace(/^wss?/,'https').replace(/\/$/,'');
   checkEdgeTtsStatus(base);
 }
-
-function checkEdgeTtsStatus(base) {
-  var box = document.getElementById('tts-server-status');
-  if (!box) return;
-  fetch(base + '/api/tts/status')
-    .then(function(r){ return r.json(); })
-    .then(function(d) {
-      if (d.available) {
-        box.className = 'info-box info-green';
-        box.innerHTML = '&#x2713; Edge TTS disponible' + (d.version ? ' v' + d.version : '') + ' — voces reales';
-      } else {
-        box.className = 'info-box info-yellow';
-        box.innerHTML = '&#x26A0; edge-tts no instalado en servidor.<br><span style="opacity:0.7">Ejecuta: <code style="background:rgba(0,0,0,0.2);padding:1px 4px;">pip install edge-tts</code></span><br>Usando Web Speech API como fallback.';
-      }
+function checkEdgeTtsStatus(base){
+  var box=document.getElementById('tts-server-status');if(!box)return;
+  fetch(base+'/api/tts/status')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.available){box.className='info-box info-green';box.innerHTML='&#x2713; edge-tts disponible en servidor';}
+      else{box.className='info-box info-yellow';box.innerHTML='&#x26A0; edge-tts no instalado.<br><code style="background:rgba(0,0,0,0.2);padding:1px 4px;font-size:8px;">pip install edge-tts</code>';}
+      updateTtsWidgetUrl();
     })
-    .catch(function() {
-      box.className = 'info-box info-yellow';
-      box.innerHTML = '&#x26A0; Servidor sin endpoint TTS — usando Web Speech API';
-    });
+    .catch(function(){box.className='info-box info-yellow';box.innerHTML='&#x26A0; Sin endpoint TTS en servidor';updateTtsWidgetUrl();});
 }
 function toggleKickManual(){var el=document.getElementById('kick-manual-wrap');el.style.display=el.style.display==='none'?'block':'none';}
-
 async function resolveKickId(){
   var channel=currentChannels.kick||store.get('kickChannel')||'';
   var box=document.getElementById('kick-status-box');
@@ -1381,7 +1025,6 @@ async function resolveKickId(){
     await sendKickId(id);
   }catch(e){box.className='info-box info-red';box.innerHTML='Error: '+e.message;document.getElementById('kick-manual-wrap').style.display='block';}
 }
-
 async function sendKickId(idParam){
   var id=idParam||document.getElementById('kickChannelId').value.trim();
   if(!id)return toast('Introduce el Channel ID');
@@ -1394,19 +1037,10 @@ async function sendKickId(idParam){
     else toast('Servidor rechazo el ID');
   }catch(e){toast('Error: '+e.message);}
 }
-
 async function restartTikTok(){var su=store.get('serverUrl');if(!su)return toast('Configura la URL');var hu=su.replace(/^wss?/,'https').replace(/\/$/,'');try{var r=await fetch(hu+'/api/tiktok/restart',{method:'POST'});var d=await r.json();toast(d.ok?'\u21BA TikTok reconectando...':'Error');}catch(e){toast('No se pudo conectar');}}
 async function restartYouTube(){var su=store.get('serverUrl');if(!su)return toast('Configura la URL');var hu=su.replace(/^wss?/,'https').replace(/\/$/,'');var ytBox=document.getElementById('youtube-status-box');if(ytBox){ytBox.className='info-box info-yellow';ytBox.innerHTML='\u23F3 Buscando live...';}try{var r=await fetch(hu+'/api/youtube/restart',{method:'POST'});var d=await r.json();toast(d.ok?'\u21BA YouTube reconectando...':'Error');}catch(e){toast('No se pudo conectar');}}
 function openYouTubeLive(){var c=currentChannels.youtube||'';if(!c)return toast('YouTube no configurado');var h=c.startsWith('@')?c:'@'+c;window.open('https://www.youtube.com/'+h+'/live','_blank','noopener');}
-
-function sendCustomMessage(){
-  var input=document.getElementById('custom-msg-input');
-  var text=input.value.trim();if(!text)return;
-  if(!isConnected||!ws){toast('Sin conexion al servidor');return;}
-  ws.send(JSON.stringify({type:'custom_message',user:'Tu (dashboard)',text:text}));
-  input.value='';
-}
-
+function sendCustomMessage(){var input=document.getElementById('custom-msg-input');var text=input.value.trim();if(!text)return;if(!isConnected||!ws){toast('Sin conexion al servidor');return;}ws.send(JSON.stringify({type:'custom_message',user:'Tu (dashboard)',text:text}));input.value='';}
 function getBaseOverlayDir(){var href=window.location.href.split('?')[0].replace(/\/+$/,'');var base=href.replace(/\/dashboard(\/[^?]*)?$/,'/overlay');if(base===href)base=href.replace(/\/[^/]+$/,'/overlay');return base;}
 function updateOverlayUrls(){
   var su=store.get('serverUrl');
@@ -1420,6 +1054,7 @@ function updateOverlayUrls(){
     var url=base+'/'+ids[id].file+'?server='+encodeURIComponent(su)+ids[id].params;
     box.textContent=url;box.dataset.url=url;
   });
+  updateTtsWidgetUrl();
 }
 function copyUrl(id){var url=document.getElementById(id).dataset.url;if(!url)return toast('Configura el servidor primero');navigator.clipboard.writeText(url).then(function(){toast('URL copiada');});}
 function openUrl(id){var url=document.getElementById(id).dataset.url;if(!url)return toast('Configura el servidor primero');window.open(url,'_blank');}
@@ -1428,304 +1063,100 @@ function exportMessages(){var data=messages.map(function(m,i){return{id:i+1,name
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function injectTestMessage(){
-  appendMessage({type:'twitch',platform:'twitch',chatname:'TestViewer',chatmessage:'Hola! Kappa que tal PogChamp',nameColor:'#b892e8',chatemotes:[{text:'Kappa',url:'https://static-cdn.jtvnw.net/emoticons/v2/25/default/dark/1.0',start:7,end:11},{text:'PogChamp',url:'https://static-cdn.jtvnw.net/emoticons/v2/305954156/default/dark/1.0',start:18,end:25}],mid:'test-tw-'+Date.now()});
-  setTimeout(function(){appendMessage({type:'kick',platform:'kick',chatname:'TestKick',chatmessage:'Hola [emote:1:GreenBalloon] como van',nameColor:'#7ecf6e',mid:'test-kick-'+Date.now()});},400);
+  appendMessage({type:'twitch',platform:'twitch',chatname:'TestViewer',chatmessage:',Hola desde Twitch! qué tal',nameColor:'#b892e8',chatemotes:[],mid:'test-tw-'+Date.now()});
+  setTimeout(function(){appendMessage({type:'kick',platform:'kick',chatname:'TestKick',chatmessage:',Hola desde Kick! qué onda',nameColor:'#7ecf6e',mid:'test-kick-'+Date.now()});},400);
   setTimeout(function(){appendMessage({type:'donation',platform:'twitch',donationType:'bits',chatname:'Donator',chatmessage:'Gran stream!',amount:500,nameColor:'#e8a0a0',mid:'test-bits-'+Date.now()});},800);
-  setTimeout(function(){appendMessage({type:'tiktok',platform:'tiktok',chatname:'TestTikTok',chatmessage:'Desde TikTok!',nameColor:'#FF0050',mid:'test-tt-'+Date.now()});},1200);
+  setTimeout(function(){appendMessage({type:'tiktok',platform:'tiktok',chatname:'TestTikTok',chatmessage:',Desde TikTok!',nameColor:'#FF0050',mid:'test-tt-'+Date.now()});},1200);
   toast('Mensajes de prueba listos');
 }
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(function(){el.classList.remove('show');},2800);}
 
 // ══════════════════════════════════════════════════════════════
-// MOTOR TTS — Web Speech API
-// Basado en la lógica de Casterlabs TTS script
+// TTS — Configuración del widget (sin audio en este dashboard)
+// El audio se reproduce en tts_widget.html cargado en OBS
 // ══════════════════════════════════════════════════════════════
 
 var TTS = {
-  enabled:        false,
-  prefix:         ',',
-  voice:          'Edge Alvaro',
-  volume:         1.0,
-  rate:           1.0,
-  sayName:        true,
-  sayDonations:   false,
+  enabled:          false,
+  prefix:           ',',
+  voice:            'Edge Alvaro',
+  volume:           1.0,
+  rate:             1.0,
+  sayName:          true,
+  sayDonations:     false,
   ignoredPlatforms: [],
-  bannedUsers:    [],
-  bannedWords:    [],
-  // Cola de mensajes pendientes
-  queue:          [],
-  speaking:       false,
-  // Referencia al utterance y elemento actual
-  currentEl:      null,
-  synth:          window.speechSynthesis || null,
-  // Caché de voces disponibles del sistema
-  _voices:        [],
-  _voicesLoaded:  false,
+  bannedUsers:      [],
+  bannedWords:      [],
 };
 
-// Cargar voces — no se necesita con edge-tts server, pero se mantiene para fallback Web Speech
-function ttsLoadVoices() {
-  // Solo se usa como fallback cuando el servidor no tiene edge-tts instalado
-  TTS._voices = (window.speechSynthesis && window.speechSynthesis.getVoices()) || [];
-}
+// ── Construir URL del widget TTS ──────────────────────────
 
-// Mapa nombre de voz → nombre en Web Speech API (fallback local)
-var TTS_WEB_VOICE_MAP = {
-  'Edge Alvaro':   ['Microsoft Alvaro', 'es-ES', 'Spanish Spain'],
-  'Edge Ximena':   ['Microsoft Dalia',  'es-MX', 'Spanish Mexico'],
-  'Edge Jorge':    ['Microsoft Jorge',  'es-MX', 'Spanish'],
-  'Edge Aria':     ['Microsoft Aria',   'en-US'],
-  'Edge Guy':      ['Microsoft Guy',    'en-US'],
-  'Edge Jenny':    ['Microsoft Jenny',  'en-US'],
-  'Edge Raquel':   ['Microsoft Raquel', 'pt-PT'],
-  'Edge Francisca':['Microsoft Francisca','pt-BR'],
-};
-
-function ttsGetVoice(name) {
-  if (!window.speechSynthesis) return null;
-  var voices     = window.speechSynthesis.getVoices();
-  var candidates = TTS_WEB_VOICE_MAP[name] || [name];
-  for (var ci = 0; ci < candidates.length; ci++) {
-    var cand = candidates[ci].toLowerCase();
-    for (var vi = 0; vi < voices.length; vi++) {
-      if (voices[vi].name.toLowerCase().indexOf(cand) !== -1 ||
-          voices[vi].lang.toLowerCase().indexOf(cand) !== -1) return voices[vi];
-    }
-  }
-  // Fallback: primera voz en español
-  for (var vi = 0; vi < voices.length; vi++) {
-    if (voices[vi].lang.startsWith('es')) return voices[vi];
-  }
-  return null;
-}
-
-// Limpia el texto: quita emojis, URLs, emotes de Twitch/Kick, minúsculas
-function ttsCleanText(text) {
-  if (!text) return '';
-  // Quitar URLs
-  text = text.replace(/https?:\/\/\S+/g, '');
-  // Quitar emotes de Kick [emote:id:name]
-  text = text.replace(/\[emote:\d+:[^\]]+\]/g, '');
-  // Quitar emojis y caracteres no ASCII (letras, números, puntuación básica)
-  text = text.replace(/[^\p{L}\p{N}\p{P}\s]/gu, function(c) {
-    // Permitir solo puntuación básica
-    return /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9?!'",.:\-\s]/.test(c) ? c : ' ';
-  });
-  // Múltiples espacios
-  text = text.replace(/\s+/g, ' ').trim();
-  // SIEMPRE en minúsculas
-  return text.toLowerCase();
-}
-
-// Decide si un mensaje debe leerse por TTS
-function ttsMaybeSpeak(data, el) {
-  if (!TTS.enabled) return;
-
-  var platform = (data.platform || data.type || '').toLowerCase();
-  var msgText  = data.chatmessage || '';
-  var username = (data.chatname || '').toLowerCase();
-
-  // ── Donaciones / eventos especiales ──
-  if (data.type === 'donation') {
-    if (!TTS.sayDonations) return;
-    var donText = '';
-    var donName = data.chatname || 'Alguien';
-    switch (data.donationType) {
-      case 'bits':    donText = donName + ' donó ' + data.amount + ' bits'; break;
-      case 'sub':     donText = donName + ' se suscribió'; break;
-      case 'resub':   donText = donName + ' se resuscribió ' + (data.months||'') + ' meses'; break;
-      case 'subgift': donText = donName + ' regaló una suscripción'; break;
-      case 'superchat': donText = donName + ' envió un superchat de ' + (data.amountDisplay || data.amount); break;
-      case 'member':  donText = donName + ' se hizo miembro'; break;
-      case 'gift':    donText = donName + ' envió un regalo de tiktok'; break;
-      default:        donText = donName + ' hizo una donación';
-    }
-    ttsEnqueue(ttsCleanText(donText), el);
-    return;
-  }
-
-  // ── Solo mensajes de chat normales ──
-  if (data.type !== 'twitch' && data.type !== 'kick' && data.type !== 'tiktok' && data.type !== 'youtube') return;
-
-  // 1. Verificar prefijo
-  var prefix = TTS.prefix.trim();
-  if (prefix && !msgText.startsWith(prefix)) return;
-  // Quitar el prefijo del texto a leer
-  var rawMsg = prefix ? msgText.slice(prefix.length).trim() : msgText.trim();
-  if (!rawMsg) return;
-
-  // 2. Plataformas ignoradas
-  if (TTS.ignoredPlatforms.indexOf(platform) !== -1) return;
-
-  // 3. Usuarios ignorados (blacklist)
-  for (var i = 0; i < TTS.bannedUsers.length; i++) {
-    if (username.indexOf(TTS.bannedUsers[i].toLowerCase()) !== -1) return;
-  }
-
-  // 4. Palabras / frases baneadas (en el mensaje original, case-insensitive)
-  var msgLower = rawMsg.toLowerCase();
-  for (var i = 0; i < TTS.bannedWords.length; i++) {
-    if (msgLower.indexOf(TTS.bannedWords[i].toLowerCase()) !== -1) return;
-  }
-
-  // 5. Ignorar si empieza con ! u otros prefijos de bot
-  if (rawMsg.startsWith('!')) return;
-
-  // 6. Construir texto a leer
-  var cleaned = ttsCleanText(rawMsg);
-  if (!cleaned) return;
-
-  var toSpeak = '';
-  if (TTS.sayName) {
-    var cleanName = ttsCleanText(data.chatname || '');
-    var verb = cleaned.includes('?') ? ' pregunta ' : ' dice ';
-    toSpeak = cleanName + verb + cleaned;
-  } else {
-    toSpeak = cleaned;
-  }
-
-  ttsEnqueue(toSpeak, el);
-}
-
-// Encolar y reproducir
-function ttsEnqueue(text, el) {
-  TTS.queue.push({ text: text, el: el || null });
-  ttsUpdateQueueUI();
-  if (!TTS.speaking) ttsPlayNext();
-}
-
-function ttsPlayNext() {
-  if (!TTS.queue.length) { TTS.speaking = false; ttsSetIndicator(false); ttsUpdateQueueUI(); return; }
-  TTS.speaking = true;
-
-  var item = TTS.queue[0];
-  TTS.currentEl = item.el;
-  if (TTS.currentEl) TTS.currentEl.classList.add('tts-reading');
-  ttsSetIndicator(true, item.text);
-
-  // ── Llamar al servidor Edge TTS ──
+function buildTtsWidgetUrl() {
   var su = store.get('serverUrl');
-  if (!su) {
-    console.warn('[TTS] Sin servidor configurado, saltando mensaje');
-    ttsAfterPlay();
-    return;
-  }
-  var httpBase = su.replace(/^wss?/, 'https').replace(/\/$/, '');
-  ttsPlayViaServer(item, httpBase);
+  if (!su) return '';
+
+  // Obtener ruta base (misma carpeta que dashboard.html)
+  var href = window.location.href.split('?')[0];
+  var base = href.replace(/\/[^/]+$/, '');
+
+  var params = new URLSearchParams();
+  params.set('server',      su);
+  params.set('voice',       TTS.voice);
+  params.set('rate',        String(TTS.rate));
+  params.set('volume',      String(TTS.volume));
+  params.set('prefix',      TTS.prefix);
+  params.set('sayname',     TTS.sayName ? '1' : '0');
+  params.set('saydon',      TTS.sayDonations ? '1' : '0');
+  if (TTS.ignoredPlatforms.length) params.set('ignore', TTS.ignoredPlatforms.join(','));
+  if (TTS.bannedUsers.length)      params.set('bannedusers', TTS.bannedUsers.join(','));
+  if (TTS.bannedWords.length)      params.set('bannedwords', TTS.bannedWords.join('|'));
+
+  return base + '/tts_widget.html?' + params.toString();
 }
 
-// Reproducción via servidor Edge TTS → MP3
-var _ttsAudio = null;
+function updateTtsWidgetUrl() {
+  var url = buildTtsWidgetUrl();
+  var box = document.getElementById('tts-widget-url');
+  if (!box) return;
+  if (!url) { box.textContent = 'Configura el servidor primero...'; box.dataset.url = ''; return; }
+  box.textContent = url;
+  box.dataset.url = url;
 
-function ttsPlayViaServer(item, httpBase) {
-  if (_ttsAudio) { try { _ttsAudio.pause(); _ttsAudio.src = ''; } catch(e) {} _ttsAudio = null; }
-
-  fetch(httpBase + '/api/tts', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: item.text, voice: TTS.voice, rate: TTS.rate })
-  })
-  .then(function(r) {
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    return r.blob();
-  })
-  .then(function(blob) {
-    var url   = URL.createObjectURL(blob);
-    var audio = new Audio(url);
-    _ttsAudio = audio;
-    audio.volume = TTS.volume;
-    audio.onended = function() { URL.revokeObjectURL(url); _ttsAudio = null; ttsAfterPlay(); };
-    audio.onerror = function() { URL.revokeObjectURL(url); _ttsAudio = null; ttsAfterPlay(); };
-    audio.play().catch(function() { ttsAfterPlay(); });
-  })
-  .catch(function(err) {
-    console.warn('[TTS] Error servidor:', err.message);
-    ttsAfterPlay(); // saltar mensaje silenciosamente
-  });
-}
-
-function ttsAfterPlay() {
-  TTS.queue.shift();
-  if (TTS.currentEl) { TTS.currentEl.classList.remove('tts-reading'); TTS.currentEl = null; }
-  TTS.speaking = TTS.queue.length > 0;
-  ttsUpdateQueueUI();
-  if (TTS.queue.length) setTimeout(ttsPlayNext, 150);
-  else ttsSetIndicator(false);
-}
-
-function ttsSetIndicator(speaking, text) {
+  // Mostrar indicador en header si TTS activo
   var ind = document.getElementById('tts-indicator');
-  if (!ind) return;
-  ind.classList.toggle('active', TTS.enabled);
-  ind.classList.toggle('speaking', speaking && TTS.enabled);
-  var lbl = document.getElementById('tts-indicator-label');
-  if (lbl) lbl.textContent = speaking ? 'TTS' : 'TTS';
-}
-
-function ttsUpdateQueueUI() {
-  var qt  = document.getElementById('tts-queue-text');
-  var qc  = document.getElementById('tts-queue-count');
-  if (!qt) return;
-  if (TTS.queue.length === 0) {
-    qt.textContent = 'Sin mensajes en cola';
-    if (qc) qc.textContent = '';
-  } else {
-    qt.textContent = TTS.queue[0].text;
-    if (qc) qc.textContent = TTS.queue.length > 1 ? '+' + (TTS.queue.length - 1) : '';
+  if (ind) {
+    ind.classList.toggle('active', TTS.enabled);
+    ind.classList.toggle('speaking', false);
   }
 }
 
-// ── Controles ──────────────────────────────────────────────
+function copyTtsWidgetUrl() {
+  var url = buildTtsWidgetUrl();
+  if (!url) return toast('Configura el servidor primero');
+  navigator.clipboard.writeText(url).then(function() { toast('URL TTS widget copiada'); });
+}
+
+function openTtsWidget() {
+  var url = buildTtsWidgetUrl();
+  if (!url) return toast('Configura el servidor primero');
+  window.open(url, '_blank');
+}
+
+// ── Controles de la card TTS ──────────────────────────────
 
 function ttsToggle(on) {
   TTS.enabled = on;
-  if (!on) {
-    if (_ttsAudio) { try { _ttsAudio.pause(); _ttsAudio.src=''; } catch(e){} _ttsAudio = null; }
-    TTS.queue = []; TTS.speaking = false;
-    if (TTS.currentEl) { TTS.currentEl.classList.remove('tts-reading'); TTS.currentEl = null; }
-    ttsSetIndicator(false);
-    ttsUpdateQueueUI();
-    toast('🔇 TTS desactivado');
-  } else {
-    ttsSetIndicator(false);
-    var su = store.get('serverUrl');
-    if (su) {
-      var base = su.replace(/^wss?/, 'https').replace(/\/$/, '');
-      fetch(base + '/api/tts/status')
-        .then(function(r){ return r.json(); })
-        .then(function(d){ toast('🔊 TTS activado — ' + (d.engine || 'Edge TTS')); })
-        .catch(function(){ toast('🔊 TTS activado — conecta el servidor'); });
-    } else {
-      toast('🔊 TTS activado — configura el servidor primero');
-    }
-    ttsSave();
-  }
-}
-
-function ttsSkip() {
-  if (_ttsAudio) { try { _ttsAudio.pause(); _ttsAudio.src=''; } catch(e){} _ttsAudio = null; }
-  if (TTS.currentEl) { TTS.currentEl.classList.remove('tts-reading'); TTS.currentEl = null; }
-  TTS.queue.shift();
-  TTS.speaking = false;
-  ttsUpdateQueueUI();
-  if (TTS.queue.length) setTimeout(ttsPlayNext, 100);
-  else ttsSetIndicator(false);
-}
-
-function ttsClearQueue() {
-  if (_ttsAudio) { try { _ttsAudio.pause(); _ttsAudio.src=''; } catch(e){} _ttsAudio = null; }
-  TTS.queue = []; TTS.speaking = false;
-  if (TTS.currentEl) { TTS.currentEl.classList.remove('tts-reading'); TTS.currentEl = null; }
-  ttsSetIndicator(false);
-  ttsUpdateQueueUI();
-  toast('Cola TTS limpiada');
+  var ind = document.getElementById('tts-indicator');
+  if (ind) ind.classList.toggle('active', on);
+  ttsSave();
+  if (on) toast('🔊 TTS activado — añade el widget a OBS');
+  else    toast('🔇 TTS desactivado');
 }
 
 function ttsTogglePlatform(plat) {
   var idx = TTS.ignoredPlatforms.indexOf(plat);
   if (idx === -1) TTS.ignoredPlatforms.push(plat);
   else TTS.ignoredPlatforms.splice(idx, 1);
-  // Actualizar botones
   document.querySelectorAll('.tts-plat-btn').forEach(function(b) {
     b.classList.toggle('ignored', TTS.ignoredPlatforms.indexOf(b.dataset.plat) !== -1);
   });
@@ -1752,53 +1183,43 @@ function ttsRemoveUser(idx) { TTS.bannedUsers.splice(idx, 1); ttsSave(); ttsRend
 function ttsRemoveWord(idx) { TTS.bannedWords.splice(idx, 1); ttsSave(); ttsRenderLists(); }
 
 function ttsRenderLists() {
-  // Usuarios
   var ul = document.getElementById('tts-banned-users-list');
   if (ul) {
-    if (!TTS.bannedUsers.length) { ul.innerHTML = '<div class="tts-list-empty">Sin usuarios ignorados</div>'; }
-    else { ul.innerHTML = TTS.bannedUsers.map(function(u, i) { return '<div class="tts-list-item"><span>'+esc(u)+'</span><button class="tts-list-del" onclick="ttsRemoveUser('+i+')">&#x2715;</button></div>'; }).join(''); }
+    if (!TTS.bannedUsers.length) ul.innerHTML = '<div class="tts-list-empty">Sin usuarios ignorados</div>';
+    else ul.innerHTML = TTS.bannedUsers.map(function(u,i){return '<div class="tts-list-item"><span>'+esc(u)+'</span><button class="tts-list-del" onclick="ttsRemoveUser('+i+')">&#x2715;</button></div>';}).join('');
   }
-  // Palabras
   var wl = document.getElementById('tts-banned-words-list');
   if (wl) {
-    if (!TTS.bannedWords.length) { wl.innerHTML = '<div class="tts-list-empty">Sin palabras baneadas</div>'; }
-    else { wl.innerHTML = TTS.bannedWords.map(function(w, i) { return '<div class="tts-list-item"><span>'+esc(w)+'</span><button class="tts-list-del" onclick="ttsRemoveWord('+i+')">&#x2715;</button></div>'; }).join(''); }
+    if (!TTS.bannedWords.length) wl.innerHTML = '<div class="tts-list-empty">Sin palabras baneadas</div>';
+    else wl.innerHTML = TTS.bannedWords.map(function(w,i){return '<div class="tts-list-item"><span>'+esc(w)+'</span><button class="tts-list-del" onclick="ttsRemoveWord('+i+')">&#x2715;</button></div>';}).join('');
   }
 }
 
-// ── Persistencia ───────────────────────────────────────────
-
 function ttsSave() {
-  // Leer controles
   var pfx   = document.getElementById('tts-prefix');
   var voice = document.getElementById('tts-voice');
   var vol   = document.getElementById('tts-volume');
   var rate  = document.getElementById('tts-rate');
   var sayN  = document.getElementById('tts-say-name');
   var sayD  = document.getElementById('tts-say-donations');
-  if (pfx)   TTS.prefix   = pfx.value || ',';
-  if (voice) TTS.voice    = voice.value;
-  if (vol)   TTS.volume   = parseFloat(vol.value) / 100;
-  if (rate)  TTS.rate     = parseFloat(rate.value);
-  if (sayN)  TTS.sayName  = sayN.checked;
+  if (pfx)   TTS.prefix       = pfx.value || ',';
+  if (voice) TTS.voice        = voice.value;
+  if (vol)   TTS.volume       = parseFloat(vol.value) / 100;
+  if (rate)  TTS.rate         = parseFloat(rate.value);
+  if (sayN)  TTS.sayName      = sayN.checked;
   if (sayD)  TTS.sayDonations = sayD.checked;
   store.set('ttsConfig', JSON.stringify({
-    enabled:          TTS.enabled,
-    prefix:           TTS.prefix,
-    voice:            TTS.voice,
-    volume:           TTS.volume,
-    rate:             TTS.rate,
-    sayName:          TTS.sayName,
-    sayDonations:     TTS.sayDonations,
-    ignoredPlatforms: TTS.ignoredPlatforms,
-    bannedUsers:      TTS.bannedUsers,
-    bannedWords:      TTS.bannedWords,
+    enabled: TTS.enabled, prefix: TTS.prefix, voice: TTS.voice,
+    volume: TTS.volume, rate: TTS.rate, sayName: TTS.sayName,
+    sayDonations: TTS.sayDonations, ignoredPlatforms: TTS.ignoredPlatforms,
+    bannedUsers: TTS.bannedUsers, bannedWords: TTS.bannedWords,
   }));
+  updateTtsWidgetUrl();
 }
 
 function ttsLoad() {
   var raw = store.get('ttsConfig');
-  if (!raw) return;
+  if (!raw) { updateTtsWidgetUrl(); return; }
   try {
     var c = JSON.parse(raw);
     TTS.enabled          = !!c.enabled;
@@ -1812,7 +1233,6 @@ function ttsLoad() {
     TTS.bannedUsers      = c.bannedUsers  || [];
     TTS.bannedWords      = c.bannedWords  || [];
 
-    // Aplicar a controles
     var enEl  = document.getElementById('tts-enabled');
     var pfx   = document.getElementById('tts-prefix');
     var voice = document.getElementById('tts-voice');
@@ -1823,34 +1243,24 @@ function ttsLoad() {
     var vd    = document.getElementById('tts-vol-display');
     var rd    = document.getElementById('tts-rate-display');
 
-    if (enEl)  enEl.checked       = TTS.enabled;
-    if (pfx)   pfx.value          = TTS.prefix;
-    if (voice) voice.value        = TTS.voice;
-    if (vol)   { vol.value        = Math.round(TTS.volume * 100); if (vd) vd.textContent = vol.value + '%'; }
-    if (rate)  { rate.value       = TTS.rate; if (rd) rd.textContent = TTS.rate.toFixed(1) + 'x'; }
-    if (sayN)  sayN.checked       = TTS.sayName;
-    if (sayD)  sayD.checked       = TTS.sayDonations;
+    if (enEl)  enEl.checked  = TTS.enabled;
+    if (pfx)   pfx.value     = TTS.prefix;
+    if (voice) voice.value   = TTS.voice;
+    if (vol)   { vol.value   = Math.round(TTS.volume * 100); if (vd) vd.textContent = vol.value + '%'; }
+    if (rate)  { rate.value  = TTS.rate; if (rd) rd.textContent = TTS.rate.toFixed(1) + 'x'; }
+    if (sayN)  sayN.checked  = TTS.sayName;
+    if (sayD)  sayD.checked  = TTS.sayDonations;
 
-    // Botones de plataforma
     document.querySelectorAll('.tts-plat-btn').forEach(function(b) {
       b.classList.toggle('ignored', TTS.ignoredPlatforms.indexOf(b.dataset.plat) !== -1);
     });
-
-    // Listas
     ttsRenderLists();
+    updateTtsWidgetUrl();
 
-    // Indicador
-    ttsSetIndicator(false);
-
-    if (TTS.enabled) ttsLoadVoices();
-  } catch(e) {}
+    var ind = document.getElementById('tts-indicator');
+    if (ind) ind.classList.toggle('active', TTS.enabled);
+  } catch(e) { updateTtsWidgetUrl(); }
 }
-
-// Inicializar TTS al cargar el DOM
-document.addEventListener('DOMContentLoaded', function() {
-  ttsLoadVoices();
-  ttsLoad();
-});
 </script>
 </body>
 </html>
