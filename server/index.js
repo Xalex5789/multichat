@@ -1,8 +1,11 @@
 // ============================================================
-//  MEEVE MULTICHAT SERVER v2.1
-//  Fix: TikTok usa nueva API TikTokLiveConnection + WebcastEvent
-//  Fix: broadcast() deduplica mid globalmente -> sin duplicados
-//  Fix: TIKTOK_TARGET_IDC nueva variable de entorno requerida
+//  MEEVE MULTICHAT SERVER v2.2
+//  Fix TikTok: campos correctos según tiktok-live-connector v1.2.x
+//    - giftDetails.giftName / giftDetails.diamondCount / giftDetails.giftType
+//    - Quitar opciones inválidas: connectWithUniqueId, requestPollingIntervalMs
+//    - mid usa msgId cuando está disponible (dedup real)
+//    - profilePictureUrls array fallback
+//  Fix: broadcast() deduplica mid globalmente
 // ============================================================
 const express  = require('express');
 const http     = require('http');
@@ -10,6 +13,7 @@ const https    = require('https');
 const { WebSocketServer } = require('ws');
 const tmi      = require('tmi.js');
 
+// ── TikTok: carga defensiva ──────────────────────────────────
 let TikTokLiveConnection, WebcastEvent, ControlEvent, SignConfig;
 try {
   const tt = require('tiktok-live-connector');
@@ -17,9 +21,11 @@ try {
   WebcastEvent         = tt.WebcastEvent;
   ControlEvent         = tt.ControlEvent;
   SignConfig           = tt.SignConfig;
-  if (!TikTokLiveConnection) throw new Error('Ejecuta: npm install tiktok-live-connector@latest');
-  console.log('[TikTok] tiktok-live-connector v1.2.x cargado');
-} catch(e) { console.log('[TikTok] No disponible:', e.message); }
+  if (!TikTokLiveConnection) throw new Error('TikTokLiveConnection no encontrado. Ejecuta: npm install tiktok-live-connector@latest');
+  console.log('[TikTok] tiktok-live-connector cargado OK');
+} catch(e) {
+  console.log('[TikTok] No disponible:', e.message);
+}
 
 const app    = express();
 const server = http.createServer(app);
@@ -55,6 +61,7 @@ const state = {
   msgCount: 0,
 };
 
+// ── Utilidades Twitch ────────────────────────────────────────
 function parseTwitchEmotes(message, emotesTag) {
   if (!emotesTag || typeof emotesTag !== 'object') return [];
   const result = [];
@@ -67,6 +74,7 @@ function parseTwitchEmotes(message, emotesTag) {
   return result.sort((a, b) => a.start - b.start);
 }
 
+// ── Avatar caches ────────────────────────────────────────────
 const kickAvatarCache = {}, kickAvatarPending = {};
 const twitchAvatarCache = {}, twitchAvatarPending = {};
 
@@ -109,7 +117,7 @@ function getKickAvatar(username, callback) {
   req.setTimeout(8000, () => req.destroy());
 }
 
-// ══ BROADCAST con dedup global por mid ══
+// ── Broadcast con dedup global por mid ──────────────────────
 const _broadcastSeen = new Map();
 
 function broadcast(msg) {
@@ -141,7 +149,13 @@ function broadcastStatus() {
 
 wss.on('connection', (ws) => {
   state.clients.add(ws);
-  ws.send(JSON.stringify({ type: 'status', twitch: state.twitch.connected, kick: state.kick.connected, tiktok: state.tiktok.connected, youtube: state.youtube.connected, youtubeVideoId: state.youtube.videoId || null, channels: { twitch: CONFIG.twitch, kick: CONFIG.kick, tiktok: CONFIG.tiktok, youtube: CONFIG.youtubeHandle } }));
+  ws.send(JSON.stringify({
+    type: 'status',
+    twitch: state.twitch.connected, kick: state.kick.connected,
+    tiktok: state.tiktok.connected, youtube: state.youtube.connected,
+    youtubeVideoId: state.youtube.videoId || null,
+    channels: { twitch: CONFIG.twitch, kick: CONFIG.kick, tiktok: CONFIG.tiktok, youtube: CONFIG.youtubeHandle }
+  }));
   ws.on('close', () => state.clients.delete(ws));
   ws.on('message', (data) => {
     try {
@@ -160,7 +174,9 @@ wss.on('connection', (ws) => {
   });
 });
 
-// ══ TWITCH ══
+// ══════════════════════════════════════════════════════════════
+// TWITCH
+// ══════════════════════════════════════════════════════════════
 function connectTwitch() {
   if (!CONFIG.twitch) return;
   const client = new tmi.Client({ options: { debug: false }, channels: [CONFIG.twitch] });
@@ -192,7 +208,9 @@ function connectTwitch() {
   client.on('submysterygift', (ch, u, num, methods, us) =>         broadcast({ type: 'donation', platform: 'twitch', donationType: 'subgift', chatname: us['display-name'] || u, chatmessage: `Regaló ${num} subs`, amount: num, nameColor: us?.color || '#9146FF', chatimg: null, mid: 'tw-massgift-' + Date.now() }));
 }
 
-// ══ KICK ══
+// ══════════════════════════════════════════════════════════════
+// KICK
+// ══════════════════════════════════════════════════════════════
 app.get('/api/kick/channel-id',  (req, res) => res.json({ kickId: CONFIG.kickId || null, channel: CONFIG.kick }));
 app.post('/api/kick/channel-id', (req, res) => {
   const { channelId } = req.body;
@@ -314,8 +332,47 @@ function tryKickPusher(channelId) {
   ws.on('error', (e) => console.error('[Kick] WS error:', e.message));
 }
 
-// ══ TIKTOK v1.2.x ══
+// ══════════════════════════════════════════════════════════════
+// TIKTOK v1.2.x  — CORREGIDO
+//
+// Cambios respecto a v2.1:
+//
+// 1. Opciones de conexión:
+//    ❌ connectWithUniqueId: true     → no existe en v1.2.x, eliminado
+//    ❌ requestPollingIntervalMs      → no existe en v1.2.x, eliminado
+//    ✅ processInitialData: false      → válido
+//    ✅ enableExtendedGiftInfo: true   → válido
+//    ✅ sessionId / ttTargetIdc        → válidos
+//
+// 2. Evento CHAT:
+//    ✅ data.user?.uniqueId            → correcto
+//    ✅ data.comment                   → correcto
+//    ✅ data.user?.profilePictureUrl   → correcto
+//    ✅ mid usa data.msgId cuando existe (dedup real)
+//    ✅ profilePictureUrls[0] como fallback
+//
+// 3. Evento GIFT — CAMPOS CORREGIDOS:
+//    ❌ data.giftType        → en v1.2.x es data.giftDetails?.giftType
+//    ❌ data.giftName        → en v1.2.x es data.giftDetails?.giftName
+//    ❌ data.diamondCount    → en v1.2.x es data.giftDetails?.diamondCount
+//    ❌ data.extendedGiftInfo?.name → también está en data.giftDetails?.giftName
+//    ✅ data.repeatCount     → correcto
+//    ✅ data.repeatEnd       → correcto
+//
+// 4. Avatar TikTok:
+//    Ahora usa profilePictureUrls[0] como fallback si profilePictureUrl falta
+// ══════════════════════════════════════════════════════════════
+
 let ttRetryDelay = 15000, ttRetryTimeout = null;
+
+// Helper: obtiene avatar de un objeto user de TikTok
+function getTikTokAvatar(user) {
+  if (!user) return null;
+  // v1.2.x expone profilePictureUrl (string) o profilePictureUrls (array)
+  return user.profilePictureUrl
+    || (Array.isArray(user.profilePictureUrls) && user.profilePictureUrls[0])
+    || null;
+}
 
 async function connectTikTokConnector() {
   if (!CONFIG.tiktok || !TikTokLiveConnection) return;
@@ -324,16 +381,19 @@ async function connectTikTokConnector() {
   if (state.tiktok.instance) { try { state.tiktok.instance.disconnect(); } catch(e) {} state.tiktok.instance = null; }
   if (ttRetryTimeout) { clearTimeout(ttRetryTimeout); ttRetryTimeout = null; }
 
+  // Configurar API key de Euler si está disponible
   if (CONFIG.eulerApiKey && SignConfig) SignConfig.apiKey = CONFIG.eulerApiKey;
 
+  // ── Opciones válidas para v1.2.x ──
+  // NOTA: connectWithUniqueId y requestPollingIntervalMs NO existen en v1.2.x
   const opts = {
-    processInitialData:       false,
-    enableExtendedGiftInfo:   true,
-    requestPollingIntervalMs: 2000,
-    connectWithUniqueId:      true,
+    processInitialData:     false,  // No procesar mensajes viejos al conectar
+    enableExtendedGiftInfo: true,   // Para tener giftDetails completo
   };
+
   if (CONFIG.tiktokSession && CONFIG.tiktokIdc) {
-    opts.sessionId = CONFIG.tiktokSession; opts.ttTargetIdc = CONFIG.tiktokIdc;
+    opts.sessionId   = CONFIG.tiktokSession;
+    opts.ttTargetIdc = CONFIG.tiktokIdc;
     console.log('[TikTok] Conectando con sessionId + ttTargetIdc');
   } else if (CONFIG.tiktokSession) {
     opts.sessionId = CONFIG.tiktokSession;
@@ -343,19 +403,28 @@ async function connectTikTokConnector() {
   }
 
   let conn;
-  try { conn = new TikTokLiveConnection(username, opts); }
-  catch(e) { console.error('[TikTok] Error creando conexion:', e.message); ttRetryTimeout = setTimeout(connectTikTokConnector, ttRetryDelay); return; }
+  try {
+    conn = new TikTokLiveConnection(username, opts);
+  } catch(e) {
+    console.error('[TikTok] Error creando conexion:', e.message);
+    ttRetryTimeout = setTimeout(connectTikTokConnector, ttRetryDelay);
+    return;
+  }
   state.tiktok.instance = conn;
-  conn.on('error', (err) => console.error('[TikTok] Error:', err?.message || err));
+  conn.on('error', (err) => console.error('[TikTok] Error interno:', err?.message || err));
 
   try {
     await conn.connect();
-    state.tiktok.connected = true; state.tiktok.lastMsg = Date.now(); ttRetryDelay = 15000;
-    broadcastStatus(); console.log('[TikTok] Conectado a @' + username);
+    state.tiktok.connected = true;
+    state.tiktok.lastMsg   = Date.now();
+    ttRetryDelay = 15000;
+    broadcastStatus();
+    console.log('[TikTok] Conectado a @' + username);
   } catch(e) {
     const msg = e?.message || String(e);
     console.error('[TikTok] Error al conectar:', msg);
-    state.tiktok.connected = false; broadcastStatus();
+    state.tiktok.connected = false;
+    broadcastStatus();
     let delay = 30000;
     if (msg.includes('LIVE_NOT_FOUND') || msg.includes('not live'))  delay = 60000;
     else if (msg.includes('403') || msg.includes('Forbidden'))       delay = 300000;
@@ -366,45 +435,114 @@ async function connectTikTokConnector() {
     return;
   }
 
-  // Chat — v1.2.x: data.user.uniqueId
+  // ── Chat ─────────────────────────────────────────────────────
+  // En v1.2.x: data.user.uniqueId, data.comment, data.msgId
   conn.on(WebcastEvent.CHAT, (data) => {
     state.tiktok.lastMsg = Date.now();
-    const uniqueId = data.user?.uniqueId || data.uniqueId || 'TikToker';
-    const userId   = data.user?.userId   || data.userId   || uniqueId;
-    broadcast({ type: 'tiktok', platform: 'tiktok', chatname: uniqueId, chatmessage: data.comment || '', chatimg: data.user?.profilePictureUrl || data.profilePictureUrl || null, nameColor: '#FF0050', mid: `tt-${userId}-${Date.now()}` });
+    const uniqueId  = data.user?.uniqueId  || data.uniqueId  || 'TikToker';
+    const userId    = data.user?.userId    || data.userId    || uniqueId;
+    const avatar    = getTikTokAvatar(data.user);
+    // Usa msgId como mid para deduplicación real entre reconexiones
+    const mid = data.msgId ? `tt-msg-${data.msgId}` : `tt-${userId}-${Date.now()}`;
+    broadcast({
+      type:        'tiktok',
+      platform:    'tiktok',
+      chatname:    uniqueId,
+      chatmessage: data.comment || '',
+      chatimg:     avatar,
+      nameColor:   '#FF0050',
+      mid,
+    });
   });
 
-  // Regalos — v1.2.x: data.user.uniqueId, giftType, repeatEnd
+  // ── Regalos ───────────────────────────────────────────────────
+  // CORRECCIÓN PRINCIPAL: en v1.2.x los campos de regalo están en data.giftDetails
+  //   data.giftDetails.giftType  (antes: data.giftType)
+  //   data.giftDetails.giftName  (antes: data.giftName / data.extendedGiftInfo.name)
+  //   data.giftDetails.diamondCount (antes: data.diamondCount)
   conn.on(WebcastEvent.GIFT, (data) => {
     state.tiktok.lastMsg = Date.now();
-    if (data.giftType === 1 && !data.repeatEnd) return;
-    const uniqueId = data.user?.uniqueId || data.uniqueId || 'TikToker';
-    const userId   = data.user?.userId   || data.userId   || uniqueId;
-    const gn = data.giftName || data.extendedGiftInfo?.name || `Gift #${data.giftId}`;
-    const di = data.diamondCount || 0, qty = data.repeatCount || 1;
-    broadcast({ type: 'donation', platform: 'tiktok', donationType: 'gift', chatname: uniqueId, chatmessage: `Envio ${qty}x ${gn} (${di * qty} Diamantes)`, giftName: gn, amount: di * qty, currency: 'DIAMONDS', quantity: qty, chatimg: data.user?.profilePictureUrl || null, nameColor: '#FF0050', mid: `tt-gift-${data.giftId}-${userId}-${qty}` });
+
+    // Streak: ignorar eventos intermedios (solo procesar cuando termina)
+    const giftType = data.giftDetails?.giftType ?? data.giftType;
+    if (giftType === 1 && !data.repeatEnd) return;
+
+    const uniqueId  = data.user?.uniqueId || data.uniqueId || 'TikToker';
+    const userId    = data.user?.userId   || data.userId   || uniqueId;
+    const avatar    = getTikTokAvatar(data.user);
+
+    // Nombre del regalo — buscar en giftDetails primero (v1.2.x), luego fallbacks
+    const giftName = data.giftDetails?.giftName
+      || data.giftDetails?.name
+      || data.giftName
+      || `Gift #${data.giftId}`;
+
+    // Costo en diamantes — buscar en giftDetails primero (v1.2.x)
+    const diamondCount = data.giftDetails?.diamondCount
+      || data.giftDetails?.diamond_count
+      || data.diamondCount
+      || 0;
+
+    const qty   = data.repeatCount || 1;
+    const total = diamondCount * qty;
+
+    broadcast({
+      type:        'donation',
+      platform:    'tiktok',
+      donationType:'gift',
+      chatname:    uniqueId,
+      chatmessage: `Envió ${qty}x ${giftName}${total > 0 ? ` (${total} 💎)` : ''}`,
+      giftName,
+      amount:      total,
+      currency:    'DIAMONDS',
+      quantity:    qty,
+      chatimg:     avatar,
+      nameColor:   '#FF0050',
+      mid: `tt-gift-${data.giftId}-${userId}-${qty}`,
+    });
   });
 
-  // Suscripciones
+  // ── Suscripciones ─────────────────────────────────────────────
   conn.on(WebcastEvent.SUBSCRIBE, (data) => {
     const uniqueId = data.user?.uniqueId || data.uniqueId || 'TikToker';
     const userId   = data.user?.userId   || uniqueId;
-    broadcast({ type: 'donation', platform: 'tiktok', donationType: 'sub', chatname: uniqueId, chatmessage: 'Se suscribio', chatimg: data.user?.profilePictureUrl || null, nameColor: '#FF0050', mid: `tt-sub-${userId}-${Date.now()}` });
+    const avatar   = getTikTokAvatar(data.user);
+    broadcast({
+      type:        'donation',
+      platform:    'tiktok',
+      donationType:'sub',
+      chatname:    uniqueId,
+      chatmessage: 'Se suscribió',
+      chatimg:     avatar,
+      nameColor:   '#FF0050',
+      mid: `tt-sub-${userId}-${Date.now()}`,
+    });
   });
 
-  // Desconexion
-  const onDisconnect = () => { console.log('[TikTok] Desconectado'); state.tiktok.connected = false; broadcastStatus(); ttRetryTimeout = setTimeout(connectTikTokConnector, ttRetryDelay); };
+  // ── Desconexión ───────────────────────────────────────────────
+  const onDisconnect = () => {
+    console.log('[TikTok] Desconectado');
+    state.tiktok.connected = false;
+    broadcastStatus();
+    ttRetryTimeout = setTimeout(connectTikTokConnector, ttRetryDelay);
+  };
   if (ControlEvent?.DISCONNECTED) conn.on(ControlEvent.DISCONNECTED, onDisconnect);
   else conn.on('disconnected', onDisconnect);
 }
 
+// Watchdog: reconecta si no llegan mensajes en 3 minutos
 setInterval(() => {
   if (state.tiktok.connected && state.tiktok.lastMsg > 0 && Date.now() - state.tiktok.lastMsg > 180000) {
-    console.log('[TikTok] Watchdog: reconectando...'); state.tiktok.connected = false; broadcastStatus(); connectTikTokConnector();
+    console.log('[TikTok] Watchdog: sin mensajes por 3 min, reconectando...');
+    state.tiktok.connected = false;
+    broadcastStatus();
+    connectTikTokConnector();
   }
 }, 60000);
 
-// ══ YOUTUBE ══
+// ══════════════════════════════════════════════════════════════
+// YOUTUBE
+// ══════════════════════════════════════════════════════════════
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
 let ytPollState = { active: false, videoId: null, liveChatId: null, pageToken: null, pollTimer: null, errorCount: 0, seenIds: new Set() };
 
@@ -482,7 +620,9 @@ function disconnectYouTubeApi() {
   state.youtube.connected = false; state.youtube.videoId = null; broadcastStatus();
 }
 
-// ══ ENDPOINTS ══
+// ══════════════════════════════════════════════════════════════
+// ENDPOINTS
+// ══════════════════════════════════════════════════════════════
 app.get('/health', (req, res) => res.json({ ok: true, uptime: Math.floor(process.uptime()), messages: state.msgCount, clients: state.clients.size, twitch: state.twitch.connected, kick: state.kick.connected, tiktok: state.tiktok.connected, youtube: state.youtube.connected }));
 app.get('/api/status', (req, res) => res.json({ twitch: { connected: state.twitch.connected, channel: CONFIG.twitch }, kick: { connected: state.kick.connected, channel: CONFIG.kick }, tiktok: { connected: state.tiktok.connected, user: CONFIG.tiktok }, youtube: { connected: state.youtube.connected, videoId: state.youtube.videoId }, clients: state.clients.size, messages: state.msgCount, uptime: Math.floor(process.uptime()) }));
 app.post('/api/tiktok/restart', (req, res) => { state.tiktok.connected = false; state.tiktok.restartCount++; ttRetryDelay = 15000; broadcastStatus(); connectTikTokConnector(); res.json({ ok: true, restarts: state.tiktok.restartCount }); });
@@ -491,13 +631,17 @@ app.post('/api/youtube/restart', (req, res) => { if (state.youtube.videoId) { co
 app.post('/api/youtube/connect', (req, res) => { const { videoId } = req.body; if (!videoId) return res.status(400).json({ error: 'videoId requerido' }); connectYouTubeApi(videoId); res.json({ ok: true, videoId }); });
 app.post('/api/youtube/disconnect', (req, res) => { disconnectYouTubeApi(); res.json({ ok: true }); });
 
+// ══════════════════════════════════════════════════════════════
+// START
+// ══════════════════════════════════════════════════════════════
 server.listen(CONFIG.port, () => {
-  console.log(`\nMEEVE MULTICHAT SERVER v2.1`);
+  console.log(`\nMEEVE MULTICHAT SERVER v2.2`);
   console.log(`Puerto   : ${CONFIG.port}`);
   console.log(`Twitch   : ${CONFIG.twitch || '(no config)'}`);
   console.log(`Kick     : ${CONFIG.kick || '(no config)'} (ID: ${CONFIG.kickId || 'auto'})`);
   console.log(`TikTok   : ${CONFIG.tiktok || '(no config)'} ${CONFIG.tiktokSession ? '[sessionId OK]' : '[sin sessionId]'} ${CONFIG.tiktokIdc ? `[idc: ${CONFIG.tiktokIdc}]` : ''}`);
-  console.log(`YouTube  : ${YOUTUBE_API_KEY ? 'API key OK' : 'FALTA YOUTUBE_API_KEY'}\n`);
+  console.log(`YouTube  : ${YOUTUBE_API_KEY ? 'API key OK' : 'FALTA YOUTUBE_API_KEY'}`);
+  console.log(`Euler    : ${CONFIG.eulerApiKey ? 'API key OK' : '(sin key - usando servicio publico)'}\n`);
   connectTwitch();
   connectKick();
   connectTikTokConnector();
