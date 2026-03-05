@@ -603,38 +603,45 @@ const EDGE_TTS_VOICES = {
   'Google Translate Português':'pt-BR-AntonioNeural',
 };
 
-// ── Detectar si edge-tts está instalado ──────────────────────
+// ── Detectar Python y módulo edge_tts ───────────────────────
+// Usamos `python3 -m edge_tts` en lugar del binario `edge-tts`
+// para evitar problemas de PATH en Render/Railway.
 let edgeTtsAvailable = false;
-let edgeTtsBin = 'edge-tts';
+let edgeTtsPython    = 'python3';  // o 'python'
 
 function detectEdgeTts() {
-  const candidates = [
-    'edge-tts',
-    path.join(os.homedir(), '.local', 'bin', 'edge-tts'),
-    '/usr/local/bin/edge-tts',
-    '/usr/bin/edge-tts',
-    // Render instala paquetes pip en este path
-    path.join(os.homedir(), '.local', 'lib', 'python3.11', 'site-packages', '..', '..', '..', 'bin', 'edge-tts'),
-  ];
-  for (const bin of candidates) {
-    try {
-      execSync(`${bin} --version`, { stdio: 'ignore', timeout: 3000 });
-      edgeTtsBin = bin;
-      edgeTtsAvailable = true;
-      console.log(`[TTS] edge-tts encontrado: ${bin}`);
-      return;
-    } catch(e) {}
+  // 1. Encontrar el ejecutable de Python
+  const pythonCandidates = ['python3', 'python'];
+  let pythonBin = null;
+  for (const p of pythonCandidates) {
+    try { execSync(`${p} --version`, { stdio: 'ignore', timeout: 3000 }); pythonBin = p; break; } catch(e) {}
   }
-  // Intentar instalar automáticamente
-  console.log('[TTS] edge-tts no encontrado, intentando instalar...');
+  if (!pythonBin) { console.warn('[TTS] Python no encontrado'); return; }
+  edgeTtsPython = pythonBin;
+
+  // 2. Verificar si edge_tts ya está instalado
   try {
-    execSync('pip install edge-tts --quiet --break-system-packages 2>/dev/null || pip3 install edge-tts --quiet', { timeout: 60000, stdio: 'pipe' });
-    edgeTtsBin = 'edge-tts';
+    execSync(`${pythonBin} -c "import edge_tts"`, { stdio: 'ignore', timeout: 5000 });
+    edgeTtsAvailable = true;
+    console.log(`[TTS] edge_tts listo (${pythonBin} -m edge_tts)`);
+    return;
+  } catch(e) {}
+
+  // 3. Instalar automáticamente
+  console.log('[TTS] Instalando edge-tts via pip...');
+  try {
+    execSync(`${pythonBin} -m pip install edge-tts --quiet`, { timeout: 90000, stdio: 'pipe' });
     edgeTtsAvailable = true;
     console.log('[TTS] edge-tts instalado correctamente');
   } catch(e) {
-    console.warn('[TTS] No se pudo instalar edge-tts:', e.message.slice(0, 100));
-    edgeTtsAvailable = false;
+    // Último intento con --break-system-packages
+    try {
+      execSync(`${pythonBin} -m pip install edge-tts --quiet --break-system-packages`, { timeout: 90000, stdio: 'pipe' });
+      edgeTtsAvailable = true;
+      console.log('[TTS] edge-tts instalado (break-system-packages)');
+    } catch(e2) {
+      console.warn('[TTS] No se pudo instalar edge-tts:', e2.message.slice(0, 120));
+    }
   }
 }
 detectEdgeTts();
@@ -643,19 +650,25 @@ detectEdgeTts();
 const ttsMemCache = new Map();
 const TTS_CACHE_MAX = 60;
 
-// ── Generar audio con edge-tts (proceso Python) ──────────────
+// ── Generar audio via `python3 -m edge_tts` ──────────────────
+// Usa el módulo directamente, sin depender del binario en PATH.
 function edgeTtsGenerate(text, voiceName, rate, callback) {
-  // edge-tts escribe el mp3 a stdout con --write-media -
-  const rateNum  = parseFloat(rate) || 1.0;
-  const ratePct  = (rateNum >= 1 ? '+' : '') + Math.round((rateNum - 1) * 100) + '%';
-  const args = [
-    '--voice', voiceName,
-    '--rate',  ratePct,
-    '--text',  text.slice(0, 500),
-    '--write-media', '-',   // stdout
-  ];
+  const rateNum = parseFloat(rate) || 1.0;
+  const ratePct = (rateNum >= 1 ? '+' : '') + Math.round((rateNum - 1) * 100) + '%';
 
-  const proc   = spawn(edgeTtsBin, args, { timeout: 20000 });
+  // Script Python inline que escribe MP3 a stdout
+  const pyScript = `
+import asyncio, sys, edge_tts
+async def run():
+    c = edge_tts.Communicate(sys.argv[1], sys.argv[2], rate=sys.argv[3])
+    async for chunk in c.stream():
+        if chunk['type'] == 'audio':
+            sys.stdout.buffer.write(chunk['data'])
+asyncio.run(run())
+`.trim();
+
+  const args = ['-c', pyScript, text.slice(0, 500), voiceName, ratePct];
+  const proc  = spawn(edgeTtsPython, args, { timeout: 25000 });
   const chunks = [];
   let   errOut = '';
 
@@ -666,7 +679,7 @@ function edgeTtsGenerate(text, voiceName, rate, callback) {
     if (code === 0 && buf.length > 100) {
       callback(null, buf);
     } else {
-      callback(new Error(errOut.trim().slice(0, 150) || `exit ${code}, buf=${buf.length}b`), null);
+      callback(new Error(errOut.trim().slice(0, 200) || `exit ${code}, buf=${buf.length}b`), null);
     }
   });
   proc.on('error', e => callback(e, null));
