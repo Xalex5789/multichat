@@ -369,13 +369,15 @@
     </div>
 
     <div class="card">
-      <div class="card-title">&#9678; TikTok</div>
-      <div class="btn-row" style="margin-bottom:8px;">
-        <button class="btn btn-secondary btn-full" onclick="restartTikTok()">&#8634; Reconectar</button>
+      <div class="card-title">&#9678; TikTok &#x2014; Bridge</div>
+      <div id="ssn-status-box" class="info-box info-yellow" style="margin-bottom:8px;">&#x23F3; Sin conectar. Abre el bridge para recibir mensajes de TikTok.</div>
+      <div class="btn-row" style="margin-bottom:6px;">
+        <button class="btn btn-primary btn-full" onclick="openTikTokBridge()">&#x1F517; Abrir Bridge TikTok</button>
+      </div>
+      <div class="btn-row" style="margin-bottom:6px;">
         <button class="btn btn-secondary btn-full" onclick="toggleTikTokPanel()">&#9654; Panel Live</button>
       </div>
-      <div class="info-box info-red" style="margin-bottom:6px;">Error 403: <a href="#" onclick="openModal('tiktok-modal');return false;">usar SESSION_ID</a></div>
-      <div class="hint">Tambien se recomienda configurar TIKTOK_TARGET_IDC en el servidor.</div>
+      <div class="hint">Abre el bridge, introduce la URL del servidor, genera el bookmarklet y arrástralo a tus favoritos. Luego úsalo en TikTok Live para enviar mensajes a Meeve.</div>
     </div>
 
     <div class="card">
@@ -1214,6 +1216,14 @@ function ttsSave() {
     bannedUsers: TTS.bannedUsers, bannedWords: TTS.bannedWords,
   }));
   updateTtsWidgetUrl();
+}
+
+// ── TikTok Bridge ─────────────────────────────────────────
+function openTikTokBridge() {
+  var base = (window.location.protocol !== 'file:') ? getBaseOverlayDir() : '';
+  var su = store.get('serverUrl') || '';
+  var url = base + '/tiktok_bridge.html' + (su ? '?server=' + encodeURIComponent(su) : '');
+  window.open(url, '_blank');
 }
 
 function ttsLoad() {
