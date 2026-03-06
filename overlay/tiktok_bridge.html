@@ -60,6 +60,8 @@
 
   <div class="card">
     <div class="card-title">&#9679; Configuración</div>
+    <label>Usuario de TikTok (opcional)</label>
+    <input id="tiktok-user" type="text" placeholder="ej: meevepics" />
     <label>URL del servidor Meeve</label>
     <input id="server-url" type="text" placeholder="wss://tu-app.onrender.com" />
     <button class="btn btn-tt" onclick="generateBookmarklet()">&#9654; Generar Bookmarklet</button>
@@ -75,8 +77,8 @@
     <div class="sep"></div>
     <ul class="steps">
       <li><span>Arrastra el botón <strong>"TikTok → Meeve"</strong> de arriba a tu barra de favoritos del navegador.</span></li>
-      <li><span>Abre <strong>TikTok.com</strong> y ve al live de tu canal.</span></li>
-      <li><span>Haz clic en el favorito <strong>"TikTok → Meeve"</strong> — aparecerá un indicador verde en la esquina.</span></li>
+      <li><span>Abre <strong>TikTok.com</strong> y ve al live de tu canal <strong id="step-user"></strong>.</span></li>
+      <li><span>Haz clic en el favorito <strong>"TikTok → Meeve"</strong> — aparecerá un indicador en la esquina.</span></li>
       <li><span>Los mensajes del chat de TikTok llegarán automáticamente a Meeve.</span></li>
     </ul>
     <div class="sep"></div>
@@ -93,22 +95,33 @@
 var serverUrl = '';
 var msgCount = 0;
 
-// Cargar URL guardada
+// Cargar URL guardada o desde parámetro
 (function(){
-  var saved = localStorage.getItem('meeve_server_url') || '';
+  var params = new URLSearchParams(window.location.search);
+  var fromParam = params.get('server') || '';
+  var saved = fromParam || localStorage.getItem('meeve_server_url') || '';
   if (saved) document.getElementById('server-url').value = saved;
+  var user = params.get('user') || localStorage.getItem('meeve_tt_user') || '';
+  if (user) document.getElementById('tiktok-user').value = user;
 })();
 
 function generateBookmarklet() {
   var url = document.getElementById('server-url').value.trim();
+  var ttUser = document.getElementById('tiktok-user').value.trim().replace(/^@/, '');
   if (!url) { setStatus('err', 'Introduce la URL del servidor.'); return; }
   serverUrl = url;
   localStorage.setItem('meeve_server_url', url);
+  if (ttUser) localStorage.setItem('meeve_tt_user', ttUser);
+
+  var openLiveSnippet = ttUser
+    ? `if(!window.location.href.includes('tiktok.com/@${ttUser.replace(/'/g,"\\'")}'))window.open('https://www.tiktok.com/@${ttUser.replace(/'/g,"\\'")}'+'/live','_blank');`
+    : '';
 
   // El bookmarklet inyecta un script en la página de TikTok
   // Observa el DOM del chat e intercepta mensajes nuevos
   var code = `(function(){
 if(window.__meeveBridge){window.__meeveBridge.toast('Ya activo');return;}
+${openLiveSnippet}
 var SERVER='${url.replace(/'/g,"\\'")}';
 var ws=null,retryDelay=2000,seenIds={};
 function connect(){
@@ -182,6 +195,8 @@ toast('\\u23F3 Meeve Bridge iniciando...');
   document.getElementById('bm-code').textContent = minCode.slice(0, 200) + '...';
   document.getElementById('bm-card').style.display = 'block';
   document.getElementById('log-card').style.display = 'block';
+  var stepUser = document.getElementById('step-user');
+  if (stepUser) stepUser.textContent = ttUser ? '(@' + ttUser + ')' : '';
   setStatus('tt', '&#x2713; Bookmarklet generado. Arrastralo a tus favoritos.');
 
   // Escuchar mensajes en esta página también (para debug)
